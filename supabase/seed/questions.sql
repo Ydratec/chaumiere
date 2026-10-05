@@ -1,0 +1,22 @@
+insert into questions (text) values
+  ('Quel petit bonheur a rendu ta journée meilleure ?'),
+  ('Quelle est la dernière chose qui t''a fait éclater de rire ?'),
+  ('Si tu pouvais dîner avec n''importe qui, vivant ou non, ce serait qui ?'),
+  ('Quel est ton plat réconfort ?'),
+  ('Quelle chanson t''a accompagné cette semaine ?'),
+  ('Quel super-pouvoir inutile aimerais-tu avoir ?'),
+  ('Quel est le meilleur conseil qu''on t''ait donné ?'),
+  ('Où partirais-tu demain, billet payé ?'),
+  ('Quel film peux-tu revoir sans jamais te lasser ?'),
+  ('Quelle habitude aimerais-tu adopter ?'),
+  ('Quel est ton pire souvenir de cuisine ?'),
+  ('Quelle est la chose la plus spontanée que tu aies faite ?'),
+  ('Quel talent caché as-tu ?'),
+  ('Si ta vie était un film, quel en serait le titre ?'),
+  ('Quel objet ne pourrais-tu pas abandonner ?'),
+  ('Quel est ton souvenir d''enfance préféré ?'),
+  ('Quelle règle absurde adorerais-tu faire appliquer ?'),
+  ('De quoi es-tu le plus fier cette année ?'),
+  ('Quelle est la dernière chose que tu as apprise ?'),
+  ('Un mot pour décrire ta journée ?')
+on conflict do nothing;
