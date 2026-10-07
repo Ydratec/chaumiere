@@ -6,6 +6,7 @@ import type { Person } from "@/src/modules/rooms/context";
 import { Cat, MOODS, type Mood } from "@/src/components/cat";
 import { Icon } from "@/src/components/icons";
 import { browserDb } from "@/src/lib/db/client";
+import { chatSent } from "@/src/modules/notifications/actions";
 
 export type Message = { id: number; user_id: string; content: string };
 export type Reaction = { message_id: number; user_id: string; emoji: string };
@@ -103,6 +104,7 @@ export function Chat({
     lastTyping.current = 0;
     const { error } = await sb.from("messages").insert({ activity_id: activityId, content });
     if (error) setText(content);
+    else void chatSent(activityId); // prévient les autres (notification, limitée à une toutes les 10 min)
   }
 
   async function toggle(message_id: number, emoji: string) {

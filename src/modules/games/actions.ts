@@ -1,12 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { loadUnlocks } from "@/src/modules/farm/data";
 import { GAME_LOCKS } from "@/src/modules/farm/projects";
+import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { ENGINES } from "./engines";
-import { isGameType, type GameState } from "./labels";
+import { GAME_TYPES, isGameType, type GameState } from "./labels";
 
 export type Game = {
   id: string;
@@ -29,6 +31,12 @@ async function load(gameId: string) {
   return { admin, game, uid: c.user.id, names: c.names };
 }
 
+const label = (g: Game) => (isGameType(g.type) ? GAME_TYPES[g.type].label : "Partie");
+const url = (g: Pick<Game, "room_id" | "id">) => `/r/${g.room_id}/games/${g.id}`;
+/** Notification de jeu, envoyée après la réponse (ne ralentit pas le coup joué). */
+const tell = (to: string[], g: Pick<Game, "room_id" | "id">, title: string, body: string) =>
+  after(() => notify(to, "games", { title, body, url: url(g), tag: `game-${g.id}` }));
+
 /** Défi lancé à toute la salle (target vide) ou à un joueur. Un nouveau défi remplace le précédent encore ouvert. */
 export async function createGame(f: FormData) {
   const roomId = String(f.get("room_id"));
@@ -46,11 +54,13 @@ export async function createGame(f: FormData) {
   await admin.from("games").update({ status: "cancelled" }).eq("room_id", roomId).eq("creator", c.user.id).eq("status", "open");
   const { data } = await admin.from("games").insert({ room_id: roomId, type, creator: c.user.id, target }).select("id").single();
   const id = data?.id;
+  const to = target ? [target] : await roomMembers(roomId, c.user.id);
+  if (id) tell(to, { room_id: roomId, id }, `${c.names[c.user.id]} te défie`, GAME_TYPES[type].label);
   redirect(`/r/${roomId}/games/${id}`);
 }
 
 export async function acceptGame(f: FormData) {
-  const { admin, game, uid } = await load(String(f.get("game_id")));
+  const { admin, game, uid, names } = await load(String(f.get("game_id")));
   if (game.status !== "open" || game.creator === uid || (game.target && game.target !== uid)) return;
 
   const engine = isGameType(game.type) ? ENGINES[game.type] : null;
@@ -61,7 +71,10 @@ export async function acceptGame(f: FormData) {
     .from("games")
     .update({ status: "playing", opponent: uid, state, version: 1 })
     .eq("id", game.id).eq("status", "open").select("id");
-  if (data?.length) await admin.from("game_secrets").insert({ game_id: game.id, deck: secret });
+  if (data?.length) {
+    await admin.from("game_secrets").insert({ game_id: game.id, deck: secret });
+    tell([game.creator], game, `${names[uid]} a relevé ton défi`, label(game));
+  }
   redirect(`/r/${game.room_id}/games/${game.id}`);
 }
 
@@ -77,7 +90,7 @@ export async function cancelGame(f: FormData) {
 export async function playMove(gameId: string, move: unknown) {
   // Verrou optimiste : si l'autre joueur a joué entre-temps, on recharge et on rejoue le coup.
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { admin, game, uid } = await load(gameId);
+    const { admin, game, uid, names } = await load(gameId);
     if (game.status !== "playing" || !game.state || !isGameType(game.type)) return null;
     const { data: secret } = await admin.from("game_secrets").select("deck").eq("game_id", gameId).single<{ deck: unknown }>();
     const res = secret && ENGINES[game.type].play(game.state, secret.deck, move, uid);
@@ -90,14 +103,20 @@ export async function playMove(gameId: string, move: unknown) {
       .update({ state: res.state, status, version: game.version + 1 })
       .eq("id", gameId).eq("version", game.version)
       .select("version");
-    if (data?.length) return { state: res.state as GameState, status: status as Game["status"], version: game.version + 1 };
+    if (data?.length) {
+      const other = uid === game.creator ? game.opponent! : game.creator;
+      const s = res.state as GameState;
+      if (s.winner) tell([other], game, "Partie terminée", s.winner === "draw" ? `${label(game)} : égalité` : s.winner === uid ? `${label(game)} : ${names[uid]} a gagné` : `${label(game)} : tu as gagné !`);
+      else if (s.turn === other && (game.state.turn !== other || s.phase !== game.state.phase)) tell([other], game, "À toi de jouer", `${label(game)} contre ${names[uid]}`);
+      return { state: s, status: status as Game["status"], version: game.version + 1 };
+    }
   }
   return null;
 }
 
 /** Abandonner une partie en cours : l'adversaire gagne. */
 export async function forfeitGame(gameId: string) {
-  const { admin, game, uid } = await load(gameId);
+  const { admin, game, uid, names } = await load(gameId);
   if (game.status !== "playing" || !game.state || (uid !== game.creator && uid !== game.opponent)) return null;
   const engine = isGameType(game.type) ? ENGINES[game.type] : null;
   let state: GameState = { ...game.state, winner: uid === game.creator ? game.opponent! : game.creator, forfeit: uid };
@@ -110,5 +129,7 @@ export async function forfeitGame(gameId: string) {
     .update({ state, status: "finished", version: game.version + 1 })
     .eq("id", gameId).eq("version", game.version)
     .select("version");
-  return data?.length ? { state, status: "finished" as const, version: game.version + 1 } : null;
+  if (!data?.length) return null;
+  tell([state.winner as string], game, "Partie terminée", `${label(game)} : ${names[uid]} a abandonné, tu gagnes !`);
+  return { state, status: "finished" as const, version: game.version + 1 };
 }

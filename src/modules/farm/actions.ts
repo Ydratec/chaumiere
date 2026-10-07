@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
@@ -57,7 +59,7 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
       const { error } = await add(negate(r.inputs));
       if (error) return done("Il te manque des ingrédients.");
       const now = Date.now();
-      const { data } = await where(tiles().update({ item: r.id, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, farm.unlocks)).toISOString() }))
+      const { data } = await where(tiles().update({ notified: false, item: r.id, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, farm.unlocks)).toISOString() }))
         .is("item", null).select("x");
       if (!data?.length) await add(r.inputs); // déjà lancé entre-temps : remboursement
       return done(data?.length ? undefined : "Déjà occupé.");
@@ -105,9 +107,14 @@ export async function contribute(roomId: string, project: string, item: string) 
   const admin = adminDb();
   const { error } = await admin.rpc("farm_contribute", { r: roomId, u: uid, p: project, it: item, n: qty });
   if (error) return "Tu n'en as pas assez.";
-  const after = (await loadProjects(roomId, farm.unlocks)).find((x) => x.key === project);
-  if (after && isComplete(after, after.progress))
-    await admin.from("room_unlocks").upsert({ room_id: roomId, key: project }, { ignoreDuplicates: true });
+  const now = (await loadProjects(roomId, farm.unlocks)).find((x) => x.key === project);
+  if (now && isComplete(now, now.progress)) {
+    const { data: fresh } = await admin.from("room_unlocks").upsert({ room_id: roomId, key: project }, { ignoreDuplicates: true }).select("key");
+    if (fresh?.length) { // débloqué à l'instant (une seule notification même si deux dons arrivent ensemble)
+      const to = await roomMembers(roomId, uid);
+      after(() => notify(to, "farm", { title: `Projet terminé : ${p.title}`, body: p.desc, url: `/r/${roomId}/farm`, tag: `project-${project}` }));
+    }
+  }
   revalidatePath(`/r/${roomId}`, "layout");
   return "";
 }
@@ -122,10 +129,14 @@ export async function createOffer(roomId: string, give: Inventory, want: Invento
 }
 
 export async function acceptOffer(roomId: string, offer: number) {
-  const uid = await member(roomId);
-  const { data, error } = await adminDb().rpc("farm_offer_accept", { o: offer, r: roomId, b: uid });
+  const c = await getRoomContext(roomId);
+  if (!c) throw new Error("Non autorisé");
+  const admin = adminDb();
+  const { data: o } = await admin.from("farm_offers").select("seller").eq("id", offer).eq("room_id", roomId).maybeSingle();
+  const { data, error } = await admin.rpc("farm_offer_accept", { o: offer, r: roomId, b: c.user.id });
   revalidatePath(`/r/${roomId}/farm`);
   if (error) return "Il te manque ce qui est demandé.";
+  if (data && o) after(() => notify([o.seller], "farm", { title: "Échange conclu", body: `${c.names[c.user.id]} a accepté ton offre au marché.`, url: `/r/${roomId}/farm`, tag: `offer-${offer}` }));
   return data ? "" : "Cette offre n'est plus disponible.";
 }
 

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { CSSProperties } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NoZoom } from "@/src/components/no-zoom";
+import { ServiceWorker } from "@/src/components/service-worker";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <NoZoom />
+        <ServiceWorker />
         {children}
       </body>
     </html>
