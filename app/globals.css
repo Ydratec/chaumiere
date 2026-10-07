@@ -1,26 +1,182 @@
 @import "tailwindcss";
 
+/* Teinte d'accent (0-360), changeable par chacun : toutes les classes indigo-* la suivent. */
 :root {
-  --background: #ffffff;
+  --h: 250;
+  --background: hsl(var(--h) 45% 97%);
   --foreground: #171717;
 }
 
 @theme inline {
+  /* neutres légèrement teintés par l'accent */
+  --color-zinc-50: hsl(var(--h) 40% 96%);
+  --color-zinc-100: hsl(var(--h) 30% 93%);
+  --color-zinc-200: hsl(var(--h) 22% 88%);
+  --color-indigo-50: hsl(var(--h) 100% 97%);
+  --color-indigo-100: hsl(var(--h) 90% 93%);
+  --color-indigo-300: hsl(var(--h) 80% 76%);
+  --color-indigo-500: hsl(var(--h) 65% 58%);
+  --color-indigo-600: hsl(var(--h) 60% 50%);
+  --color-indigo-700: hsl(var(--h) 60% 42%);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Motif de pattes en filigrane, de la couleur d'accent */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: hsl(var(--h) 60% 50%);
+  opacity: 0.045;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg transform='rotate(-20 30 30)'%3E%3Cellipse cx='30' cy='36' rx='8' ry='6.5'/%3E%3Ccircle cx='19' cy='26' r='3'/%3E%3Ccircle cx='26' cy='20' r='3'/%3E%3Ccircle cx='34' cy='20' r='3'/%3E%3Ccircle cx='41' cy='26' r='3'/%3E%3C/g%3E%3Cg transform='rotate(25 90 90)'%3E%3Cellipse cx='90' cy='96' rx='8' ry='6.5'/%3E%3Ccircle cx='79' cy='86' r='3'/%3E%3Ccircle cx='86' cy='80' r='3'/%3E%3Ccircle cx='94' cy='80' r='3'/%3E%3Ccircle cx='101' cy='86' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg transform='rotate(-20 30 30)'%3E%3Cellipse cx='30' cy='36' rx='8' ry='6.5'/%3E%3Ccircle cx='19' cy='26' r='3'/%3E%3Ccircle cx='26' cy='20' r='3'/%3E%3Ccircle cx='34' cy='20' r='3'/%3E%3Ccircle cx='41' cy='26' r='3'/%3E%3C/g%3E%3Cg transform='rotate(25 90 90)'%3E%3Cellipse cx='90' cy='96' rx='8' ry='6.5'/%3E%3Ccircle cx='79' cy='86' r='3'/%3E%3Ccircle cx='86' cy='80' r='3'/%3E%3Ccircle cx='94' cy='80' r='3'/%3E%3Ccircle cx='101' cy='86' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Pas de glissement horizontal natif, de rebond latéral ni de zoom : on gère les balayages nous-mêmes (SwipeNav). */
+html,
+body {
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
+
+/* Comme une app : pas de menu « Ouvrir / Partager » ni de sélection de texte quand on garde le doigt
+   appuyé sur un lien, un bouton ou une image (iOS). Le texte des messages et réponses reste sélectionnable. */
+a,
+button,
+img,
+svg,
+label {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Langage visuel commun : peu de cadres, des surfaces douces, des titres discrets. */
+@layer components {
+  .panel {
+    @apply rounded-[1.4rem] bg-white p-5;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 16px 40px -24px rgb(0 0 0 / 0.18);
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500;
+  }
+  .field {
+    @apply w-full rounded-2xl bg-zinc-100 px-4 py-3 text-base outline-none transition placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:bg-zinc-300 disabled:text-zinc-500;
+  }
+  .btn-soft {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-40;
+  }
+  .rows > * + * {
+    @apply border-t border-zinc-200/70;
+  }
+}
+
+/* Transitions entre écrans (React <ViewTransition>, voir app/r/[roomId]/template.tsx) */
+::view-transition-old(.page-out) {
+  animation: 90ms ease-in both fade-out;
+}
+::view-transition-new(.page-in) {
+  animation: 180ms ease-out both fade-in-up;
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Petites animations d'interface */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(6px);
+  }
+}
+.animate-pop {
+  animation: pop 200ms ease-out both;
+}
+button,
+a {
+  transition: transform 120ms, background-color 150ms, opacity 150ms;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Personnages (CharacterSprite) : pattes en alternance quand ils marchent, queue qui ondule. */
+.cat-leg,
+.cat-tail,
+.cat-body {
+  transform-box: fill-box;
+}
+.cat-leg {
+  transform-origin: top center;
+}
+.cat-walking .cat-leg-a {
+  animation: cat-step 0.28s ease-in-out infinite;
+}
+.cat-walking .cat-leg-b {
+  animation: cat-step 0.28s ease-in-out infinite reverse;
+}
+.cat-walking .cat-body {
+  animation: cat-bob 0.28s ease-in-out infinite;
+}
+.cat-tail {
+  transform-origin: bottom right;
+  animation: cat-tail 2.4s ease-in-out infinite;
+}
+@keyframes cat-step {
+  0%,
+  100% {
+    transform: rotate(22deg);
+  }
+  50% {
+    transform: rotate(-22deg);
+  }
+}
+@keyframes cat-bob {
+  50% {
+    transform: translateY(-0.8px);
+  }
+}
+@keyframes cat-tail {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-14deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,52 +1,47 @@
-import { db } from "@/src/lib/db/server";
-import { registry, type Activity } from "@/src/modules/activities/registry";
-import { Chat } from "@/src/modules/chat/chat";
+import Link from "next/link";
+import { Wordmark } from "@/src/components/logo";
+import { Icon } from "@/src/components/icons";
+import { Avatar } from "@/src/components/avatar";
+import { getMyRooms } from "@/src/modules/rooms/context";
+import { JoinForms } from "@/src/modules/rooms/join-forms";
 import { logout } from "./actions";
 import { LoginForm } from "./login-form";
 
 export default async function Home() {
-  const sb = await db();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return <LoginForm />;
-
-  const { data: me } = await sb
-    .from("room_members")
-    .select("room_id, rooms(name)")
-    .eq("user_id", user.id)
-    .single<{ room_id: string; rooms: { name: string } }>();
-  if (!me) return <LoginForm />;
-
-  const [{ data: members }, { data: activity }] = await Promise.all([
-    sb.from("room_members").select("user_id, username").eq("room_id", me.room_id),
-    sb.rpc("today_activity", { r: me.room_id }).single<Activity>(),
-  ]);
-  if (!activity) return <p className="p-8">Aucune question disponible (base de questions vide ?).</p>;
-
-  const [{ data: answers }, { data: messages }] = await Promise.all([
-    sb.from("answers").select("user_id, content").eq("activity_id", activity.id),
-    sb.from("messages").select("id, user_id, content").eq("activity_id", activity.id).order("id"),
-  ]);
-  const names = Object.fromEntries((members ?? []).map((m) => [m.user_id, m.username]));
-  const Today = registry[activity.type];
+  const rooms = await getMyRooms();
+  if (!rooms) return <LoginForm />;
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white px-4 py-4">
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Ta salle</p>
-            <h1 className="text-lg font-bold">{me.rooms?.name}</h1>
-          </div>
+    <main className="min-h-screen px-4 py-6 text-zinc-900">
+      <div className="mx-auto max-w-md space-y-6">
+        <header className="flex items-center justify-between">
+          <h1><Wordmark /></h1>
           <form action={logout}>
-            <button className="rounded-full border border-zinc-200 px-3 py-2 text-sm font-medium">Quitter</button>
+            <button className="btn-soft">Se déconnecter</button>
           </form>
-        </div>
-      </header>
-      <div className="mx-auto max-w-md space-y-5 px-4 py-5">
-        <Today activity={activity} userId={user.id} names={names} answers={answers ?? []} />
-        <Chat activityId={activity.id} userId={user.id} names={names} initial={messages ?? []} />
+        </header>
+        <h2 className="eyebrow pt-4">Mes salles</h2>
+        {rooms.length > 0 && (
+          <ul className="rows">
+            {rooms.map((r) => (
+              <li key={r.room_id}>
+                <Link
+                  href={`/r/${r.room_id}`}
+                  className="group flex items-center gap-4 py-3"
+                >
+                  <Avatar url={r.rooms.avatar_url} name={r.rooms.name} size={48} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-lg font-semibold tracking-tight">{r.rooms.name}</p>
+                    <p className="text-sm text-zinc-500">Tu es « {r.username} »</p>
+                  </div>
+                  <span className="text-zinc-400 transition group-hover:translate-x-0.5"><Icon name="arrow" size={18} /></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {rooms.length === 0 && <p className="text-zinc-600">Tu n&apos;as pas encore de salle : rejoins-en une ou crée la tienne.</p>}
+        <JoinForms />
       </div>
     </main>
   );

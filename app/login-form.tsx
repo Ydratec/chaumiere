@@ -1,28 +1,29 @@
 "use client";
 
 import { useActionState } from "react";
+import { Cat } from "@/src/components/cat";
+import { Wordmark } from "@/src/components/logo";
 import { login } from "./actions";
-
-const input =
-  "w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100";
 
 export function LoginForm() {
   const [error, action, pending] = useActionState(login, "");
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-8 text-zinc-900">
+    <main className="min-h-screen px-4 py-8 text-zinc-900">
       <div className="mx-auto flex min-h-[85vh] w-full max-w-md flex-col justify-center">
         <header className="mb-8">
-          <p className="text-sm font-bold text-indigo-600">ENTRE AMIS</p>
-          <h1 className="mt-3 text-3xl font-bold">Retrouve ta salle</h1>
-          <p className="mt-2 text-zinc-600">Connecte-toi pour découvrir la question du jour.</p>
+          <div className="mb-6 flex items-end justify-between">
+            <Wordmark />
+            <div className="flex -space-x-2"><Cat coat={0} size={52} /><Cat coat={2} mood="love" size={52} /><Cat coat={1} mood="wow" size={52} /></div>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight">Connecte-toi</h1>
         </header>
-        <form action={action} className="space-y-4 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <label className="block text-sm font-medium">
-            Identifiant
-            <input name="username" autoComplete="username" required className={`${input} mt-1.5`} />
+        <form action={action} className="space-y-4">
+          <label className="block">
+            <span className="eyebrow">Identifiant</span>
+            <input name="username" autoComplete="username" autoCapitalize="none" required className="field mt-1.5 bg-white shadow-sm" />
           </label>
-          <label className="block text-sm font-medium">
-            Code PIN
+          <label className="block">
+            <span className="eyebrow">Code PIN</span>
             <input
               name="pin"
               type="password"
@@ -31,23 +32,19 @@ export function LoginForm() {
               maxLength={4}
               placeholder="4 chiffres"
               required
-              className={`${input} mt-1.5`}
+              className="field mt-1.5 bg-white tracking-[0.5em] shadow-sm"
             />
           </label>
-          <label className="block text-sm font-medium">
-            Code de la salle
-            <input name="code" required className={`${input} mt-1.5`} />
-          </label>
           {error && (
-            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+            <p role="alert" className="text-sm text-red-700">
               {error}
             </p>
           )}
           <button
             disabled={pending}
-            className="min-h-12 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="btn w-full"
           >
-            Rejoindre la salle
+            Continuer
           </button>
         </form>
       </div>
