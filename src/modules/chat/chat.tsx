@@ -85,9 +85,13 @@ export function Chat({
     };
   }, [sb, activityId]);
 
+  // Suivre la conversation seulement si on est déjà en bas de la page (ou si c'est notre message) :
+  // pas de saut quand on lit la question en haut.
+  const lastMine = messages.at(-1)?.user_id === userId;
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "nearest" });
-  }, [messages, typing]);
+    const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200;
+    if (atBottom || lastMine) bottom.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [messages.length, typing.length, lastMine]);
 
   function onType(value: string) {
     setText(value);
@@ -121,9 +125,9 @@ export function Chat({
   const who = typing.map((id) => names[id] ?? "?");
 
   return (
-    <section className="panel">
+    <section>
       <h3 className="eyebrow mb-4">Discussion</h3>
-      <div className="max-h-[28rem] space-y-3 overflow-y-auto">
+      <div className="space-y-3">
         {messages.length === 0 && <p className="text-sm text-zinc-500">Aucun message : lance la discussion !</p>}
         {messages.map((m) => {
           const mine = m.user_id === userId;
@@ -195,13 +199,17 @@ export function Chat({
         )}
         <div ref={bottom} />
       </div>
-      <form onSubmit={send} className="mt-4 flex gap-2">
+      {/* Saisie collée en bas de l'écran, juste au-dessus de la barre d'onglets. */}
+      <form
+        onSubmit={send}
+        className="sticky bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.6rem)] z-10 mt-4 flex gap-2 rounded-full bg-white/90 p-1.5 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.3)] backdrop-blur-md"
+      >
         <input
           value={text}
           onChange={(e) => onType(e.target.value)}
           maxLength={1000}
           placeholder="Un message…"
-          className="field min-w-0 flex-1 rounded-full py-2.5"
+          className="min-w-0 flex-1 rounded-full bg-transparent px-4 py-2.5 text-base outline-none placeholder:text-zinc-400"
         />
         <button aria-label="Envoyer" className="btn size-11 shrink-0 p-0">
           <Icon name="arrow" size={20} />
