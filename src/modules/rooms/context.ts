@@ -6,28 +6,37 @@ export type Member = { user_id: string; username: string; role: "admin" | "membe
 /** Ce qu'il faut pour afficher quelqu'un : pseudo, photo, personnage. */
 export type Person = { name: string; url: string | null; character: Character };
 
+export type AuthUser = { id: string; email?: string };
+
+/**
+ * Utilisateur connecté, vérifié localement (signature ES256 du jeton, sans appel réseau à Supabase Auth).
+ * Mis en cache pour la durée d'une requête.
+ */
+export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
+  const { data } = await (await db()).auth.getClaims();
+  const c = data?.claims;
+  return c?.sub ? { id: c.sub, email: typeof c.email === "string" ? c.email : undefined } : null;
+});
+
 /** Utilisateur connecté + une de ses salles + ses membres, ou null si pas connecté / pas membre. */
 export const getRoomContext = cache(async (roomId: string) => {
-  const sb = await db();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
+  const sb = await db();
 
-  const { data: me } = await sb
-    .from("room_members")
-    .select("role, rooms(name, avatar_url)")
-    .eq("user_id", user.id)
-    .eq("room_id", roomId)
-    .maybeSingle<{ role: Member["role"]; rooms: { name: string; avatar_url: string | null } }>();
-  if (!me) return null;
-
+  // Une seule requête : tous les membres (la RLS ne renvoie rien si on n'est pas membre) + la salle.
   const { data } = await sb
     .from("room_members")
-    .select("user_id, username, role, avatar_url, character")
+    .select("user_id, username, role, avatar_url, character, rooms(name, avatar_url)")
     .eq("room_id", roomId)
-    .order("username");
-  const members: Member[] = (data ?? []).map((m) => ({ ...m, character: readCharacter(m.character, m.username) }));
+    .order("username")
+    .returns<(Omit<Member, "character"> & { character: unknown; rooms: { name: string; avatar_url: string | null } })[]>();
+  const me = data?.find((m) => m.user_id === user.id);
+  if (!me) return null;
+
+  const members: Member[] = data!.map((m) => ({
+    user_id: m.user_id, username: m.username, role: m.role, avatar_url: m.avatar_url, character: readCharacter(m.character, m.username),
+  }));
   const names: Record<string, string> = Object.fromEntries(members.map((m) => [m.user_id, m.username]));
   const people: Record<string, Person> = Object.fromEntries(
     members.map((m) => [m.user_id, { name: m.username, url: m.avatar_url, character: m.character }]),
@@ -47,12 +56,9 @@ export const getRoomContext = cache(async (roomId: string) => {
 
 /** Les salles de l'utilisateur connecté (null si pas connecté). */
 export async function getMyRooms() {
-  const sb = await db();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
-  const { data } = await sb
+  const { data } = await (await db())
     .from("room_members")
     .select("room_id, username, rooms(name, avatar_url)")
     .eq("user_id", user.id)

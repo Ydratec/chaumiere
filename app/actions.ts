@@ -61,7 +61,7 @@ export async function answer(f: FormData) {
     if (!m) return;
   }
   await sb.from("answers").upsert({ activity_id: activityId, content });
-  revalidatePath("/", "layout");
+  revalidatePath(a ? `/r/${a.room_id}/question` : "/", a ? "page" : "layout"); // seule la page de la question change
 }
 
 /** Teinte d'accent personnelle (0-360), lue par app/layout.tsx. */

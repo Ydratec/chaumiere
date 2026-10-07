@@ -1,14 +1,14 @@
 "use server";
 
 import { after } from "next/server";
-import { adminDb, db } from "@/src/lib/db/server";
-import { getRoomContext } from "@/src/modules/rooms/context";
+import { adminDb } from "@/src/lib/db/server";
+import { getAuthUser, getRoomContext } from "@/src/modules/rooms/context";
 import { notify, throttle, type Kind } from "./push";
 
 export type Prefs = Record<Kind, boolean>;
 
 async function me() {
-  const { data: { user } } = await (await db()).auth.getUser();
+  const user = await getAuthUser();
   if (!user) throw new Error("Non connecté");
   return user.id;
 }

@@ -19,7 +19,8 @@ export async function proxy(req: NextRequest) {
       },
     },
   );
-  await sb.auth.getUser();
+  // Vérifie le jeton localement (signature ES256) et le rafraîchit s'il a expiré : pas d'appel réseau à chaque page.
+  await sb.auth.getClaims();
   return res;
 }
 

@@ -108,3 +108,31 @@ test("offres d'échange : un objet contre un autre, quantités raisonnables", as
   assert.equal(offerError({ gold: 1 } as never, { egg: 2 }), "Objet inconnu.");
   assert.equal(offerError({}, { egg: 2 }), "Choisis un objet à donner et un à recevoir.");
 });
+
+test("coup appliqué tout de suite : planter, récolter, vendre, construire, déplacer, démolir", async () => {
+  const { applyMove } = await import("../../src/modules/farm/rules.ts");
+  type FarmState = import("../../src/modules/farm/rules.ts").FarmState;
+  const bac: Tile = { x: 0, y: 0, kind: "planter", item: null, started_at: null, ready_at: null };
+  let f: FarmState = { tiles: [bac], items: { coins: 30 }, unlocks: [] };
+  const ok = (r: ReturnType<typeof applyMove>) => { assert.ok("state" in r, "error" in r ? r.error : ""); return (r as { state: typeof f }).state; };
+
+  f = ok(applyMove(f, { kind: "start", x: 1, y: 1, recipe: "wheat" }, 0)); // n'importe quelle case du bac
+  assert.equal(f.items.coins, 29);
+  assert.equal(f.tiles[0].item, "wheat");
+  assert.deepEqual(applyMove(f, { kind: "collect", x: 0, y: 0 }, 60_000), { error: "Pas encore prêt." });
+  f = ok(applyMove(f, { kind: "collect", x: 0, y: 0 }, 120_000));
+  assert.equal(f.items.wheat, 2);
+  assert.equal(f.tiles[0].item, null);
+
+  f = ok(applyMove(f, { kind: "sell", item: "wheat", qty: 2 }, 0));
+  assert.deepEqual([f.items.wheat, f.items.coins], [0, 33]);
+  assert.deepEqual(applyMove(f, { kind: "sell", item: "wheat", qty: 1 }, 0), { error: "Tu n'en as pas assez." });
+
+  f = ok(applyMove(f, { kind: "build", x: 4, y: 4, building: "pot" }, 0));
+  assert.equal(f.items.coins, 25);
+  assert.deepEqual(applyMove(f, { kind: "build", x: 1, y: 1, building: "pot" }, 0), { error: "Il y a déjà quelque chose ici." });
+  f = ok(applyMove(f, { kind: "move", x: 4, y: 4, to: { x: 6, y: 6 } }, 0));
+  assert.ok(f.tiles.some((t) => t.kind === "pot" && t.x === 6 && t.y === 6));
+  f = ok(applyMove(f, { kind: "clear", x: 6, y: 6 }, 0));
+  assert.equal(f.tiles.length, 1);
+});

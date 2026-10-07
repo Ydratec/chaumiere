@@ -1,5 +1,5 @@
 // Règles de la ferme : fonctions pures (testées dans tests/unit/farm.test.ts).
-import { BUILDINGS, GRID_H, GRID_W, isBuilding, isItem, type BuildingId, type Inventory, type ItemId, type Recipe } from "./catalog.ts";
+import { BUILDINGS, GRID_H, GRID_W, ITEMS, isBuilding, isItem, type BuildingId, type Inventory, type ItemId, type Recipe } from "./catalog.ts";
 
 /** Un objet posé : (x, y) = son coin haut-gauche. */
 export type Tile = { x: number; y: number; kind: string; item: string | null; started_at: string | null; ready_at: string | null };
@@ -135,4 +135,66 @@ export function offerError(give: Inventory, want: Inventory) {
   if (gi === wi) return "Choisis deux objets différents.";
   if (![gq, wq].every((q) => Number.isInteger(q) && q! >= 1 && q! <= 999)) return "Quantités entre 1 et 999.";
   return null;
+}
+
+// ---------- Effet d'un coup (affichage immédiat côté client ; le serveur refait la même chose en base) ----------
+
+export type FarmMove =
+  | { kind: "build"; x: number; y: number; building: string }
+  | { kind: "move"; x: number; y: number; to: { x: number; y: number } }
+  | { kind: "start"; x: number; y: number; recipe: string }
+  | { kind: "collect"; x: number; y: number }
+  | { kind: "clear"; x: number; y: number }
+  | { kind: "sell"; item: string; qty: number };
+export type FarmState = { tiles: Tile[]; items: Inventory; unlocks: string[] };
+
+const plus = (inv: Inventory, delta: Inventory): Inventory => {
+  const out = { ...inv };
+  for (const [k, v] of Object.entries(delta)) out[k as ItemId] = (out[k as ItemId] ?? 0) + (v ?? 0);
+  return out;
+};
+const same = (a: Tile) => (b: Tile) => a.x === b.x && a.y === b.y;
+
+/** Nouvel état après ce coup, ou le message d'erreur (mêmes règles et mêmes messages que le serveur). */
+export function applyMove(f: FarmState, m: FarmMove, now: number): { state: FarmState } | { error: string } {
+  const tile = "x" in m ? tileAt(f.tiles, m.x, m.y) : undefined;
+  switch (m.kind) {
+    case "build": {
+      if (!isBuilding(m.building)) return { error: "Bâtiment inconnu." };
+      const err = placeError(f.tiles, f.items, m.building, m.x, m.y, f.unlocks);
+      if (err) return { error: err };
+      const t: Tile = { x: m.x, y: m.y, kind: m.building, item: null, started_at: null, ready_at: null };
+      return { state: { ...f, tiles: [...f.tiles, t], items: plus(f.items, { coins: -BUILDINGS[m.building].cost }) } };
+    }
+    case "move": {
+      if (!tile || !isBuilding(tile.kind)) return { error: "Rien à déplacer." };
+      const err = placeError(f.tiles, f.items, tile.kind, m.to.x, m.to.y, f.unlocks, tile);
+      if (err) return { error: err };
+      return { state: { ...f, tiles: f.tiles.map((t) => (same(tile)(t) ? { ...t, x: m.to.x, y: m.to.y } : t)) } };
+    }
+    case "start": {
+      const err = startError(tile, f.items, m.recipe);
+      if (err) return { error: err };
+      const r = recipeOf(tile!.kind, m.recipe)!;
+      const t = { ...tile!, item: r.id, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, f.unlocks)).toISOString() };
+      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile!)(x) ? t : x)), items: plus(f.items, negate(r.inputs)) } };
+    }
+    case "collect": {
+      const r = tile && recipeOf(tile.kind, tile.item);
+      if (!r) return { error: "Rien à récolter." };
+      if (!isReady(tile, now)) return { error: "Pas encore prêt." };
+      const t = { ...tile, item: null, started_at: null, ready_at: null };
+      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? t : x)), items: plus(f.items, { [r.out]: r.qty }) } };
+    }
+    case "clear": {
+      if (!tile || tile.item) return { error: "Attends que ce soit fini avant de démolir." };
+      return { state: { ...f, tiles: f.tiles.filter((t) => !same(tile)(t)) } };
+    }
+    case "sell": {
+      const qty = Math.floor(Number(m.qty));
+      if (!isItem(m.item) || m.item === "coins" || !(qty > 0)) return { error: "Vente impossible." };
+      if ((f.items[m.item] ?? 0) < qty) return { error: "Tu n'en as pas assez." };
+      return { state: { ...f, items: plus(f.items, { [m.item]: -qty, coins: qty * ITEMS[m.item].price }) } };
+    }
+  }
 }

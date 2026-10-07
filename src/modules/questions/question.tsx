@@ -1,5 +1,5 @@
-import { answer } from "@/app/actions";
 import type { ActivityProps } from "../activities/registry";
+import { AnswerForm } from "./answer-form";
 import { VoteActivity } from "./vote";
 
 export function QuestionActivity(props: ActivityProps) {
@@ -14,19 +14,7 @@ export function QuestionActivity(props: ActivityProps) {
         <h2 className="mt-2 text-[1.7rem] font-bold leading-tight tracking-tight">{activity.payload.text}</h2>
       </section>
 
-      <form action={answer} className="space-y-3">
-        <input type="hidden" name="activity_id" value={activity.id} />
-        <textarea
-          name="content"
-          defaultValue={mine?.content}
-          rows={3}
-          maxLength={500}
-          required
-          placeholder="Ta réponse…"
-          className="field resize-y bg-white shadow-sm"
-        />
-        <button className="btn">{mine ? "Modifier ma réponse" : "Envoyer"}</button>
-      </form>
+      <AnswerForm activityId={activity.id} mine={mine?.content} />
 
       {mine && (
         <section>

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { adminDb, db } from "@/src/lib/db/server";
-import { getRoomContext } from "./context";
+import { adminDb } from "@/src/lib/db/server";
+import { getAuthUser, getRoomContext } from "./context";
 
 const PSEUDO = /^[\p{L}\p{N} _-]{2,20}$/u;
 
@@ -15,9 +15,7 @@ async function ctx(f: FormData, adminOnly = false) {
 }
 
 async function userId() {
-  const {
-    data: { user },
-  } = await (await db()).auth.getUser();
+  const user = await getAuthUser();
   if (!user) throw new Error("Non connecté");
   return user.id;
 }

@@ -8,15 +8,9 @@ import { getRoomContext } from "@/src/modules/rooms/context";
 import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
 import { loadFarm, loadProjects, type Farm } from "./data";
 import { isComplete, remaining } from "./projects";
-import { duration, gridH, negate, offerError, placeError, recipeOf, startError, tileAt } from "./rules";
+import { duration, gridH, negate, offerError, placeError, recipeOf, startError, tileAt, type FarmMove } from "./rules";
 
-export type FarmMove =
-  | { kind: "build"; x: number; y: number; building: string }
-  | { kind: "move"; x: number; y: number; to: { x: number; y: number } }
-  | { kind: "start"; x: number; y: number; recipe: string }
-  | { kind: "collect"; x: number; y: number }
-  | { kind: "clear"; x: number; y: number }
-  | { kind: "sell"; item: string; qty: number };
+export type { FarmMove };
 
 /** Un coup sur sa ferme. Renvoie la ferme à jour, ou un message d'erreur. */
 export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm: Farm; error?: string }> {

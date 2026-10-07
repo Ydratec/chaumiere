@@ -9,7 +9,7 @@ import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
 import type { Farm } from "./data";
 import {
-  around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, progress, recipeOf, sizeOf, tileAt,
+  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, progress, recipeOf, sizeOf, tileAt,
   type Cell, type Tile,
 } from "./rules";
 
@@ -62,12 +62,21 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
     };
   }, []);
 
+  // Le coup s'affiche tout de suite (mêmes règles que le serveur), puis l'état du serveur fait foi.
+  // Tant que d'autres coups sont en route, on garde l'affichage prévu (pas de retour en arrière visuel).
+  const inflight = useRef(0);
   function act(move: FarmMove, close = true) {
+    const predicted = applyMove(farm, move, now); // même horloge que l'affichage
+    if ("error" in predicted) return setMsg(predicted.error);
+    setFarm((f) => ({ ...f, ...predicted.state }));
+    setMsg("");
+    if (close) setOpen(null);
+    inflight.current++;
     startTransition(async () => {
       const res = await farmAction(roomId, move);
-      setFarm(res.farm);
-      setMsg(res.error ?? "");
-      if (!res.error && close) setOpen(null);
+      inflight.current--;
+      if (res.error || inflight.current === 0) setFarm(res.farm);
+      if (res.error) setMsg(res.error);
     });
   }
 

@@ -1,18 +1,30 @@
+"use client";
+
+import { useOptimistic } from "react";
 import { answer } from "@/app/actions";
 import { Avatar } from "@/src/components/avatar";
 import type { ActivityProps } from "../activities/registry";
 import { tally } from "./tally";
 
 /** Question de vote : on choisit un membre ; ensuite, histogramme des voix avec les bulles des votants. */
-export function VoteActivity({ activity, userId, people, answers }: ActivityProps) {
+export function VoteActivity({ activity, userId, people, answers: saved }: ActivityProps) {
+  // Le vote s'affiche tout de suite ; le serveur confirme ensuite (et corrige si besoin).
+  const [answers, vote] = useOptimistic(saved, (all, target: string) => [
+    ...all.filter((a) => a.user_id !== userId),
+    { user_id: userId, content: target },
+  ]);
   const mine = answers.find((a) => a.user_id === userId);
+  async function submit(f: FormData) {
+    vote(String(f.get("content")));
+    await answer(f);
+  }
   const members = Object.entries(people).map(([id, p]) => ({ id, name: p.name }));
   const person = (id: string, size: number) => (
     <Avatar url={people[id]?.url} character={people[id]?.character} name={people[id]?.name ?? "?"} size={size} />
   );
 
   const choices = (
-    <form action={answer} className="grid grid-cols-3 gap-2">
+    <form action={submit} className="grid grid-cols-3 gap-2">
       <input type="hidden" name="activity_id" value={activity.id} />
       {members.map((m) => (
         <button
