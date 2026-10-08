@@ -90,12 +90,15 @@ async function member(roomId: string) {
 }
 
 /** Donner à un projet de salle tout ce qu'on a de cet objet (sans dépasser ce qu'il manque). */
-export async function contribute(roomId: string, project: string, item: string) {
+/** Donner `want` unités (ramené à ce qu'on a et à ce qu'il manque). */
+export async function contribute(roomId: string, project: string, item: string, want: number) {
   const uid = await member(roomId);
   const farm = await loadFarm(roomId, uid);
   const p = (await loadProjects(roomId, farm.unlocks)).find((x) => x.key === project);
   if (!p || !isItem(item) || !(item in p.needs)) return "Ce projet n'en a pas besoin.";
-  const qty = Math.min(farm.items[item] ?? 0, remaining(p, p.progress, item));
+  const asked = Math.floor(Number(want));
+  if (!(asked >= 1)) return "Quantité invalide.";
+  const qty = Math.min(asked, farm.items[item] ?? 0, remaining(p, p.progress, item));
   if (qty <= 0) return (farm.items[item] ?? 0) ? "Cet objet est déjà complet." : "Tu n'en as pas.";
 
   const admin = adminDb();
@@ -147,4 +150,29 @@ export async function moveCat(roomId: string, x: number, y: number) {
   const farm = await loadFarm(roomId, uid);
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= GRID_W || y >= gridH(farm.unlocks) || tileAt(farm.tiles, x, y)) return;
   await adminDb().from("farm_cats").upsert({ room_id: roomId, user_id: uid, x, y });
+}
+
+/** Laisser une fleur dans la serre d'un ami (une fois par jour et par ami, vérifié par la base). */
+export async function giveGift(roomId: string, receiver: string) {
+  const c = await getRoomContext(roomId);
+  if (!c) throw new Error("Non autorisé");
+  if (receiver === c.user.id || !c.names[receiver]) return "Impossible.";
+  const { error } = await adminDb().rpc("farm_gift", { r: roomId, g: c.user.id, rcv: receiver, it: "flower" });
+  if (error) return error.code === "23505" ? "Déjà offert aujourd'hui." : "Récolte une fleur d'abord.";
+  after(() => notify([receiver], "farm", {
+    title: "Un cadeau t'attend",
+    body: `${c.names[c.user.id]} t'a laissé une fleur dans ta serre.`,
+    url: `/r/${roomId}/farm`,
+    tag: `gift-${roomId}`,
+  }));
+  revalidatePath(`/r/${roomId}/farm`);
+  return "";
+}
+
+/** Ouvrir un cadeau reçu : la fleur rejoint la réserve. Renvoie la serre à jour et qui l'a offert. */
+export async function openGift(roomId: string, giftId: number) {
+  const uid = await member(roomId);
+  const { data } = await adminDb().rpc("farm_open_gift", { gid: giftId, rcv: uid });
+  const g = (data as { giver: string; item: string }[] | null)?.[0] ?? null;
+  return { farm: await loadFarm(roomId, uid), gift: g };
 }

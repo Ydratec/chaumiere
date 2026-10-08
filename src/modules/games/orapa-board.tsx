@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { BoardProps } from "./labels";
 import {
-  buildGrid, EDGES, H, mix, PIECES, pieceCells, trace, W,
-  type Cell, type Color, type Grid, type LogEntry, type OrapaState, type Shape,
+  buildGrid, centerAt, EDGES, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W,
+  type Cell, type Color, type Grid, type LogEntry, type OrapaState, type Placement, type Shape,
 } from "./orapa";
 
-// Plateau sombre inspiré de github.com/TheApo/orapa : repères colorés par le résultat, tracé de l'onde.
+// Plateau sombre inspiré de github.com/TheApo/orapa : repères colorés par le résultat.
 const HEX: Record<Color, string> = {
   red: "#e74c3c", yellow: "#f1c40f", blue: "#3498db", white: "#ecf0f1", clear: "rgba(189,195,199,0.45)", black: "#1d1d1d",
 };
@@ -30,7 +30,7 @@ function Gem({ cell }: { cell: Cell }) {
   );
 }
 
-function PieceIcon({ k, rot, size = 14 }: { k: number; rot: number; size?: number }) {
+function PieceIcon({ k, rot = 0, size = 14 }: { k: number; rot?: number; size?: number }) {
   const cells = pieceCells(k, rot);
   const w = Math.max(...cells.map((c) => c[0])) + 1, h = Math.max(...cells.map((c) => c[1])) + 1;
   return (
@@ -48,17 +48,27 @@ const result = (w: { to: string | null; colors: Color[] }) =>
 const same = (a: { to: string | null; colors: Color[] }, b: { to: string | null; colors: Color[] }) =>
   a.to === b.to && a.colors.join() === b.colors.join();
 
-// ---------- Placement des gemmes (sa grille secrète, ou son hypothèse sur celle de l'adversaire) ----------
+// ---------- Éditeur : gemmes posées et croix, gardées sur l'appareil ----------
 
-type Placement = { x: number; y: number; rot: number; on: boolean };
+type Draft = { placed: (Placement | null)[]; crosses: number[] };
+const emptyDraft = (): Draft => ({ placed: PIECES.map(() => null), crosses: [] });
 
-/** Grille et propriétaire de chaque case pour les gemmes posées (hors `skip`). */
-function layout(pl: Placement[], skip = -1) {
+function loadDraft(key: string): Draft {
+  try {
+    const d = JSON.parse(localStorage.getItem(key) ?? "null") as Draft | null;
+    if (d && Array.isArray(d.placed) && d.placed.length === PIECES.length && Array.isArray(d.crosses)) return d;
+  } catch {}
+  return emptyDraft();
+}
+
+/** Grille et propriétaire de chaque case pour les gemmes posées. */
+function layout(placed: (Placement | null)[]) {
   const grid: Grid = Array(W * H).fill(null);
   const owner: number[] = Array(W * H).fill(-1);
-  pl.forEach((p, k) => {
-    if (!p.on || k === skip) return;
+  placed.forEach((p, k) => {
+    if (!p) return;
     pieceCells(k, p.rot, p.x, p.y).forEach(([x, y, sh]) => {
+      if (x < 0 || y < 0 || x >= W || y >= H) return;
       grid[y * W + x] = { s: sh, c: PIECES[k].color };
       owner[y * W + x] = k;
     });
@@ -66,88 +76,48 @@ function layout(pl: Placement[], skip = -1) {
   return { grid, owner };
 }
 
-const size = (k: number, rot: number) => {
-  const cells = pieceCells(k, rot);
-  return { w: Math.max(...cells.map((c) => c[0])) + 1, h: Math.max(...cells.map((c) => c[1])) + 1 };
-};
+/** Brouillon d'une grille (sa grille secrète ou son hypothèse), sauvegardé à chaque changement. */
+function useDraft(key: string) {
+  const [d, setD] = useState<Draft>(() => loadDraft(key)); // monté seulement côté navigateur (voir OrapaBoard)
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(d));
+    } catch {}
+  }, [key, d]);
+  const { grid, owner } = layout(d.placed);
 
-// ponytail: placements gardés en mémoire seulement (perdus au rechargement) ; les stocker si ça gêne.
-function usePlacement() {
-  const [pl, setPl] = useState<Placement[]>(() => PIECES.map(() => ({ x: 0, y: 0, rot: 0, on: false })));
-  const [cur, setCur] = useState<number | null>(0);
-  const { grid, owner } = layout(pl);
-
-  // Pose si la gemme reste dans la grille sans en chevaucher une autre.
-  function update(k: number, p: Placement) {
-    const others = layout(pl, k).owner;
-    const ok = pieceCells(k, p.rot, p.x, p.y).every(([x, y]) => x >= 0 && y >= 0 && x < W && y < H && others[y * W + x] < 0);
-    if (ok) setPl(pl.map((q, i) => (i === k ? p : q)));
+  /** Pose (ou déplace) la gemme k ; refusé si elle chevauche ou sort. Les croix sous la gemme disparaissent. */
+  function place(k: number, p: Placement) {
+    if (placementError(d.placed, k, p)) return false;
+    const covered = new Set(pieceCells(k, p.rot, p.x, p.y).map(([x, y]) => y * W + x));
+    setD({ placed: d.placed.map((q, i) => (i === k ? p : q)), crosses: d.crosses.filter((c) => !covered.has(c)) });
+    return true;
   }
-
   return {
-    pl, cur, setCur, grid, owner,
-    any: pl.some((p) => p.on),
-    allPlaced: pl.every((p) => p.on),
-    left: pl.filter((p) => !p.on).length,
-    placements: pl.map(({ x, y, rot }) => ({ x, y, rot })),
-    // Toucher une gemme posée la sélectionne ; toucher une case libre y pose la gemme sélectionnée.
-    tap(x: number, y: number) {
-      const o = owner[y * W + x];
-      if (o >= 0 && o !== cur) return setCur(o);
-      if (cur === null) return;
-      const { w, h } = size(cur, pl[cur].rot);
-      update(cur, { ...pl[cur], x: Math.min(x, W - w), y: Math.min(y, H - h), on: true });
-    },
-    turn() {
-      if (cur === null) return;
-      const p = pl[cur], rot = (p.rot + 1) % 4;
-      if (!p.on) return setPl(pl.map((q, i) => (i === cur ? { ...q, rot } : q)));
-      const { w, h } = size(cur, rot);
-      update(cur, { ...p, rot, x: Math.min(p.x, W - w), y: Math.min(p.y, H - h) });
-    },
-    remove() {
-      if (cur !== null) setPl(pl.map((q, i) => (i === cur ? { ...q, on: false } : q)));
-    },
+    ...d, grid, owner, place,
+    left: d.placed.filter((p) => !p).length,
+    any: d.placed.some(Boolean),
+    remove: (k: number) => setD({ ...d, placed: d.placed.map((q, i) => (i === k ? null : q)) }),
+    rotate: (k: number) => d.placed[k] && place(k, rotateInPlace(k, d.placed[k]!)),
+    toggleCross: (i: number) =>
+      owner[i] < 0 && setD({ ...d, crosses: d.crosses.includes(i) ? d.crosses.filter((c) => c !== i) : [...d.crosses, i] }),
   };
 }
+type Editor = ReturnType<typeof useDraft>;
 
-function Tray({ ed }: { ed: ReturnType<typeof usePlacement> }) {
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {PIECES.map((p, k) => (
-          <button
-            key={p.name}
-            onClick={() => ed.setCur(k)}
-            aria-label={p.name}
-            aria-pressed={ed.cur === k}
-            className={`flex h-16 min-w-16 shrink-0 items-center justify-center rounded-2xl px-2 transition ${
-              ed.cur === k ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-zinc-100"
-            } ${ed.pl[k].on && ed.cur !== k ? "opacity-35" : ""}`}
-          >
-            <PieceIcon k={k} rot={ed.pl[k].rot} />
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <button onClick={ed.turn} disabled={ed.cur === null} className="btn-soft flex-1">Tourner</button>
-        <button onClick={ed.remove} disabled={ed.cur === null || !ed.pl[ed.cur].on} className="btn-soft flex-1">Retirer</button>
-      </div>
-    </div>
-  );
-}
+// ---------- Plateau : grille + 36 repères ----------
 
-// ---------- Plateau : grille + 36 repères + tracé ----------
+type Ghost = { k: number; p: Placement; ok: boolean };
 
-function Plateau({ grid, onCell, selected, onEdge, waves = [], active, path, pathOk = true, faded }: {
+function Plateau({ grid, crosses, ghost, boardRef, onCellDown, onEdge, waves = [], active, faded }: {
   grid: Grid;
-  onCell?: (x: number, y: number) => void;
-  selected?: (i: number) => boolean;
+  crosses?: number[];
+  ghost?: Ghost | null; // gemme en cours de glisser
+  boardRef?: React.Ref<HTMLDivElement>;
+  onCellDown?: (x: number, y: number, e: React.PointerEvent) => void;
   onEdge?: (id: string) => void;
   waves?: Wave[]; // résultats observés : colorent leurs repères
   active?: Wave | null;
-  path?: [number, number][] | null;
-  pathOk?: boolean; // le tracé (sur l'hypothèse) donne-t-il le résultat observé ?
   faded?: (w: Wave) => boolean; // ondes déjà expliquées par l'hypothèse : repères estompés
 }) {
   const ports = new Map<string, { hex: string; dim: boolean }>();
@@ -156,7 +126,7 @@ function Plateau({ grid, onCell, selected, onEdge, waves = [], active, path, pat
     ports.set(w.from, r);
     if (w.to) ports.set(w.to, r);
   }
-  const color = active ? result(active).hex : "#fff";
+  const ghostCells = new Map(ghost ? pieceCells(ghost.k, ghost.p.rot, ghost.p.x, ghost.p.y).map(([x, y, s]) => [y * W + x, s] as const) : []);
 
   const edge = (side: string, i: number) => {
     const id = EDGES.find((e) => e.side === side && e.i === i)!.id;
@@ -179,42 +149,125 @@ function Plateau({ grid, onCell, selected, onEdge, waves = [], active, path, pat
   };
 
   return (
-    <div className="relative rounded-2xl bg-slate-800 p-1.5 shadow-inner">
-      <div className="grid" style={{ gridTemplateColumns: `repeat(${W + 2}, minmax(0, 1fr))`, gridAutoRows: "1fr" }}>
+    <div className="rounded-2xl bg-slate-800 p-1.5 shadow-inner">
+      <div ref={boardRef} className="grid select-none" style={{ gridTemplateColumns: `repeat(${W + 2}, minmax(0, 1fr))`, gridAutoRows: "1fr", touchAction: onCellDown ? "none" : undefined }}>
         <span className="aspect-square" />
         {Array.from({ length: W }, (_, x) => edge("N", x))}
         <span />
         {Array.from({ length: H }, (_, y) => [
           edge("W", y),
-          ...Array.from({ length: W }, (_, x) => (
-            <button
-              key={`c${x}-${y}`}
-              disabled={!onCell}
-              onClick={() => onCell?.(x, y)}
-              aria-label={`Case ${x + 1}, ${y + 1}`}
-              className={`aspect-square shadow-[inset_0_0_0_0.5px_#475569] ${selected?.(y * W + x) ? "bg-slate-600" : "bg-slate-700/80"}`}
-            >
-              <Gem cell={grid[y * W + x]} />
-            </button>
-          )),
+          ...Array.from({ length: W }, (_, x) => {
+            const i = y * W + x;
+            const g = ghostCells.get(i);
+            return (
+              <div
+                key={`c${x}-${y}`}
+                onPointerDown={onCellDown ? (e) => onCellDown(x, y, e) : undefined}
+                className="relative aspect-square bg-slate-700/80 shadow-[inset_0_0_0_0.5px_#475569]"
+              >
+                <Gem cell={grid[i]} />
+                {!grid[i] && crosses?.includes(i) && (
+                  <svg viewBox="0 0 1 1" className="absolute inset-0 size-full" aria-label="Case vide">
+                    <path d="M.3.3l.4.4M.7.3l-.4.4" stroke="#94a3b8" strokeWidth=".08" strokeLinecap="round" />
+                  </svg>
+                )}
+                {g && ghost && (
+                  <svg viewBox="0 0 1 1" className="pointer-events-none absolute inset-0 size-full opacity-80">
+                    <polygon points={POLY[g]} fill={HEX[PIECES[ghost.k].color]} stroke={ghost.ok ? "#4ade80" : "#f87171"} strokeWidth={0.1} />
+                  </svg>
+                )}
+              </div>
+            );
+          }),
           edge("E", y),
         ])}
         <span />
         {Array.from({ length: W }, (_, x) => edge("S", x))}
         <span />
       </div>
-      {path && (
-        <svg className="pointer-events-none absolute inset-1.5" viewBox={`0 0 ${W + 2} ${H + 2}`} preserveAspectRatio="none" aria-hidden>
-          <polyline
-            points={path.map(([x, y]) => `${x + 1.5},${y + 1.5}`).join(" ")}
-            fill="none"
-            stroke={color === ABSORBED ? "#f8fafc" : color}
-            strokeWidth={0.13}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            strokeDasharray={pathOk ? undefined : "0.25 0.2"}
-          />
-        </svg>
+    </div>
+  );
+}
+
+/**
+ * Plateau éditable : glisser une gemme de la réserve pour la poser (centrée sous le doigt),
+ * toucher une gemme pour la tourner, la glisser pour la déplacer (hors du plateau = retour en réserve),
+ * outil Croix pour marquer les cases vides.
+ */
+function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.ComponentProps<typeof Plateau>, "grid"> }) {
+  const board = useRef<HTMLDivElement>(null);
+  const [tool, setTool] = useState<"gems" | "cross">("gems");
+  const [cur, setCur] = useState<number | null>(null); // gemme choisie dans la réserve (pour la poser d'un toucher)
+  const [ghost, setGhost] = useState<Ghost | null>(null);
+
+  /** Case du plateau sous le doigt (null hors du plateau). */
+  function cellAt(clientX: number, clientY: number) {
+    const r = board.current!.getBoundingClientRect();
+    const col = Math.floor(((clientX - r.left) / r.width) * (W + 2)) - 1;
+    const row = Math.floor(((clientY - r.top) / r.height) * (H + 2)) - 1;
+    return col >= 0 && row >= 0 && col < W && row < H ? { x: col, y: row } : null;
+  }
+
+  /** Suit le doigt ; au lâcher : pose (si possible) ou retire (si lâchée hors du plateau). `tap` si le doigt n'a pas bougé. */
+  function drag(k: number, rot: number, e: React.PointerEvent, tap: () => void) {
+    const x0 = e.clientX, y0 = e.clientY;
+    let moved = false, last: Ghost | null = null;
+    const others = ed.placed.map((q, i) => (i === k ? null : q));
+    const onMove = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
+      moved = true;
+      const c = cellAt(ev.clientX, ev.clientY);
+      const p = c ? centerAt(k, rot, c.x, c.y) : null;
+      last = p ? { k, p, ok: !placementError(others, k, p) } : null;
+      setGhost(last);
+    };
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      setGhost(null);
+      if (!moved) return tap();
+      if (last?.ok) ed.place(k, last.p);
+      else if (!cellAt(ev.clientX, ev.clientY) && ed.placed[k]) ed.remove(k); // lâchée hors du plateau
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
+  function onCellDown(x: number, y: number, e: React.PointerEvent) {
+    const i = y * W + x;
+    const k = ed.owner[i];
+    if (tool === "cross") return k < 0 && ed.toggleCross(i);
+    if (k >= 0) return drag(k, ed.placed[k]!.rot, e, () => ed.rotate(k)); // toucher = tourner, glisser = déplacer
+    if (cur !== null && !ed.placed[cur] && ed.place(cur, centerAt(cur, 0, x, y))) setCur(null);
+  }
+
+  const tray = PIECES.map((p, k) => ({ p, k })).filter(({ k }) => !ed.placed[k]);
+  return (
+    <div className="space-y-3">
+      <Plateau grid={ed.grid} crosses={ed.crosses} ghost={ghost} boardRef={board} onCellDown={onCellDown} {...plateau} />
+      <div className="grid grid-cols-2 gap-1 rounded-full bg-zinc-100 p-1 text-sm font-medium">
+        {(["gems", "cross"] as const).map((t) => (
+          <button key={t} onClick={() => setTool(t)} className={`rounded-full py-1.5 transition ${tool === t ? "bg-white shadow-sm" : "text-zinc-500"}`}>
+            {t === "gems" ? "Gemmes" : "Croix"}
+          </button>
+        ))}
+      </div>
+      {tray.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-2" data-no-swipe>
+          {tray.map(({ p, k }) => (
+            <button
+              key={p.name}
+              aria-label={p.name}
+              aria-pressed={cur === k}
+              onPointerDown={(e) => drag(k, 0, e, () => setCur(cur === k ? null : k))}
+              className={`flex h-16 min-w-16 shrink-0 touch-none items-center justify-center rounded-2xl px-2 transition ${cur === k ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-zinc-100"}`}
+            >
+              <PieceIcon k={k} />
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -262,7 +315,7 @@ const Rules = () => (
   <details className="text-sm">
     <summary className="cursor-pointer font-medium text-zinc-600">Règles</summary>
     <p className="mt-2 leading-6 text-zinc-600">
-      Chacun cache ses 6 gemmes (elles ne se touchent pas par un côté). Ensuite, à ton tour, touche un repère du bord pour
+      Chacun cache ses 7 gemmes (elles ne se touchent pas par un côté). Ensuite, à ton tour, touche un repère du bord pour
       envoyer une onde dans la grille adverse : elle avance tout droit, fait demi-tour sur un côté droit, tourne d&apos;un
       quart sur une diagonale, prend la couleur des gemmes touchées (les couleurs se mélangent) et ressort. La gemme
       transparente dévie sans colorer, le bloc noir absorbe. Vérifie ta déduction quand tu veux : ça ne fait pas passer le
@@ -273,15 +326,24 @@ const Rules = () => (
 
 // ---------- Plateau du jeu ----------
 
-export function OrapaBoard({ state, userId, myTurn, name, play, priv }: BoardProps) {
+const noop = () => () => {};
+
+/** Les brouillons viennent de l'appareil : le plateau ne s'affiche qu'une fois la page chargée côté navigateur. */
+export function OrapaBoard(props: BoardProps) {
+  const ready = useSyncExternalStore(noop, () => true, () => false);
+  if (!ready) return <div className="aspect-[10/12] animate-pulse rounded-2xl bg-slate-800/80" />;
+  return <OrapaGame {...props} />;
+}
+
+function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardProps) {
   const s = state as unknown as OrapaState;
-  const setup = usePlacement();
-  const guess = usePlacement();
+  const setup = useDraft(`orapa:${gameId}:setup`);
+  const guess = useDraft(`orapa:${gameId}:guess`);
   const [tab, setTab] = useState(0);
   const [sel, setSel] = useState<number | null>(null);
   const [error, setError] = useState("");
 
-  if (!s.ready) return <p className="text-center text-sm text-zinc-500">Partie d&apos;une ancienne version : abandonne-la et relance un défi.</p>;
+  if (!s.ready || s.players.length !== 2) return <p className="text-center text-sm text-zinc-500">Partie d&apos;une ancienne version : abandonne-la et relance un défi.</p>;
 
   const isPlayer = s.players.includes(userId);
   const [p0, p1] = isPlayer ? [userId, s.players.find((p) => p !== userId)!] : s.players;
@@ -305,17 +367,17 @@ export function OrapaBoard({ state, userId, myTurn, name, play, priv }: BoardPro
         </div>
       );
     async function submit() {
-      if (!buildGrid(setup.placements)) return setError("Deux gemmes ne doivent pas se toucher par un côté.");
+      const placements = setup.placed as Placement[];
+      if (!buildGrid(placements)) return setError("Deux gemmes ne doivent pas se toucher par un côté.");
       setError("");
-      await play({ kind: "setup", placements: setup.placements });
+      await play({ kind: "setup", placements });
     }
     return (
       <div className="space-y-4">
-        <Plateau grid={setup.grid} onCell={setup.tap} selected={(i) => setup.cur !== null && setup.owner[i] === setup.cur} />
-        <Tray ed={setup} />
+        <EditableBoard ed={setup} />
         {error && <p role="alert" className="text-center text-sm text-red-700">{error}</p>}
-        <button disabled={!setup.allPlaced} onClick={submit} className="btn w-full">
-          {setup.allPlaced ? "Valider ma grille" : `Pose encore ${setup.left} gemme${setup.left > 1 ? "s" : ""}`}
+        <button disabled={setup.left > 0} onClick={submit} className="btn w-full">
+          {setup.left ? `Pose encore ${setup.left} gemme${setup.left > 1 ? "s" : ""}` : "Valider ma grille"}
         </button>
         <Rules />
       </div>
@@ -333,13 +395,15 @@ export function OrapaBoard({ state, userId, myTurn, name, play, priv }: BoardPro
   const solution = s.solutions?.[owner] ?? null;
   const guessing = isPlayer && tab === 0 && !solution;
   const known = solution ?? (isPlayer && tab === 1 ? (priv as Grid | null) : null); // grille réelle, si on la connaît
-  const grid = known ?? (guessing ? guess.grid : Array(W * H).fill(null));
 
-  // Tracé de l'onde sélectionnée : exact sur une grille connue, sinon tel que l'hypothèse le prédit.
-  const traced = active && (known ? trace(known, active.from) : guessing && guess.any ? trace(guess.grid, active.from) : null);
+  // L'hypothèse explique-t-elle chaque onde observée ? (calcul seulement, rien n'est dessiné)
   const check = guessing && guess.any ? (w: Wave) => same(trace(guess.grid, w.from), w) : undefined;
   const tabs = isPlayer ? [`Grille de ${name(p1)}`, "Ma grille"] : [`Grille de ${name(p1)}`, `Grille de ${name(p0)}`];
   const r = active && result(active);
+  const ports = {
+    onEdge: myTurn && tab === 0 ? (from: string) => play({ kind: "wave", from }) : undefined,
+    waves, active, faded: check,
+  };
 
   return (
     <div className="space-y-4">
@@ -365,27 +429,17 @@ export function OrapaBoard({ state, userId, myTurn, name, play, priv }: BoardPro
         ) : null}
       </p>
 
-      <Plateau
-        grid={grid}
-        onCell={guessing ? guess.tap : undefined}
-        selected={(i) => guessing && guess.cur !== null && guess.owner[i] === guess.cur}
-        onEdge={myTurn && tab === 0 ? (from) => play({ kind: "wave", from }) : undefined}
-        waves={waves}
-        active={active}
-        path={traced?.path}
-        pathOk={!check || !active || check(active)}
-        faded={check}
-      />
-
-      {solution && <p className="text-center text-sm font-medium">Grille révélée.</p>}
-      {guessing && (
+      {guessing ? (
         <>
-          <Tray ed={guess} />
-          <button disabled={!guess.allPlaced} onClick={() => play({ kind: "guess", grid: guess.grid })} className="btn w-full">
-            {guess.allPlaced ? "Vérifier ma grille" : `Pose encore ${guess.left} gemme${guess.left > 1 ? "s" : ""} pour vérifier`}
+          <EditableBoard ed={guess} plateau={ports} />
+          <button disabled={guess.left > 0} onClick={() => play({ kind: "guess", grid: guess.grid })} className="btn w-full">
+            {guess.left ? `Pose encore ${guess.left} gemme${guess.left > 1 ? "s" : ""} pour vérifier` : "Vérifier ma grille"}
           </button>
         </>
+      ) : (
+        <Plateau grid={known ?? Array(W * H).fill(null)} {...ports} />
       )}
+      {solution && <p className="text-center text-sm font-medium">Grille révélée.</p>}
 
       <section>
         <h3 className="eyebrow mb-1">{shooter === userId ? "Tes ondes" : `Ondes de ${name(shooter)}`}</h3>

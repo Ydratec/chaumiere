@@ -21,6 +21,7 @@ export const PIECES: { name: string; color: Color; cells: PieceCell[] }[] = [
   { name: "Triangle jaune", color: "yellow", cells: [[0, 0, "sw"], [0, 1, "sq"], [1, 1, "sw"]] },
   { name: "Parallélogramme rouge", color: "red", cells: [[0, 0, "se"], [1, 0, "sq"], [2, 0, "nw"]] },
   { name: "Grand triangle bleu", color: "blue", cells: [[1, 0, "se"], [2, 0, "sw"], [0, 1, "se"], [1, 1, "sq"], [2, 1, "sq"], [3, 1, "sw"]] },
+  { name: "Grand triangle blanc", color: "white", cells: [[1, 0, "se"], [2, 0, "sw"], [0, 1, "se"], [1, 1, "sq"], [2, 1, "sq"], [3, 1, "sw"]] },
   { name: "Losange blanc", color: "white", cells: [[0, 0, "se"], [1, 0, "sw"], [0, 1, "ne"], [1, 1, "nw"]] },
   { name: "Triangle transparent", color: "clear", cells: [[0, 0, "se"], [1, 0, "sw"]] },
   { name: "Bloc noir", color: "black", cells: [[0, 0, "sq"], [1, 0, "sq"]] },
@@ -148,6 +149,46 @@ export function wave(grid: Grid, from: string): { to: string | null; colors: Col
 }
 
 export type Placement = { x: number; y: number; rot: number };
+
+// ---------- Placement des gemmes (éditeur) ----------
+
+/** Taille (largeur, hauteur) de la gemme k tournée `rot` fois. */
+export function pieceSize(k: number, rot: number) {
+  const cells = pieceCells(k, rot);
+  return { w: Math.max(...cells.map((c) => c[0])) + 1, h: Math.max(...cells.map((c) => c[1])) + 1 };
+}
+
+const clampTo = (v: number, max: number) => Math.max(0, Math.min(max, v));
+
+/** Coin haut-gauche pour que la gemme soit centrée sur la case (cx, cy), recalée dans le plateau. */
+export function centerAt(k: number, rot: number, cx: number, cy: number): Placement {
+  const { w, h } = pieceSize(k, rot);
+  return { x: clampTo(cx - Math.floor((w - 1) / 2), W - w), y: clampTo(cy - Math.floor((h - 1) / 2), H - h), rot };
+}
+
+/** Quart de tour en gardant (à peu près) le même centre, recalé dans le plateau. */
+export function rotateInPlace(k: number, p: Placement): Placement {
+  const { w, h } = pieceSize(k, p.rot);
+  const rot = (p.rot + 1) % 4;
+  return centerAt(k, rot, p.x + Math.floor((w - 1) / 2), p.y + Math.floor((h - 1) / 2));
+}
+
+/**
+ * Pourquoi la gemme k ne peut pas aller en `p` parmi les autres gemmes posées (null = possible).
+ * `placed[i]` : position de la gemme i, ou null si elle est dans la réserve. Le contact est permis
+ * pendant l'édition ; seule la grille finale (buildGrid) l'interdit.
+ */
+export function placementError(placed: (Placement | null)[], k: number, p: Placement) {
+  const taken = new Set<number>();
+  placed.forEach((q, i) => {
+    if (q && i !== k) pieceCells(i, q.rot, q.x, q.y).forEach(([x, y]) => taken.add(y * W + x));
+  });
+  for (const [x, y] of pieceCells(k, p.rot, p.x, p.y)) {
+    if (x < 0 || y < 0 || x >= W || y >= H) return "Hors du plateau.";
+    if (taken.has(y * W + x)) return "Une autre gemme est déjà là.";
+  }
+  return null;
+}
 
 /**
  * Grille formée des 5 gemmes (dans l'ordre de PIECES), ou null si une gemme sort de la grille,

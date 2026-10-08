@@ -220,3 +220,14 @@ export function ObjectArt({ kind, item, growth }: { kind: string; item: ItemId |
       return null;
   }
 }
+
+/** Petit paquet cadeau (une case). */
+export const GiftArt = () => (
+  <svg viewBox="0 0 24 24" className="size-full overflow-visible" aria-hidden>
+    <ellipse cx="12" cy="22" rx="8" ry="1.4" fill="rgba(60,40,20,.22)" />
+    <rect x="4" y="10" width="16" height="11" rx="1.5" fill="#f472b6" />
+    <rect x="3" y="7.5" width="18" height="4" rx="1.2" fill="#ec4899" />
+    <rect x="10.5" y="7.5" width="3" height="13.5" fill="#fde68a" />
+    <path d="M12 7.5c-2-4-6-4-5.5-1.5.4 1.8 3.5 1.5 5.5 1.5zM12 7.5c2-4 6-4 5.5-1.5-.4 1.8-3.5 1.5-5.5 1.5z" fill="#fde68a" stroke="#f59e0b" strokeWidth=".6" />
+  </svg>
+);

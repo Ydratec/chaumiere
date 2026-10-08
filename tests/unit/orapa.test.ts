@@ -1,14 +1,16 @@
 // Lancer : node --test 'tests/unit/*.test.ts'
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EDGES, H, PIECES, W, buildGrid, generate, mix, pieceCells, play, start, trace, wave, type Grid } from "../../src/modules/games/orapa.ts";
+import { EDGES, H, PIECES, W, buildGrid, centerAt, generate, mix, pieceCells, pieceSize, placementError, play, rotateInPlace, start, trace, wave, type Grid } from "../../src/modules/games/orapa.ts";
 
 const empty = (): Grid => Array(W * H).fill(null);
 const at = (x: number, y: number) => y * W + x;
 // Une grille valide : les 5 gemmes éloignées les unes des autres.
+// Ordre de PIECES : triangle jaune, parallélogramme rouge, grand triangle bleu, grand triangle blanc,
+// losange blanc, triangle transparent, bloc noir.
 const PLACEMENTS = [
-  { x: 0, y: 0, rot: 0 }, { x: 4, y: 0, rot: 0 }, { x: 0, y: 4, rot: 0 },
-  { x: 6, y: 4, rot: 0 }, { x: 0, y: 8, rot: 0 }, { x: 5, y: 8, rot: 0 },
+  { x: 0, y: 0, rot: 0 }, { x: 4, y: 0, rot: 0 }, { x: 0, y: 3, rot: 0 }, { x: 4, y: 6, rot: 0 },
+  { x: 5, y: 2, rot: 0 }, { x: 0, y: 8, rot: 0 }, { x: 3, y: 9, rot: 0 },
 ];
 
 test("onde : ligne droite, demi-tour, quart de tour, transparente, absorption", () => {
@@ -68,11 +70,11 @@ test("pièce tournée : 4 quarts de tour reviennent au départ, formes cohérent
 });
 
 test("grille composée : valide, ou refusée si hors grille, chevauchement ou contact", () => {
-  assert.equal(buildGrid(PLACEMENTS)!.filter(Boolean).length, 20);
+  assert.equal(buildGrid(PLACEMENTS)!.filter(Boolean).length, 26);
   const moved = (k: number, p: object) => PLACEMENTS.map((q, i) => (i === k ? p : q));
-  assert.equal(buildGrid(moved(5, { x: 7, y: 9, rot: 0 })), null); // hors grille
-  assert.equal(buildGrid(moved(5, { x: 0, y: 0, rot: 0 })), null); // chevauche le triangle jaune
-  assert.equal(buildGrid(moved(5, { x: 2, y: 1, rot: 0 })), null); // touche le triangle jaune par un côté
+  assert.equal(buildGrid(moved(6, { x: 7, y: 9, rot: 0 })), null); // hors grille
+  assert.equal(buildGrid(moved(6, { x: 0, y: 0, rot: 0 })), null); // chevauche le triangle jaune
+  assert.equal(buildGrid(moved(6, { x: 2, y: 1, rot: 0 })), null); // touche le triangle jaune par un côté
   assert.equal(buildGrid(PLACEMENTS.slice(1)), null); // une gemme manque
 });
 
@@ -90,7 +92,7 @@ test("partie : chacun pose sa grille, puis devine celle de l'autre", () => {
   assert.equal(s.phase, "setup");
   assert.equal(go({ kind: "setup", placements: PLACEMENTS }, "A"), null); // une seule fois
   assert.equal(go({ kind: "wave", from: "H1" }, a), null); // pas avant que les deux grilles soient posées
-  const gridB = PLACEMENTS.map((p, k) => (k === 5 ? { x: 3, y: 8, rot: 0 } : p));
+  const gridB = PLACEMENTS.map((p, k) => (k === 6 ? { x: 6, y: 9, rot: 0 } : p));
   assert.ok(go({ kind: "setup", placements: gridB }, "B"));
   assert.equal(s.phase, "play");
 
@@ -108,4 +110,26 @@ test("partie : chacun pose sa grille, puis devine celle de l'autre", () => {
   go({ kind: "guess", grid: buildGrid(a === "A" ? gridB : PLACEMENTS) }, a);
   assert.equal(s.winner, a);
   assert.deepEqual(Object.keys(s.solutions!).sort(), ["A", "B"]);
+});
+
+test("éditeur : gemme centrée sous le doigt, recalée aux bords, rotation sur place, chevauchement", () => {
+  // grand triangle bleu (4×2) centré sur (4, 5)
+  assert.deepEqual(centerAt(2, 0, 4, 5), { x: 3, y: 5, rot: 0 });
+  assert.deepEqual(centerAt(2, 0, 7, 9), { x: W - 4, y: H - 2, rot: 0 }); // au bord : recalé dans le plateau
+  assert.deepEqual(centerAt(2, 0, 0, 0), { x: 0, y: 0, rot: 0 });
+
+  const p = centerAt(2, 0, 4, 5);
+  const r = rotateInPlace(2, p);
+  assert.equal(r.rot, 1);
+  assert.deepEqual(pieceSize(2, 1), { w: 2, h: 4 }); // tourné : 2×4
+  assert.ok(Math.abs(r.x + 0.5 - (p.x + 1.5)) <= 1 && Math.abs(r.y + 1.5 - (p.y + 0.5)) <= 1, "centre à peu près gardé");
+  assert.ok(pieceCells(2, r.rot, r.x, r.y).every(([x, y]) => x >= 0 && y >= 0 && x < W && y < H));
+  assert.deepEqual(rotateInPlace(2, { x: 4, y: 0, rot: 3 }).rot, 0); // 4 quarts de tour
+
+  const placed = PIECES.map(() => null) as ({ x: number; y: number; rot: number } | null)[];
+  placed[0] = { x: 0, y: 0, rot: 0 };
+  assert.equal(placementError(placed, 6, { x: 0, y: 1, rot: 0 }), "Une autre gemme est déjà là.");
+  assert.equal(placementError(placed, 6, { x: 2, y: 1, rot: 0 }), null); // contact permis pendant l'édition
+  assert.equal(placementError(placed, 6, { x: 7, y: 0, rot: 0 }), "Hors du plateau.");
+  assert.equal(placementError(placed, 0, { x: 1, y: 0, rot: 0 }), null); // une gemme ne se gêne pas elle-même
 });

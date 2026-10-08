@@ -3,8 +3,8 @@
 import { useEffect, useEffectEvent, useRef, useState, useTransition } from "react";
 import { CharacterSprite } from "@/src/components/character-sprite";
 import type { Character } from "@/src/modules/characters/catalog";
-import { farmAction, moveCat, type FarmMove } from "./actions";
-import { ItemIcon, ObjectArt } from "./art";
+import { farmAction, moveCat, openGift, type FarmMove } from "./actions";
+import { GiftArt, ItemIcon, ObjectArt } from "./art";
 import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
 import type { Farm } from "./data";
@@ -39,7 +39,7 @@ function Cost({ need, have }: { need: Inventory; have: Inventory }) {
 type Placing = { kind: BuildingId; moving?: Tile };
 
 /** Sa serre (ou celle d'un ami en lecture seule, avec `owner`). Le chat se déplace en touchant le sol. */
-export function FarmView({ roomId, initial, character, owner }: { roomId: string; initial: Farm; character: Character; owner?: string }) {
+export function FarmView({ roomId, initial, character, owner, names }: { roomId: string; initial: Farm; character: Character; owner?: string; names: Record<string, string> }) {
   const [farm, setFarm] = useState(initial);
   const [now, setNow] = useState(initial.now);
   const [cat, setCat] = useState<Cell>(initial.cat);
@@ -49,6 +49,7 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
   const [placing, setPlacing] = useState<Placing | null>(null);
   const [ghost, setGhost] = useState<Cell | null>(null);
   const [msg, setMsg] = useState("");
+  const [toast, setToast] = useState(""); // message agréable (cadeau ouvert…)
   const [pending, startTransition] = useTransition();
   const walk = useRef<ReturnType<typeof setTimeout> | null>(null);
   const world = useRef<HTMLDivElement>(null);
@@ -266,7 +267,7 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
         onClick={tapGround}
         onPointerDown={dragNew}
         data-no-swipe
-        className="relative w-full touch-manipulation select-none"
+        className="relative isolate w-full touch-manipulation select-none"
         style={{ aspectRatio: `${GRID_W} / ${H}`, touchAction: placing ? "none" : undefined }}
       >
         <div className="absolute inset-0 overflow-hidden rounded-b-[1.2rem]"><GreenhouseFloor w={GRID_W} h={H} /></div>
@@ -305,6 +306,26 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
           );
         })}
 
+        {/* Cadeaux reçus, en bas à droite de sa serre : un toucher les ouvre. */}
+        {!owner && !placing && farm.gifts.map((g, i) => (
+          <button
+            key={g.id}
+            aria-label={`Cadeau de ${names[g.giver] ?? "?"}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              startTransition(async () => {
+                const res = await openGift(roomId, g.id);
+                setFarm(res.farm);
+                if (res.gift) setToast(`${names[res.gift.giver] ?? "Quelqu'un"} t'a offert une fleur !`);
+              });
+            }}
+            className="absolute animate-bounce p-[3px]"
+            style={{ ...box(GRID_W - 1 - (i % GRID_W), H - 1 - Math.floor(i / GRID_W), 1, 1), zIndex: 900 }}
+          >
+            <GiftArt />
+          </button>
+        ))}
+
         {/* Bulles « prêt » : sur leur propre couche, jamais cachées par un objet voisin ou la verrière. */}
         {!placing && farm.tiles.map((t) => {
           const r = recipeOf(t.kind, t.item);
@@ -331,6 +352,35 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
           </div>
         )}
 
+        {/* Valider / annuler la pose, collé à l'objet (au-dessus, ou en dessous en haut de la serre). */}
+        {placing && !placing.moving && ghost && (() => {
+          const [w, h] = BUILDINGS[placing.kind].size;
+          const below = ghost.y < 2;
+          return (
+            <div
+              className="absolute flex flex-col items-center gap-1"
+              style={{
+                left: `clamp(4.5rem, ${((ghost.x + w / 2) / GRID_W) * 100}%, calc(100% - 4.5rem))`,
+                top: `${((below ? ghost.y + h : ghost.y) / H) * 100}%`,
+                transform: `translate(-50%, ${below ? "0.4rem" : "calc(-100% - 0.4rem)"})`,
+                zIndex: 1000,
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-1 rounded-full bg-white p-1 shadow-lg">
+                <button aria-label="Annuler" onClick={() => { setPlacing(null); setGhost(null); }} className="flex size-9 items-center justify-center rounded-full bg-zinc-100 text-lg font-bold text-zinc-500">
+                  ✕
+                </button>
+                <button disabled={!!placeErr || pending} onClick={confirmPlace} className="btn h-9 gap-1 px-3 py-0 text-sm">
+                  ✓ {BUILDINGS[placing.kind].cost} <ItemIcon id="coins" size={14} />
+                </button>
+              </div>
+              {placeErr && <span className="max-w-44 rounded-lg bg-white/95 px-2 py-0.5 text-center text-[11px] font-medium text-red-700 shadow">{placeErr}</span>}
+            </div>
+          );
+        })()}
+
         {/* Le chat : marche sur sa case, glisse d'une case à l'autre. */}
         <div
           className="pointer-events-none absolute transition-[left,top] ease-linear"
@@ -349,18 +399,16 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
       </div>
       </div>
 
-      {placing && !placing.moving && (
-        <div className="space-y-2">
-          {placeErr && <p className="text-center text-sm text-red-700">{placeErr}</p>}
-          <div className="flex gap-2">
-            <button onClick={() => { setPlacing(null); setGhost(null); }} className="btn-soft flex-1 py-3">Annuler</button>
-            <button disabled={!ghost || !!placeErr || pending} onClick={confirmPlace} className="btn flex-1">
-              Poser · {BUILDINGS[placing.kind].cost} <ItemIcon id="coins" size={16} />
-            </button>
-          </div>
-        </div>
+      {/* Ferme pleine (aucune place trouvée) : on peut quand même annuler. */}
+      {placing && !placing.moving && !ghost && (
+        <button onClick={() => setPlacing(null)} className="btn-soft w-full py-3">Annuler</button>
       )}
       {msg && !open && <p role="alert" className="text-center text-sm text-red-700">{msg}</p>}
+      {toast && (
+        <button onClick={() => setToast("")} className="animate-pop flex w-full items-center justify-center gap-2 rounded-2xl bg-pink-50 px-4 py-3 text-sm font-medium text-pink-700">
+          <ItemIcon id="flower" size={20} /> {toast}
+        </button>
+      )}
 
       {!owner && (
         <section>

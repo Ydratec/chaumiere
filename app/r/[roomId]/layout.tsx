@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Logo } from "@/src/components/logo";
-import { Avatar } from "@/src/components/avatar";
 import { SwipeNav } from "@/src/components/swipe-nav";
 import { TabBar } from "@/src/components/tab-bar";
-import { getRoomContext } from "@/src/modules/rooms/context";
+import { getMyRooms, getRoomContext } from "@/src/modules/rooms/context";
+import { RoomSwitcher } from "@/src/modules/rooms/room-switcher";
 
 export default async function RoomLayout({
   children,
@@ -16,19 +14,13 @@ export default async function RoomLayout({
   const { roomId } = await params;
   const ctx = await getRoomContext(roomId);
   if (!ctx) redirect("/");
+  const rooms = (await getMyRooms()) ?? [];
 
   return (
     <div className="min-h-screen pb-28 text-zinc-900">
-      <header className="sticky top-0 z-10 bg-background/80 px-4 pb-2 pt-4 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center gap-3">
-          <Avatar url={ctx.roomAvatar} name={ctx.roomName ?? "?"} size={40} />
-          <div className="min-w-0 flex-1">
-            <p className="eyebrow">Salle</p>
-            <h1 className="truncate text-xl font-bold tracking-tight">{ctx.roomName}</h1>
-          </div>
-          <Link href="/" aria-label="Mes salles" title="Mes salles" className="rounded-full p-1 transition hover:bg-white">
-            <Logo size={30} />
-          </Link>
+      <header className="px-4 pb-2 pt-4">
+        <div className="mx-auto max-w-md">
+          <RoomSwitcher roomId={roomId} name={ctx.roomName ?? "?"} avatar={ctx.roomAvatar} rooms={rooms} />
         </div>
       </header>
       <main className="mx-auto max-w-md space-y-8 px-4 py-4">{children}</main>

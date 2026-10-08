@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic } from "react";
+import { useOptimistic, useState } from "react";
 import { answer } from "@/app/actions";
 import { Avatar } from "@/src/components/avatar";
 import type { ActivityProps } from "../activities/registry";
@@ -14,7 +14,10 @@ export function VoteActivity({ activity, userId, people, answers: saved, voteLoc
     { user_id: userId, content: target },
   ]);
   const mine = answers.find((a) => a.user_id === userId);
+  const [picked, setPicked] = useState<string | null>(null);
   async function submit(f: FormData) {
+    if (!f.get("content")) return;
+    setPicked(null);
     vote(String(f.get("content")));
     await answer(f);
   }
@@ -23,20 +26,30 @@ export function VoteActivity({ activity, userId, people, answers: saved, voteLoc
     <Avatar url={people[id]?.url} character={people[id]?.character} name={people[id]?.name ?? "?"} size={size} />
   );
 
+  // Toucher un membre le sélectionne seulement ; le vote part avec le bouton de validation (pas de vote par erreur).
   const choices = (
-    <form action={submit} className="grid grid-cols-3 gap-2">
+    <form action={submit} className="space-y-3">
       <input type="hidden" name="activity_id" value={activity.id} />
-      {members.map((m) => (
-        <button
-          key={m.id}
-          name="content"
-          value={m.id}
-          className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${mine?.content === m.id ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}
-        >
-          {person(m.id, 48)}
-          <span className="w-full truncate text-center text-sm font-medium">{m.id === userId ? "Moi" : m.name}</span>
-        </button>
-      ))}
+      <input type="hidden" name="content" value={picked ?? ""} />
+      <div className="grid grid-cols-3 gap-2">
+        {members.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            aria-pressed={picked === m.id}
+            onClick={() => setPicked(m.id)}
+            className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${picked === m.id ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}
+          >
+            {person(m.id, 48)}
+            <span className="w-full truncate text-center text-sm font-medium">{m.id === userId ? "Moi" : m.name}</span>
+          </button>
+        ))}
+      </div>
+      <button disabled={!picked || picked === mine?.content} className="btn w-full">
+        {!picked
+          ? "Choisis quelqu'un"
+          : `Valider mon vote pour ${picked === userId ? "moi" : (people[picked]?.name ?? "?")}${voteLocked ? " (définitif)" : ""}`}
+      </button>
     </form>
   );
 

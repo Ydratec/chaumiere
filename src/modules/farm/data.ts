@@ -4,7 +4,8 @@ import { START_CAT, START_COINS, START_OBJECTS, isItem, type Inventory } from ".
 import { activeProjects, type Project } from "./projects";
 import type { Cell, Tile } from "./rules";
 
-export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; now: number }; // now : heure du serveur
+export type Gift = { id: number; giver: string; item: string };
+export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; now: number }; // now : heure du serveur
 export type ProjectState = Project & { progress: Inventory; givers: Record<string, number> };
 export type Offer = { id: number; seller: string; give: Inventory; want: Inventory };
 
@@ -30,13 +31,14 @@ export async function loadUnlocks(roomId: string) {
 
 export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   const admin = adminDb();
-  const [{ data: tiles }, { data: items }, { data: cat }, unlocks] = await Promise.all([
+  const [{ data: tiles }, { data: items }, { data: cat }, { data: gifts }, unlocks] = await Promise.all([
     admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_items").select("item, qty").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_cats").select("x, y").eq("room_id", roomId).eq("user_id", uid).maybeSingle(),
+    admin.from("farm_gifts").select("id, giver, item").eq("room_id", roomId).eq("receiver", uid).eq("opened", false).order("id"),
     loadUnlocks(roomId),
   ]);
-  return { tiles: (tiles ?? []) as Tile[], items: toInventory(items ?? []), unlocks, cat: cat ?? START_CAT, now: Date.now() };
+  return { tiles: (tiles ?? []) as Tile[], items: toInventory(items ?? []), unlocks, cat: cat ?? START_CAT, gifts: (gifts ?? []) as Gift[], now: Date.now() };
 }
 
 /** Projets en cours de la salle, avec ce qui a déjà été donné et par qui. */
@@ -71,4 +73,11 @@ export async function readyCount(roomId: string, uid: string) {
     .from("farm_tiles").select("x", { count: "exact", head: true })
     .eq("room_id", roomId).eq("user_id", uid).not("item", "is", null).lte("ready_at", new Date().toISOString());
   return count ?? 0;
+}
+
+/** A-t-on déjà offert un cadeau à cette personne aujourd'hui (heure de Paris) ? */
+export async function giftedToday(roomId: string, giver: string, receiver: string) {
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+  const { data } = await adminDb().from("farm_gifts").select("id").eq("room_id", roomId).eq("giver", giver).eq("receiver", receiver).eq("day", day).maybeSingle();
+  return !!data;
 }

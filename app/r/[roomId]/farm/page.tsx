@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Avatar } from "@/src/components/avatar";
 import { redirect } from "next/navigation";
-import { ensureFarm, loadFarm, loadOffers, loadProjects } from "@/src/modules/farm/data";
+import { ensureFarm, giftedToday, loadFarm, loadOffers, loadProjects } from "@/src/modules/farm/data";
+import { GiftButton } from "@/src/modules/farm/gift-button";
 import { FarmTabs } from "@/src/modules/farm/farm-tabs";
 import { FarmView } from "@/src/modules/farm/farm-view";
 import { Market } from "@/src/modules/farm/market";
@@ -22,11 +23,12 @@ export default async function FarmPage({
 
   // Visite de la ferme d'un ami (lecture seule).
   if (u && u !== ctx.user.id && ctx.names[u]) {
-    const farm = await loadFarm(roomId, u);
+    const [farm, mine, done] = await Promise.all([loadFarm(roomId, u), loadFarm(roomId, ctx.user.id), giftedToday(roomId, ctx.user.id, u)]);
     return (
       <div className="space-y-6">
         <Link href={`/r/${roomId}/farm`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900">← Ma serre</Link>
-        <FarmView roomId={roomId} initial={farm} character={ctx.people[u].character} owner={ctx.names[u]} />
+        <FarmView roomId={roomId} initial={farm} character={ctx.people[u].character} owner={ctx.names[u]} names={ctx.names} />
+        <GiftButton roomId={roomId} receiver={u} done={done} flowers={mine.items.flower ?? 0} />
       </div>
     );
   }
@@ -48,7 +50,7 @@ export default async function FarmPage({
               {friends.length > 0 && (
                 <section>
                   <h3 className="eyebrow mb-2">Serres des amis</h3>
-                  <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-1">
+                  <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-1" data-no-swipe>
                     {friends.map((m) => (
                       <Link key={m.user_id} href={`/r/${roomId}/farm?u=${m.user_id}`} className="flex w-14 shrink-0 flex-col items-center gap-1.5 text-center">
                         <Avatar url={m.avatar_url} character={m.character} name={m.username} size={48} />
@@ -58,7 +60,7 @@ export default async function FarmPage({
                   </div>
                 </section>
               )}
-              <FarmView key={farm.now} roomId={roomId} initial={farm} character={ctx.people[ctx.user.id].character} />
+              <FarmView key={farm.now} roomId={roomId} initial={farm} character={ctx.people[ctx.user.id].character} names={ctx.names} />
             </div>
           ),
         },

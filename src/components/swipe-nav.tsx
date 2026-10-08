@@ -4,6 +4,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { roomTabs } from "./tab-bar";
 
+/** Le geste part-il d'une zone qui défile horizontalement (rangée d'avatars, réserve…) ? Elle a priorité. */
+function inScroller(el: HTMLElement | null) {
+  for (; el && el !== document.body; el = el.parentElement) {
+    const o = getComputedStyle(el).overflowX;
+    if ((o === "auto" || o === "scroll") && el.scrollWidth > el.clientWidth) return true;
+  }
+  return false;
+}
+
 const EDGE = 24; // zone du bord de l'écran réservée au geste « retour » du système
 const MIN_DX = 50;
 
@@ -26,7 +35,7 @@ export function SwipeNav({ roomId, isAdmin }: { roomId: string; isAdmin: boolean
       const t = e.touches[0];
       x0 = t.clientX; y0 = t.clientY;
       done = false;
-      ignore = !!(e.target as HTMLElement).closest("input, textarea, select, [data-no-swipe]");
+      ignore = !!(e.target as HTMLElement).closest("input, textarea, select, [data-no-swipe]") || inScroller(e.target as HTMLElement);
       if (x0 < EDGE || x0 > window.innerWidth - EDGE) e.preventDefault(); // bloque le geste retour/avance du système
     };
     // On navigue dès que le seuil est franchi, sans attendre que le doigt se lève.
