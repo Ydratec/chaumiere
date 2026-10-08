@@ -266,10 +266,10 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
         onClick={tapGround}
         onPointerDown={dragNew}
         data-no-swipe
-        className="relative w-full touch-manipulation select-none overflow-hidden rounded-b-[1.2rem]"
+        className="relative w-full touch-manipulation select-none"
         style={{ aspectRatio: `${GRID_W} / ${H}`, touchAction: placing ? "none" : undefined }}
       >
-        <GreenhouseFloor w={GRID_W} h={H} />
+        <div className="absolute inset-0 overflow-hidden rounded-b-[1.2rem]"><GreenhouseFloor w={GRID_W} h={H} /></div>
         {/* en mode placement, les joints sont soulignés pour viser plus facilement */}
         {placing && (
           <div
@@ -301,12 +301,23 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
                   <span className="block h-full rounded-full bg-white" style={{ width: `${progress(t, now) * 100}%` }} />
                 </span>
               )}
-              {done && r && (
-                <span className="absolute left-1/2 top-0 flex size-7 -translate-x-1/2 -translate-y-1/2 animate-bounce items-center justify-center rounded-full bg-white shadow-md">
-                  <ItemIcon id={r.out} size={18} />
-                </span>
-              )}
             </button>
+          );
+        })}
+
+        {/* Bulles « prêt » : sur leur propre couche, jamais cachées par un objet voisin ou la verrière. */}
+        {!placing && farm.tiles.map((t) => {
+          const r = recipeOf(t.kind, t.item);
+          if (!r || !isReady(t, now)) return null;
+          const [w] = sizeOf(t.kind);
+          return (
+            <span
+              key={`ready-${t.x}-${t.y}`}
+              className="pointer-events-none absolute flex size-7 -translate-x-1/2 -translate-y-1/2 animate-bounce items-center justify-center rounded-full bg-white shadow-md"
+              style={{ left: `${((t.x + w / 2) / GRID_W) * 100}%`, top: `${(t.y / H) * 100}%`, zIndex: 900 }}
+            >
+              <ItemIcon id={r.out} size={18} />
+            </span>
           );
         })}
 
@@ -334,7 +345,7 @@ export function FarmView({ roomId, initial, character, owner }: { roomId: string
         >
           <div className="[&>svg]:h-auto [&>svg]:w-full"><CharacterSprite character={character} walking={walking} /></div>
         </div>
-        <GreenhouseLight />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-b-[1.2rem]"><GreenhouseLight /></div>
       </div>
       </div>
 
