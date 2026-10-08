@@ -7,6 +7,7 @@ import { Cat, MOODS, type Mood } from "@/src/components/cat";
 import { Icon } from "@/src/components/icons";
 import { browserDb } from "@/src/lib/db/client";
 import { chatSent } from "@/src/modules/notifications/actions";
+import { seenKey } from "@/src/components/tab-bar";
 
 export type Message = { id: number; user_id: string; content: string };
 export type Reaction = { message_id: number; user_id: string; emoji: string };
@@ -84,6 +85,14 @@ export function Chat({
       sb.removeChannel(ch);
     };
   }, [sb, activityId]);
+
+  // Discussion ouverte = messages lus (pour la pastille de l'onglet Question).
+  const lastId = messages.at(-1)?.id ?? 0;
+  useEffect(() => {
+    try {
+      localStorage.setItem(seenKey(activityId), String(lastId));
+    } catch {}
+  }, [activityId, lastId]);
 
   // Suivre la conversation seulement si on est déjà en bas de la page (ou si c'est notre message) :
   // pas de saut quand on lit la question en haut.
