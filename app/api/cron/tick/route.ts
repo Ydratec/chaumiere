@@ -1,11 +1,11 @@
 // Appelée toutes les 5 minutes par Supabase (pg_cron, voir supabase/setup/notifications_cron.sql) :
-// envoie les notifications programmées.
+// envoie les notifications programmées (question du jour à l'heure de chaque salle, récoltes prêtes).
 import { adminDb } from "@/src/lib/db/server";
 import { ITEMS, isItem } from "@/src/modules/farm/catalog";
 import { recipeOf } from "@/src/modules/farm/rules";
 import { notify, throttle } from "@/src/modules/notifications/push";
+import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 
-const QUESTION_HOUR = 9; // heure de Paris
 
 export async function POST(req: Request) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`)
@@ -40,19 +40,17 @@ async function harvests() {
   return byFarm.size;
 }
 
-/** Une fois par jour à 9 h (heure de Paris) : « la question du jour est là », pour chaque salle. */
+/** Une fois par « jour de question » et par salle, à l'heure où la question change (9 h si c'est la nuit). */
 async function dailyQuestion() {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" })
-    .formatToParts(new Date());
-  const get = (t: string) => parts.find((p) => p.type === t)!.value;
-  if (Number(get("hour")) !== QUESTION_HOUR) return 0;
-  const day = `${get("year")}-${get("month")}-${get("day")}`;
-
+  const now = new Date();
+  const hour = paris(now).hour;
   const admin = adminDb();
-  const { data: rooms } = await admin.from("rooms").select("id, name");
+  const { data: rooms } = await admin.from("rooms").select("id, name, question_hour");
   let sent = 0;
   for (const r of rooms ?? []) {
+    if (notifyHour(r.question_hour) !== hour) continue;
     const { data: members } = await admin.from("room_members").select("user_id").eq("room_id", r.id);
+    const day = questionDay(r.question_hour, now);
     const to = await throttle((members ?? []).map((m) => m.user_id), `question:${day}:${r.id}`); // une seule fois par jour
     await notify(to, "question", { title: r.name, body: "La question du jour vous attend.", url: `/r/${r.id}/question`, tag: `question-${r.id}` });
     sent += to.length;

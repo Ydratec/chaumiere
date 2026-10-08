@@ -24,7 +24,7 @@ export default async function QuestionPage({ params }: { params: Promise<{ roomI
 
   return (
     <>
-      <Today activity={activity} userId={user.id} names={names} people={people} answers={answers ?? []} />
+      <Today activity={activity} userId={user.id} names={names} people={people} voteLocked={ctx.voteLocked} answers={answers ?? []} />
       <Chat
         activityId={activity.id}
         userId={user.id}

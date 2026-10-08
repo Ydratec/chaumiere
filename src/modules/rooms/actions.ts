@@ -119,3 +119,13 @@ export async function leaveRoom(f: FormData) {
   else await c.admin.from("rooms").delete().eq("id", c.roomId);
   redirect("/");
 }
+
+/** Options de salle : vote définitif, heure de la question du jour (0-23, heure de Paris). */
+export async function setRoomOptions(roomId: string, o: { voteLocked: boolean; questionHour: number }) {
+  const c = await getRoomContext(roomId);
+  if (!c?.isAdmin) throw new Error("Non autorisé");
+  const hour = Math.floor(Number(o.questionHour));
+  if (!(hour >= 0 && hour <= 23)) return;
+  await adminDb().from("rooms").update({ vote_locked: !!o.voteLocked, question_hour: hour }).eq("id", roomId);
+  revalidatePath(`/r/${roomId}`, "layout");
+}

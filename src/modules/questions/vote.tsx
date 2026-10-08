@@ -7,7 +7,7 @@ import type { ActivityProps } from "../activities/registry";
 import { tally } from "./tally";
 
 /** Question de vote : on choisit un membre ; ensuite, histogramme des voix avec les bulles des votants. */
-export function VoteActivity({ activity, userId, people, answers: saved }: ActivityProps) {
+export function VoteActivity({ activity, userId, people, answers: saved, voteLocked }: ActivityProps) {
   // Le vote s'affiche tout de suite ; le serveur confirme ensuite (et corrige si besoin).
   const [answers, vote] = useOptimistic(saved, (all, target: string) => [
     ...all.filter((a) => a.user_id !== userId),
@@ -80,10 +80,14 @@ export function VoteActivity({ activity, userId, people, answers: saved }: Activ
               </div>
             </div>
           ))}
-          <details className="pt-2 text-sm">
-            <summary className="cursor-pointer text-zinc-500">Changer mon vote</summary>
-            <div className="mt-3">{choices}</div>
-          </details>
+          {voteLocked ? (
+            <p className="pt-2 text-xs text-zinc-500">Vote définitif dans cette salle.</p>
+          ) : (
+            <details className="pt-2 text-sm">
+              <summary className="cursor-pointer text-zinc-500">Changer mon vote</summary>
+              <div className="mt-3">{choices}</div>
+            </details>
+          )}
         </section>
       )}
     </>

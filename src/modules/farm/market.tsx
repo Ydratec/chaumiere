@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Avatar } from "@/src/components/avatar";
 import type { Member } from "@/src/modules/rooms/context";
 import { acceptOffer, cancelOffer, createOffer } from "./actions";
 import { ItemIcon } from "./art";
@@ -92,17 +90,6 @@ export function Market({ roomId, offers, items, userId, members }: {
         </ul>
       </section>
 
-      <section>
-        <h3 className="eyebrow mb-3">Visiter les serres</h3>
-        <div className="flex flex-wrap gap-4">
-          {members.filter((m) => m.user_id !== userId).map((m) => (
-            <Link key={m.user_id} href={`/r/${roomId}/farm?u=${m.user_id}`} className="flex w-14 flex-col items-center gap-1.5 text-center">
-              <Avatar url={m.avatar_url} character={m.character} name={m.username} size={48} />
-              <span className="w-full truncate text-xs text-zinc-600">{m.username}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

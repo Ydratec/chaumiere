@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminDb, db } from "@/src/lib/db/server";
+import { getAuthUser } from "@/src/modules/rooms/context";
 
 /**
  * Identifiant + PIN. Le compte Supabase est créé à la première connexion :
@@ -54,11 +55,17 @@ export async function answer(f: FormData) {
   const sb = await db();
   const activityId = String(f.get("activity_id"));
   const content = String(f.get("content")).trim().slice(0, 500);
-  // Question de vote : la réponse doit être un membre de la salle.
-  const { data: a } = await sb.from("daily_activities").select("room_id, payload").eq("id", activityId).maybeSingle();
+  // Question de vote : la réponse doit être un membre de la salle, et si la salle l'a choisi, le vote est définitif.
+  const { data: a } = await sb.from("daily_activities").select("room_id, payload, rooms(vote_locked)").eq("id", activityId)
+    .maybeSingle<{ room_id: string; payload: { kind?: string }; rooms: { vote_locked: boolean } | null }>();
   if (a?.payload?.kind === "vote") {
     const { data: m } = await sb.from("room_members").select("user_id").eq("room_id", a.room_id).eq("user_id", content).maybeSingle();
     if (!m) return;
+    if (a.rooms?.vote_locked) {
+      const me = await getAuthUser();
+      const { data: voted } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
+      if (voted) return;
+    }
   }
   await sb.from("answers").upsert({ activity_id: activityId, content });
   revalidatePath(a ? `/r/${a.room_id}/question` : "/", a ? "page" : "layout"); // seule la page de la question change

@@ -6,6 +6,7 @@ import { ACCESSORIES, SPECIES, skinKey } from "@/src/modules/characters/catalog"
 import { ITEMS, isItem } from "@/src/modules/farm/catalog";
 import { PROJECTS } from "@/src/modules/farm/projects";
 import { getRoomContext } from "@/src/modules/rooms/context";
+import { questionDay } from "@/src/modules/questions/day";
 import { isSuperAdmin } from "./guard";
 
 /** Outils de test : réservés aux super-admins (SUPERADMINS), vérifiés à chaque appel. */
@@ -68,7 +69,8 @@ export async function resetFarm(roomId: string) {
 /** Remplace la question du jour (supprime ses réponses et sa discussion). */
 export async function newQuestion(roomId: string, kind: "open" | "vote") {
   const { admin } = await guard(roomId);
-  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+  const { data: room } = await admin.from("rooms").select("question_hour").eq("id", roomId).single();
+  const day = questionDay(room?.question_hour ?? 0);
   const { data: qs } = await admin.from("questions").select("id, text, kind").eq("kind", kind);
   if (!qs?.length) return kind === "vote" ? "Aucune question de vote : lance la migration 0013." : "Aucune question.";
   const q = qs[Math.floor(Math.random() * qs.length)];

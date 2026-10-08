@@ -58,10 +58,15 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
         <h2 className="eyebrow mb-3">Membres · {ctx.members.length}</h2>
         <div className="flex flex-wrap gap-4">
           {ctx.members.map((m) => (
-            <div key={m.user_id} className="flex w-14 flex-col items-center gap-1.5 text-center">
+            <Link
+              key={m.user_id}
+              href={m.user_id === ctx.user.id ? `/r/${roomId}/farm` : `/r/${roomId}/farm?u=${m.user_id}`}
+              aria-label={`Serre de ${m.username}`}
+              className="flex w-14 flex-col items-center gap-1.5 text-center transition active:scale-95"
+            >
               <Avatar url={m.avatar_url} character={m.character} name={m.username} size={48} />
               <span className="w-full truncate text-xs text-zinc-600">{m.username}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

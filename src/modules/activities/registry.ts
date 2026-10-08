@@ -9,6 +9,7 @@ export type ActivityProps = {
   userId: string;
   names: Record<string, string>;
   people: Record<string, Person>;
+  voteLocked?: boolean; // option de salle : on ne peut pas changer son vote
   answers: Answer[];
 };
 

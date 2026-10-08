@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore, useTransition } from "react"
 import { savePrefs, sendTest, subscribe, unsubscribe, type Prefs } from "./actions";
 
 const LABELS: Record<keyof Prefs, string> = {
-  question: "Question du jour (9 h)",
+  question: "Question du jour",
   games: "Jeux : défis, à toi de jouer",
   chat: "Messages de la discussion",
   farm: "Serre : récoltes, échanges, projets",

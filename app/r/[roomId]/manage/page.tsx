@@ -3,6 +3,7 @@ import { Avatar } from "@/src/components/avatar";
 import { AvatarForm } from "@/src/modules/rooms/avatar-form";
 import { deleteRoom, kick, renameRoom, setRole } from "@/src/modules/rooms/actions";
 import { CodeForm } from "@/src/modules/rooms/code-form";
+import { RoomOptions } from "@/src/modules/rooms/options-form";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 const btn = "btn-soft px-3 py-1.5 text-xs";
@@ -35,6 +36,10 @@ export default async function ManagePage({ params }: { params: Promise<{ roomId:
           <div className="space-y-2">
             <p className="eyebrow">Code d&apos;invitation</p>
             <CodeForm roomId={roomId} code={room?.code ?? ""} />
+          </div>
+          <div>
+            <p className="eyebrow">Question du jour</p>
+            <RoomOptions roomId={roomId} voteLocked={ctx.voteLocked} questionHour={ctx.questionHour} />
           </div>
         </section>
       )}
