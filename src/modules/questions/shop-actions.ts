@@ -5,9 +5,9 @@ import { after } from "next/server";
 import { adminDb } from "@/src/lib/db/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { getRoomContext } from "@/src/modules/rooms/context";
-import { isTheme, THEMES } from "./themes";
+import { isTheme, PACK_SIZE, THEMES } from "./themes";
 
-/** Achète une question en plus (ou à thème) pour aujourd'hui. Renvoie son id, ou un message d'erreur. */
+/** Achète une question en plus (ou un pack à thème) pour aujourd'hui. Renvoie l'id de la (première) question, ou un message d'erreur. */
 export async function buyQuestion(roomId: string, theme: string | null): Promise<{ id?: string; error?: string }> {
   const c = await getRoomContext(roomId);
   if (!c) return { error: "Non autorisé." };
@@ -18,8 +18,8 @@ export async function buyQuestion(roomId: string, theme: string | null): Promise
   const who = c.names[c.user.id];
   after(async () =>
     notify(await roomMembers(roomId, c.user.id), "question", {
-      title: theme ? `Question « ${THEMES[theme]} » de ${who}` : `${who} a ajouté une question`,
-      body: data.payload.text,
+      title: theme ? `${who} a ouvert le pack « ${THEMES[theme]} »` : `${who} a ajouté une question`,
+      body: theme ? `${PACK_SIZE} nouvelles questions, dont : ${data.payload.text}` : data.payload.text,
       url: `/r/${roomId}/question?a=${data.id}`,
     }),
   );

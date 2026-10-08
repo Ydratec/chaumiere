@@ -1,6 +1,6 @@
 -- Questions achetées avec les pièces de la serre : elles s'ajoutent à la question du jour (même journée, leur propre discussion).
--- Prix par salle : il double à chaque achat (« chaleur » +1) puis redescend un peu chaque jour (chaleur -0,35/jour).
--- Les questions à thème coûtent 3 fois plus et piochent dans des packs « theme:… » (jamais tirés pour la question du jour).
+-- Prix par salle : 1 000 pièces, il double à chaque achat (« chaleur » +1) puis redescend un peu chaque jour (chaleur -0,35/jour).
+-- Un pack à thème ajoute d'un coup 3 questions d'un pack « theme:… » (jamais tirées pour la question du jour) et coûte 5 fois le prix.
 
 alter table rooms
   add column question_heat real not null default 0,
@@ -37,15 +37,16 @@ begin
 end
 $$;
 
--- Prix actuel d'une question en plus (une question à thème coûte 3 fois ce prix). Arrondi à la dizaine.
+-- Prix actuel d'une question en plus (un pack à thème coûte 5 fois ce prix). Arrondi à 50.
 create function question_price(r uuid) returns int
   language sql stable as
 $$
-  select (ceil(150 * power(2, greatest(0, question_heat - 0.35 * extract(epoch from now() - question_heat_at) / 86400)) / 10) * 10)::int
+  select (ceil(1000 * power(2, greatest(0, question_heat - 0.35 * extract(epoch from now() - question_heat_at) / 86400)) / 50) * 50)::int
   from rooms where id = r
 $$;
 
--- Achat (tout ou rien) : paie, tire une question pas encore posée si possible, l'ajoute à la journée, fait monter le prix.
+-- Achat (tout ou rien) : paie, tire des questions pas encore posées si possible (1, ou 3 pour un pack à thème),
+-- les ajoute à la journée, fait monter le prix. Renvoie la première.
 create function buy_question(r uuid, u uuid, theme text) returns daily_activities
   language plpgsql as
 $$
@@ -55,35 +56,41 @@ declare
   price int;
   q questions;
   a daily_activities;
+  first daily_activities;
+  n int := 0;
 begin
   -- Verrou sur la salle : deux achats simultanés paient bien deux prix différents.
   select ((now() at time zone 'Europe/Paris') - make_interval(hours => question_hour))::date,
          greatest(0, question_heat - 0.35 * extract(epoch from now() - question_heat_at) / 86400)
     into d, h from rooms where id = r for update;
-  price := question_price(r) * (case when theme is null then 1 else 3 end);
+  price := question_price(r) * (case when theme is null then 1 else 5 end);
   perform farm_add_items(r, u, jsonb_build_object('coins', -price));
 
-  select * into q from questions x
-  where case when theme is null
-    then x.pack = 'base' or exists (select 1 from room_unlocks k where k.room_id = r and k.key = 'pack:' || x.pack)
-    else x.pack = 'theme:' || theme end
-  order by exists (select 1 from daily_activities y where y.room_id = r and (y.payload->>'qid')::int = x.id), random()
-  limit 1;
-  if not found then raise exception 'aucune question'; end if;
-
-  insert into daily_activities (room_id, day, slot, bought_by, payload)
-  values (r, d, coalesce((select max(slot) from daily_activities where room_id = r and day = d and type = 'question'), 0) + 1, u,
-          jsonb_build_object('qid', q.id, 'text', q.text, 'kind', q.kind, 'theme', theme, 'price', price))
-  returning * into a;
+  for q in
+    select * from questions x
+    where case when theme is null
+      then x.pack = 'base' or exists (select 1 from room_unlocks k where k.room_id = r and k.key = 'pack:' || x.pack)
+      else x.pack = 'theme:' || theme end
+    order by exists (select 1 from daily_activities y where y.room_id = r and (y.payload->>'qid')::int = x.id), random()
+    limit case when theme is null then 1 else 3 end
+  loop
+    insert into daily_activities (room_id, day, slot, bought_by, payload)
+    values (r, d, coalesce((select max(slot) from daily_activities where room_id = r and day = d and type = 'question'), 0) + 1, u,
+            jsonb_build_object('qid', q.id, 'text', q.text, 'kind', q.kind, 'theme', theme, 'price', price))
+    returning * into a;
+    if n = 0 then first := a; end if;
+    n := n + 1;
+  end loop;
+  if n = 0 then raise exception 'aucune question'; end if;
   update rooms set question_heat = h + 1, question_heat_at = now() where id = r;
-  return a;
+  return first;
 end
 $$;
 
 revoke execute on function question_price(uuid) from public, anon, authenticated;
 revoke execute on function buy_question(uuid, uuid, text) from public, anon, authenticated;
 
--- Questions à thème (seulement à l'achat).
+-- Questions à thème (seulement en pack acheté).
 insert into questions (text, kind, pack) values
   -- Amour
   ('Quel a été ton premier coup de cœur ?', 'open', 'theme:amour'),

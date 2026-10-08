@@ -4,15 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ItemIcon } from "@/src/modules/farm/art";
 import { buyQuestion } from "./shop-actions";
-import { THEME_FACTOR, THEMES, type Theme } from "./themes";
+import { PACK_FACTOR, PACK_SIZE, THEMES, type Theme } from "./themes";
 
-/** Acheter une question en plus (ou à thème) avec les pièces de la serre. Toucher choisit, le bouton confirme. */
+/** Acheter une question en plus (ou un pack à thème) avec les pièces de la serre. Toucher choisit, le bouton confirme. */
 export function QuestionShop({ roomId, price, coins }: { roomId: string; price: number; coins: number }) {
   const router = useRouter();
   const [picked, setPicked] = useState<Theme | "extra" | null>(null);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
-  const cost = (t: Theme | "extra") => (t === "extra" ? price : price * THEME_FACTOR);
+  const cost = (t: Theme | "extra") => (t === "extra" ? price : price * PACK_FACTOR);
   const coin = (n: number, size = 14) => <span className="inline-flex items-center gap-1">{n} <ItemIcon id="coins" size={size} /></span>;
   const chip = (t: Theme | "extra", label: string) => (
     <button
@@ -40,6 +40,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
         <span className="text-sm font-semibold">{coin(coins)}</span>
       </div>
       {chip("extra", "Question en plus")}
+      <p className="eyebrow pt-1">Packs à thème · {PACK_SIZE} questions</p>
       <div className="grid grid-cols-2 gap-2">{(Object.entries(THEMES) as [Theme, string][]).map(([t, name]) => chip(t, name))}</div>
       {picked && (
         <button onClick={buy} disabled={pending || cost(picked) > coins} className="btn w-full">
@@ -47,7 +48,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
         </button>
       )}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-      <p className="text-xs text-zinc-500">Elle s&apos;ajoute à la question du jour pour toute la salle. Le prix double à chaque achat, puis redescend un peu chaque jour.</p>
+      <p className="text-xs text-zinc-500">Elles s&apos;ajoutent à la question du jour pour toute la salle. Le prix double à chaque achat, puis redescend un peu chaque jour.</p>
     </section>
   );
 }
