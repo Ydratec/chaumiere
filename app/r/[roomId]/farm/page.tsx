@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { Avatar } from "@/src/components/avatar";
 import { redirect } from "next/navigation";
-import { ensureFarm, giftedToday, loadFarm, loadOffers, loadProjects } from "@/src/modules/farm/data";
+import { ensureFarm, giftedToday, loadFarm, loadOffers, loadProjects, touchActivity } from "@/src/modules/farm/data";
+import { catchUpNote } from "@/src/modules/farm/story/catchup";
+import { loadStory } from "@/src/modules/farm/story/data";
+import { StoryView } from "@/src/modules/farm/story/story-view";
 import { GiftButton } from "@/src/modules/farm/gift-button";
 import { FarmTabs } from "@/src/modules/farm/farm-tabs";
 import { FarmView } from "@/src/modules/farm/farm-view";
@@ -35,7 +38,7 @@ export default async function FarmPage({
 
   await ensureFarm(roomId, ctx.user.id);
   const farm = await loadFarm(roomId, ctx.user.id);
-  const [projects, offers] = await Promise.all([loadProjects(roomId, farm.unlocks), loadOffers(roomId)]);
+  const [projects, offers, story] = await Promise.all([loadProjects(roomId, farm.unlocks), loadOffers(roomId), loadStory(roomId, ctx.user.id, farm), touchActivity(roomId, ctx.user.id, farm.story)]).then(([p, o, s]) => [p, o, s] as const);
   const friends = ctx.members.filter((m) => m.user_id !== ctx.user.id);
 
   return (
@@ -64,6 +67,13 @@ export default async function FarmPage({
             </div>
           ),
         },
+        ...(story
+          ? [{
+              label: "Histoire",
+              badge: story.orders.filter((o) => !o.done).length,
+              content: <StoryView key={farm.now} roomId={roomId} story={story} items={farm.items} catchNote={catchUpNote(farm.story.catch)} />,
+            }]
+          : []),
         { label: "Projets", badge: projects.length, content: <ProjectsView roomId={roomId} projects={projects} unlocks={farm.unlocks} items={farm.items} names={ctx.names} /> },
         { label: "Marché", badge: offers.filter((o) => o.seller !== ctx.user.id).length, content: <Market roomId={roomId} offers={offers} items={farm.items} userId={ctx.user.id} members={ctx.members} /> },
       ]}

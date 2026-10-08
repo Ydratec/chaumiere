@@ -3,6 +3,9 @@
 import { adminDb } from "@/src/lib/db/server";
 import { ITEMS, isItem } from "@/src/modules/farm/catalog";
 import { recipeOf } from "@/src/modules/farm/rules";
+import { chapterOf } from "@/src/modules/farm/story";
+import { activeEvents } from "@/src/modules/farm/story/events";
+import { chapterDay } from "@/src/modules/farm/story/state";
 import { notify, throttle } from "@/src/modules/notifications/push";
 import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 
@@ -10,8 +13,8 @@ import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 export async function POST(req: Request) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`)
     return new Response("Non autorisé", { status: 401 });
-  const [farm, question] = await Promise.all([harvests(), dailyQuestion()]);
-  return Response.json({ farm, question });
+  const [farm, question, story] = await Promise.all([harvests(), dailyQuestion(), storyNews()]);
+  return Response.json({ farm, question, story });
 }
 
 /** Récoltes et productions devenues prêtes depuis le dernier passage (une notification par serre). */
@@ -54,6 +57,37 @@ async function dailyQuestion() {
     const to = await throttle((members ?? []).map((m) => m.user_id), `question:${day}:${r.id}`); // une seule fois par jour
     await notify(to, "question", { title: r.name, body: "La question du jour vous attend.", url: `/r/${r.id}/question`, tag: `question-${r.id}` });
     sent += to.length;
+  }
+  return sent;
+}
+
+/** Nouvel acte de l'histoire ou début d'un événement : une seule notification par salle, en journée (dès 10 h). */
+async function storyNews() {
+  const now = new Date();
+  const hour = paris(now).hour;
+  if (hour < 10 || hour >= 22) return 0;
+  const admin = adminDb();
+  const { data: rooms } = await admin.from("rooms").select("id, chapter, chapter_started_at");
+  let sent = 0;
+  for (const r of rooms ?? []) {
+    const ch = chapterOf(r.chapter);
+    if (!ch) continue;
+    const day = chapterDay(r.chapter_started_at, now.getTime());
+    const act = ch.acts.filter((a) => a.day === day && ch.quests.some((q) => q.act === a.n)).at(0);
+    const events = activeEvents(day).filter((e) => e.day === day);
+    if (!act && !events.length) continue;
+    const { data: members } = await admin.from("room_members").select("user_id").eq("room_id", r.id);
+    const everyone = (members ?? []).map((m) => m.user_id as string);
+    if (act && act.n > 1) {
+      const to = await throttle(everyone, `act:${r.chapter}:${act.n}:${r.id}`);
+      await notify(to, "farm", { title: `Épisode ${act.n} · ${act.title}`, body: "Un courrier de Mirabelle est arrivé à la serre…", url: `/r/${r.id}/farm`, tag: `act-${r.id}` });
+      sent += to.length;
+    }
+    for (const e of events) {
+      const to = await throttle(everyone, `event:${r.chapter}:${e.id}:${r.id}`);
+      await notify(to, "farm", { title: e.title, body: e.text, url: `/r/${r.id}/farm`, tag: `event-${e.id}` });
+      sent += to.length;
+    }
   }
   return sent;
 }

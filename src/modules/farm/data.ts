@@ -3,10 +3,16 @@ import { adminDb } from "@/src/lib/db/server";
 import { START_CAT, START_COINS, START_OBJECTS, isItem, type Inventory } from "./catalog";
 import { activeProjects, type Project } from "./projects";
 import type { Cell, Tile } from "./rules";
+import { ACTIVE_DAYS, catchUp, type CatchUp } from "./story/catchup";
+import { eventKeys } from "./story/events";
+import { chapterOf } from "./story";
+import { chapterDay, personalUnlocks, questsDone } from "./story/state";
 
 export type Gift = { id: number; giver: string; item: string; message: string | null; day: string };
 /** gifts : cadeaux à ouvrir ; collection : fleurs reçues (cadeaux ouverts), gardées. */
-export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; collection: Gift[]; now: number }; // now : heure du serveur
+export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; collection: Gift[]; now: number; story: StoryCore }; // now : heure du serveur
+/** Ce qu'il faut savoir de l'histoire pour jouer : chapitre, quêtes finies, rattrapage. */
+export type StoryCore = { chapter: number; day: number; done: string[]; catch: CatchUp; activeAt: string | null };
 export type ProjectState = Project & { progress: Inventory; givers: Record<string, number> };
 export type Offer = { id: number; seller: string; give: Inventory; want: Inventory };
 
@@ -30,18 +36,58 @@ export async function loadUnlocks(roomId: string) {
   return (data ?? []).map((u) => u.key as string);
 }
 
+/** Chapitre de la salle, quêtes finies (les miennes et celles des autres joueurs actifs) et rattrapage qui en découle. */
+async function loadStoryCore(roomId: string, uid: string, now: number): Promise<StoryCore> {
+  const admin = adminDb();
+  const [{ data: room }, { data: activity }] = await Promise.all([
+    admin.from("rooms").select("chapter, chapter_started_at").eq("id", roomId).single(),
+    admin.from("farm_activity").select("user_id, at").eq("room_id", roomId),
+  ]);
+  const chapter = room?.chapter ?? 1;
+  const { data: rows } = await admin.from("farm_quest_done").select("user_id, quest").eq("room_id", roomId).eq("chapter", chapter);
+  const done = (rows ?? []).filter((r) => r.user_id === uid).map((r) => r.quest as string);
+  const since = now - ACTIVE_DAYS * 86_400_000;
+  const peers = (activity ?? [])
+    .filter((a) => a.user_id !== uid && Date.parse(a.at) > since)
+    .map((a) => questsDone((rows ?? []).filter((r) => r.user_id === a.user_id).map((r) => r.quest as string)).length);
+  return {
+    chapter,
+    day: chapterDay(room?.chapter_started_at ?? now, now),
+    done,
+    catch: catchUp(questsDone(done).length, peers),
+    activeAt: (activity ?? []).find((a) => a.user_id === uid)?.at ?? null,
+  };
+}
+
+/** Note le passage du joueur (au plus une fois par heure) : sert à savoir qui est actif. */
+export async function touchActivity(roomId: string, uid: string, story: StoryCore) {
+  if (story.activeAt && Date.now() - Date.parse(story.activeAt) < 3_600_000) return;
+  await adminDb().from("farm_activity").upsert({ room_id: roomId, user_id: uid, at: new Date().toISOString() });
+}
+
 export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   const admin = adminDb();
-  const [{ data: tiles }, { data: items }, { data: cat }, { data: gifts }, unlocks] = await Promise.all([
+  const now = Date.now();
+  const [{ data: tiles }, { data: items }, { data: cat }, { data: gifts }, roomUnlocks, story] = await Promise.all([
     admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_items").select("item, qty").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_cats").select("x, y").eq("room_id", roomId).eq("user_id", uid).maybeSingle(),
     admin.from("farm_gifts").select("id, giver, item, message, day, opened").eq("room_id", roomId).eq("receiver", uid).order("id", { ascending: false }),
     loadUnlocks(roomId),
+    loadStoryCore(roomId, uid, now),
   ]);
+  const ch = chapterOf(story.chapter);
+  // Déblocages de la salle + ceux de l'histoire (bâtiments, plafonds) + coefficients des événements et du rattrapage.
+  const unlocks = [
+    ...roomUnlocks,
+    ...(ch ? personalUnlocks(ch, story.done) : []),
+    ...eventKeys(story.day),
+    ...(story.catch.speed < 1 ? [`speed:${story.catch.speed.toFixed(3)}`] : []),
+  ];
   return { tiles: (tiles ?? []) as Tile[], items: toInventory(items ?? []), unlocks, cat: cat ?? START_CAT, gifts: ((gifts ?? []) as (Gift & { opened: boolean })[]).filter((g) => !g.opened).reverse(),
     collection: ((gifts ?? []) as (Gift & { opened: boolean })[]).filter((g) => g.opened),
-    now: Date.now(),
+    now,
+    story,
   };
 }
 

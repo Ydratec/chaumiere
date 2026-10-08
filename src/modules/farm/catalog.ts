@@ -12,17 +12,17 @@ export const START_CAT = { x: 6, y: 8 };
 
 export type ItemId = "coins" | "wheat" | "carrot" | "corn" | "strawberry" | "flower" | "egg" | "bread" | "cake";
 
-/** `price` : prix de vente au village. */
+/** `price` : prix de vente au village (réduit depuis la refonte : les commandes et les chantiers paient mieux que la vente en vrac). */
 export const ITEMS: Record<ItemId, { name: string; price: number }> = {
   coins: { name: "Pièces", price: 0 },
-  wheat: { name: "Blé", price: 2 },
-  carrot: { name: "Carotte", price: 5 },
-  corn: { name: "Maïs", price: 9 },
-  strawberry: { name: "Fraise", price: 20 },
-  flower: { name: "Fleur", price: 4 },
-  egg: { name: "Œuf", price: 8 },
-  bread: { name: "Pain", price: 12 },
-  cake: { name: "Gâteau", price: 45 },
+  wheat: { name: "Blé", price: 1 },
+  carrot: { name: "Carotte", price: 3 },
+  corn: { name: "Maïs", price: 5 },
+  strawberry: { name: "Fraise", price: 12 },
+  flower: { name: "Fleur", price: 2 },
+  egg: { name: "Œuf", price: 5 },
+  bread: { name: "Pain", price: 7 },
+  cake: { name: "Gâteau", price: 27 },
 };
 export const isItem = (id: string): id is ItemId => id in ITEMS;
 
@@ -49,7 +49,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
     recipes: [{ id: "flower", out: "flower", qty: 1, minutes: 5, inputs: { coins: 1 } }],
   },
   coop: {
-    name: "Poulailler", size: [2, 2], cost: 60, max: 1, verb: "Nourrir",
+    name: "Poulailler", size: [2, 2], cost: 60, max: 1, verb: "Nourrir", requires: "b:coop",
     recipes: [{ id: "egg", out: "egg", qty: 1, minutes: 20, inputs: { wheat: 1 } }],
   },
   oven: {
@@ -58,9 +58,12 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
       { id: "bread", out: "bread", qty: 1, minutes: 15, inputs: { wheat: 3 } },
       { id: "cake", out: "cake", qty: 1, minutes: 60, inputs: { wheat: 1, egg: 1, strawberry: 1 } },
     ],
+    requires: "b:oven",
   },
   flowers: { name: "Jardinière", size: [1, 1], cost: 15, verb: "", recipes: [], requires: "cosmetic:decor" },
   tree: { name: "Agrume en pot", size: [2, 2], cost: 25, verb: "", recipes: [], requires: "cosmetic:decor" },
   fountain: { name: "Vasque", size: [2, 2], cost: 80, max: 1, verb: "", recipes: [], requires: "cosmetic:decor" },
 };
+/** Plafond de départ des objets sans `max` : l'histoire le relève (clés « cap:bac:5 » dans les déblocages personnels). */
+export const BASE_CAP: Partial<Record<BuildingId, number>> = { planter: 3, pot: 3 };
 export const isBuilding = (id: string): id is BuildingId => id in BUILDINGS;

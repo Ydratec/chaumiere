@@ -25,9 +25,9 @@ export function FarmTabs({ roomId, tabs }: { roomId: string; tabs: { label: stri
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-1 rounded-full bg-zinc-200/60 p-1 text-sm font-medium">
+      <div style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} className="grid gap-1 rounded-full bg-zinc-200/60 p-1 text-sm font-medium">
         {tabs.map((t, i) => (
-          <button key={t.label} onClick={() => { setTab(i); router.refresh(); }} className={`rounded-full py-2 transition ${tab === i ? "bg-white shadow-sm" : "text-zinc-500"}`}>
+          <button key={t.label} onClick={() => { setTab(i); router.refresh(); }} className={`rounded-full py-2 text-[13px] transition ${tab === i ? "bg-white shadow-sm" : "text-zinc-500"}`}>
             {t.label}
             {!!t.badge && <span className="ml-1 rounded-full bg-indigo-600 px-1.5 text-[11px] text-white">{t.badge}</span>}
           </button>

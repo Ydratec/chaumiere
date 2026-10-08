@@ -5,16 +5,18 @@ import { after } from "next/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
-import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
-import { loadFarm, loadProjects, type Farm, type Gift } from "./data";
+import { BUILDINGS, GRID_W, isBuilding, isItem, type Inventory } from "./catalog";
+import { loadFarm, loadProjects, touchActivity, type Farm, type Gift } from "./data";
+import { grantSecret } from "./story/grant";
+import { paris } from "@/src/modules/questions/day";
 import { randomGiftMessage } from "./gift-messages";
 import { isComplete, remaining } from "./projects";
-import { duration, gridH, negate, offerError, placeError, recipeOf, startError, tileAt, type FarmMove } from "./rules";
+import { duration, gridH, sellPrice, negate, offerError, placeError, recipeOf, startError, tileAt, type FarmMove } from "./rules";
 
 export type { FarmMove };
 
 /** Un coup sur sa ferme. Renvoie la ferme à jour, ou un message d'erreur. */
-export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm: Farm; error?: string }> {
+export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm: Farm; error?: string; notice?: string }> {
   const c = await getRoomContext(roomId);
   if (!c) throw new Error("Non autorisé");
   const uid = c.user.id;
@@ -26,7 +28,8 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
   const where = <T extends { eq: (k: string, v: unknown) => T }>(q: T) =>
     q.eq("room_id", roomId).eq("user_id", uid).eq("x", tile!.x).eq("y", tile!.y);
   const add = (delta: Inventory) => admin.rpc("farm_add_items", { r: roomId, u: uid, delta });
-  const done = async (error?: string) => ({ farm: await loadFarm(roomId, uid), error });
+  const done = async (error?: string, notice?: string | null) => ({ farm: await loadFarm(roomId, uid), error, notice: notice ?? undefined });
+  void touchActivity(roomId, uid, farm.story);
 
   switch (move.kind) {
     case "build": {
@@ -37,7 +40,8 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
       if (error) return done("Pas assez de pièces.");
       const ins = await tiles().insert({ room_id: roomId, user_id: uid, x: move.x, y: move.y, kind: move.building });
       if (ins.error) await add({ coins: BUILDINGS[move.building].cost }); // case prise entre-temps : remboursement
-      return done(ins.error ? "Il y a déjà quelque chose ici." : undefined);
+      const secret = !ins.error && move.building === "pot" && move.x === 0 && move.y === 0 ? await grantSecret(roomId, uid, "coin") : null;
+      return done(ins.error ? "Il y a déjà quelque chose ici." : undefined, secret);
     }
     case "move": {
       if (!tile || !isBuilding(tile.kind)) return done("Rien à déplacer.");
@@ -67,7 +71,9 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
         .eq("item", r.id).lte("ready_at", new Date().toISOString()).select("x");
       if (!data?.length) return done("Pas encore prêt.");
       await add({ [r.out]: r.qty });
-      return done();
+      await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `harvest:${r.out}`, n: r.qty });
+      const night = paris(new Date()).hour === 3;
+      return done(undefined, night ? await grantSecret(roomId, uid, "minuit") : null);
     }
     case "clear": {
       if (!tile || tile.item) return done("Attends que ce soit fini avant de démolir.");
@@ -77,8 +83,9 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
     case "sell": {
       const qty = Math.floor(Number(move.qty));
       if (!isItem(move.item) || move.item === "coins" || !(qty > 0)) return done("Vente impossible.");
-      const { error } = await add({ [move.item]: -qty, coins: qty * ITEMS[move.item].price });
-      return done(error ? "Tu n'en as pas assez." : undefined);
+      const { error } = await add({ [move.item]: -qty, coins: qty * sellPrice(move.item, farm.unlocks) });
+      const secret = !error && move.item === "wheat" && qty === 1 ? await grantSecret(roomId, uid, "grain") : null;
+      return done(error ? "Tu n'en as pas assez." : undefined, secret);
     }
   }
   return done("Action inconnue.");

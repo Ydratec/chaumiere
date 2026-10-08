@@ -46,7 +46,8 @@ test("poser un objet : emprise, collisions, bords, limites, déplacement", () =>
   assert.equal(placeError([bac], { coins: 100 }, "planter", 11, 0), "Ça dépasse de la ferme."); // 2 de large en x=11
   assert.equal(placeError([bac], { coins: 100 }, "pot", 11, 11), null);
   assert.equal(placeError([bac], { coins: 5 }, "pot", 5, 5), "Pas assez de pièces.");
-  assert.equal(placeError([bac, { ...field(), x: 4, kind: "coop" }], { coins: 100 }, "coop", 8, 0), "Tu as déjà un poulailler.");
+  assert.equal(placeError([bac, { ...field(), x: 4, kind: "coop" }], { coins: 100 }, "coop", 8, 0, ["b:coop"]), "Tu as déjà un poulailler.");
+  assert.equal(placeError([], { coins: 100 }, "coop", 8, 0), "À débloquer avec l'histoire.");
   assert.equal(placeError([bac], { coins: 0 }, "planter", 1, 0, [], bac), null); // déplacer : chevauche sa propre place, gratuit
 });
 
@@ -125,11 +126,11 @@ test("coup appliqué tout de suite : planter, récolter, vendre, construire, dé
   assert.equal(f.tiles[0].item, null);
 
   f = ok(applyMove(f, { kind: "sell", item: "wheat", qty: 2 }, 0));
-  assert.deepEqual([f.items.wheat, f.items.coins], [0, 33]);
+  assert.deepEqual([f.items.wheat, f.items.coins], [0, 31]);
   assert.deepEqual(applyMove(f, { kind: "sell", item: "wheat", qty: 1 }, 0), { error: "Tu n'en as pas assez." });
 
   f = ok(applyMove(f, { kind: "build", x: 4, y: 4, building: "pot" }, 0));
-  assert.equal(f.items.coins, 25);
+  assert.equal(f.items.coins, 23);
   assert.deepEqual(applyMove(f, { kind: "build", x: 1, y: 1, building: "pot" }, 0), { error: "Il y a déjà quelque chose ici." });
   f = ok(applyMove(f, { kind: "move", x: 4, y: 4, to: { x: 6, y: 6 } }, 0));
   assert.ok(f.tiles.some((t) => t.kind === "pot" && t.x === 6 && t.y === 6));

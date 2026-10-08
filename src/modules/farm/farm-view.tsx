@@ -4,12 +4,13 @@ import { useEffect, useEffectEvent, useRef, useState, useTransition } from "reac
 import { CharacterSprite } from "@/src/components/character-sprite";
 import type { Character } from "@/src/modules/characters/catalog";
 import { farmAction, moveCat, openGift, type FarmMove } from "./actions";
+import { foundSecret } from "./story/actions";
 import { GiftArt, ItemIcon, ObjectArt } from "./art";
 import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
 import type { Farm, Gift } from "./data";
 import {
-  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, progress, recipeOf, sizeOf, tileAt,
+  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, progress, recipeOf, sellPrice, sizeOf, tileAt,
   type Cell, type Tile,
 } from "./rules";
 
@@ -49,6 +50,8 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
   const [placing, setPlacing] = useState<Placing | null>(null);
   const [ghost, setGhost] = useState<Cell | null>(null);
   const [msg, setMsg] = useState("");
+  const [notice, setNotice] = useState(""); // bonne nouvelle (secret trouvé…)
+  const catTaps = useRef({ n: 0, at: 0 });
   // Cadeaux : la fenêtre s'ouvre toute seule s'il y en a un à ouvrir (« Plus tard » la ferme jusqu'au prochain toucher).
   const [giftShown, setGiftShown] = useState(true);
   const [giftFocus, setGiftFocus] = useState<number | null>(null);
@@ -82,6 +85,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
       inflight.current--;
       if (res.error || inflight.current === 0) setFarm(res.farm);
       if (res.error) setMsg(res.error);
+      if (res.notice) setNotice(res.notice);
     });
   }
 
@@ -137,7 +141,15 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
   function tapGround(e: React.MouseEvent) {
     if (owner || placing) return;
     setOpen(null);
-    walkTo([cellAt(e)]);
+    const c = cellAt(e);
+    // Quelques caresses rapides sur le chat : un petit secret.
+    if (Math.abs(c.x - cat.x) <= 1 && Math.abs(c.y - cat.y) <= 1) {
+      const t = catTaps.current, at = e.timeStamp;
+      t.n = at - t.at < 1500 ? t.n + 1 : 1;
+      t.at = at;
+      if (t.n === 7) void foundSecret(roomId, "chat").then((m) => m && setNotice(m));
+    }
+    walkTo([c]);
   }
 
   // ---------- Glisser-déposer : appui long sur un objet pour le déplacer ; un nouvel objet se fait glisser ----------
@@ -405,6 +417,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
         <button onClick={() => setPlacing(null)} className="btn-soft w-full py-3">Annuler</button>
       )}
       {msg && !open && <p role="alert" className="text-center text-sm text-red-700">{msg}</p>}
+      {notice && !open && <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-800">{notice}</p>}
 
       {!owner && (
         <section>
@@ -416,7 +429,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
                 <ItemIcon id={k} size={28} />
                 <span className="flex-1">
                   <span className="block font-medium">{ITEMS[k].name} <span className="tabular-nums text-zinc-500">× {qty}</span></span>
-                  <span className="inline-flex items-center gap-1 text-xs text-zinc-500">{ITEMS[k].price} <ItemIcon id="coins" size={12} /> l&apos;unité</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-zinc-500">{sellPrice(k, farm.unlocks)} <ItemIcon id="coins" size={12} /> l&apos;unité</span>
                 </span>
                 <button disabled={pending} onClick={() => act({ kind: "sell", item: k, qty: 1 }, false)} className="btn-soft px-3 py-1.5 text-xs">Vendre 1</button>
                 <button disabled={pending} onClick={() => act({ kind: "sell", item: k, qty }, false)} className="btn-soft px-3 py-1.5 text-xs">Tout</button>

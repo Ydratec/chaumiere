@@ -1,5 +1,5 @@
 // Règles de la ferme : fonctions pures (testées dans tests/unit/farm.test.ts).
-import { BUILDINGS, GRID_H, GRID_W, ITEMS, isBuilding, isItem, type BuildingId, type Inventory, type ItemId, type Recipe } from "./catalog.ts";
+import { BASE_CAP, BUILDINGS, GRID_H, GRID_W, ITEMS, isBuilding, isItem, type BuildingId, type Inventory, type ItemId, type Recipe } from "./catalog.ts";
 
 /** Un objet posé : (x, y) = son coin haut-gauche. */
 export type Tile = { x: number; y: number; kind: string; item: string | null; started_at: string | null; ready_at: string | null };
@@ -12,12 +12,30 @@ export const sizeOf = (kind: string): [number, number] => (isBuilding(kind) ? BU
 
 /** Hauteur de la grille selon les déblocages de la salle. */
 export const gridH = (unlocks: string[] = []) => (unlocks.includes("upgrade:land") ? GRID_H + 4 : GRID_H);
-/** Nombre max d'un objet (le 2e poulailler se débloque). */
-export const maxOf = (kind: BuildingId, unlocks: string[] = []) =>
-  kind === "coop" && unlocks.includes("upgrade:coop2") ? 2 : BUILDINGS[kind].max;
+/**
+ * Nombre max d'un objet : plafond de départ, relevé par l'histoire (« cap:planter:5 ») ; le 2e poulailler se débloque.
+ * undefined = illimité.
+ */
+export function maxOf(kind: BuildingId, unlocks: string[] = []) {
+  let m = BUILDINGS[kind].max ?? BASE_CAP[kind];
+  if (kind === "coop" && unlocks.includes("upgrade:coop2")) m = Math.max(m ?? 0, 2);
+  for (const u of unlocks) {
+    const [p, k, n] = u.split(":");
+    if (p === "cap" && k === kind) m = Math.max(m ?? 0, Number(n));
+  }
+  return m;
+}
 
-/** Durée en ms ; les améliorations de salle l'accélèrent. */
-export const duration = (r: Recipe, upgrades: string[] = []) => r.minutes * 60_000 * (upgrades.includes("upgrade:speed") ? 0.75 : 1);
+/** Produit des coefficients « <préfixe>:x » des déblocages (vitesse du rattrapage et des événements, bonus de vente). */
+const factor = (unlocks: string[], prefix: string) =>
+  unlocks.reduce((f, u) => (u.startsWith(`${prefix}:`) ? f * Number(u.slice(prefix.length + 1)) : f), 1);
+
+/** Durée en ms ; l'engrais de salle, le rattrapage et les événements l'accélèrent. */
+export const duration = (r: Recipe, upgrades: string[] = []) =>
+  Math.round(r.minutes * 60_000 * (upgrades.includes("upgrade:speed") ? 0.75 : 1) * factor(upgrades, "speed"));
+
+/** Prix de vente d'une unité (un événement peut le relever). */
+export const sellPrice = (item: ItemId, unlocks: string[] = []) => Math.max(1, Math.round(ITEMS[item].price * factor(unlocks, "sell")));
 
 export const has = (inv: Inventory, need: Inventory) =>
   Object.entries(need).every(([k, v]) => (inv[k as ItemId] ?? 0) >= (v ?? 0));
@@ -60,9 +78,10 @@ export function placeError(tiles: Tile[], inv: Inventory, kind: BuildingId, x: n
   if (footprint(kind, x, y).some((c) => occ.has(key(c.x, c.y)))) return "Il y a déjà quelque chose ici.";
   if (moving) return null;
   const b = BUILDINGS[kind];
-  if (b.requires && !unlocks.includes(b.requires)) return "À débloquer avec un projet de la salle.";
+  if (b.requires && !unlocks.includes(b.requires)) return b.requires.startsWith("b:") ? "À débloquer avec l'histoire." : "À débloquer avec un projet de la salle.";
   const max = maxOf(kind, unlocks);
-  if (max && tiles.filter((t) => t.kind === kind).length >= max) return max > 1 ? `Tu en as déjà ${max}.` : `Tu as déjà un ${b.name.toLowerCase()}.`;
+  if (max && tiles.filter((t) => t.kind === kind).length >= max)
+    return max > 1 ? `Tu en as déjà ${max}${BASE_CAP[kind] ? " (l'histoire en débloque plus)" : ""}.` : `Tu as déjà un ${b.name.toLowerCase()}.`;
   if ((inv.coins ?? 0) < b.cost) return "Pas assez de pièces.";
   return null;
 }
@@ -194,7 +213,7 @@ export function applyMove(f: FarmState, m: FarmMove, now: number): { state: Farm
       const qty = Math.floor(Number(m.qty));
       if (!isItem(m.item) || m.item === "coins" || !(qty > 0)) return { error: "Vente impossible." };
       if ((f.items[m.item] ?? 0) < qty) return { error: "Tu n'en as pas assez." };
-      return { state: { ...f, items: plus(f.items, { [m.item]: -qty, coins: qty * ITEMS[m.item].price }) } };
+      return { state: { ...f, items: plus(f.items, { [m.item]: -qty, coins: qty * sellPrice(m.item, f.unlocks) }) } };
     }
   }
 }

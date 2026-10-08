@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ITEMS, type ItemId } from "@/src/modules/farm/catalog";
-import { finishTimers, giveItems, newQuestion, resetFarm, resetUnlocks, unlockAll, unlockSkins } from "./actions";
+import { advanceStory, finishTimers, giveItems, newQuestion, resetFarm, resetStory, resetUnlocks, unlockAll, unlockSkins } from "./actions";
 
 export function AdminPanel({ roomId }: { roomId: string }) {
   const [msg, setMsg] = useState("");
@@ -23,6 +23,12 @@ export function AdminPanel({ roomId }: { roomId: string }) {
         <h2 className="eyebrow">Question du jour</h2>
         <button disabled={pending} className={btn} onClick={() => run(() => newQuestion(roomId, "vote"), "Remplacer la question du jour ? Ses réponses et sa discussion seront supprimées.")}>Nouvelle question de vote</button>
         <button disabled={pending} className={btn} onClick={() => run(() => newQuestion(roomId, "open"), "Remplacer la question du jour ? Ses réponses et sa discussion seront supprimées.")}>Nouvelle question ouverte</button>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="eyebrow">Histoire</h2>
+        <button disabled={pending} className={btn} onClick={() => run(() => advanceStory(roomId), "Faire sortir l'acte suivant (+7 jours) ?")}>Avancer le calendrier d&apos;une semaine</button>
+        <button disabled={pending} className={btn} onClick={() => run(() => resetStory(roomId), "Recommencer ton histoire (quêtes, commandes, journal, secrets) ?")}>Recommencer mon histoire</button>
       </section>
 
       <section className="space-y-2">

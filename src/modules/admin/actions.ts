@@ -78,3 +78,21 @@ export async function newQuestion(roomId: string, kind: "open" | "vote") {
   const { error } = await admin.from("daily_activities").insert({ room_id: roomId, day, type: "question", payload: { qid: q.id, text: q.text, kind: q.kind } });
   return done(roomId, error ? error.message : `Nouvelle question : « ${q.text} »`);
 }
+
+/** Fait avancer le calendrier de l'histoire d'une semaine (l'acte suivant sort) pour tester. */
+export async function advanceStory(roomId: string) {
+  const { admin } = await guard(roomId);
+  const { data: r } = await admin.from("rooms").select("chapter_started_at").eq("id", roomId).single();
+  const back = new Date(Date.parse(r?.chapter_started_at ?? new Date().toISOString()) - 7 * 86_400_000).toISOString();
+  await admin.from("rooms").update({ chapter_started_at: back }).eq("id", roomId);
+  return done(roomId, "Calendrier avancé d'une semaine.");
+}
+
+/** Recommence ses quêtes, commandes et compteurs du chapitre (pas les bâtiments ni les pièces). */
+export async function resetStory(roomId: string) {
+  const { admin, uid } = await guard(roomId);
+  await Promise.all(
+    ["farm_quest_done", "farm_stats", "farm_orders", "farm_journal", "farm_secrets"].map((t) => admin.from(t).delete().eq("room_id", roomId).eq("user_id", uid)),
+  );
+  return done(roomId, "Ton histoire repart du début.");
+}
