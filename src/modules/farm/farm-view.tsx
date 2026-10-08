@@ -7,7 +7,7 @@ import { farmAction, moveCat, openGift, type FarmMove } from "./actions";
 import { GiftArt, ItemIcon, ObjectArt } from "./art";
 import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
-import type { Farm } from "./data";
+import type { Farm, Gift } from "./data";
 import {
   applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, progress, recipeOf, sizeOf, tileAt,
   type Cell, type Tile,
@@ -49,7 +49,11 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
   const [placing, setPlacing] = useState<Placing | null>(null);
   const [ghost, setGhost] = useState<Cell | null>(null);
   const [msg, setMsg] = useState("");
-  const [toast, setToast] = useState(""); // message agréable (cadeau ouvert…)
+  // Cadeaux : la fenêtre s'ouvre toute seule s'il y en a un à ouvrir (« Plus tard » la ferme jusqu'au prochain toucher).
+  const [giftShown, setGiftShown] = useState(true);
+  const [giftFocus, setGiftFocus] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState<Gift | null>(null);
+  const waiting = farm.gifts.find((g) => g.id === giftFocus) ?? farm.gifts[0];
   const [pending, startTransition] = useTransition();
   const walk = useRef<ReturnType<typeof setTimeout> | null>(null);
   const world = useRef<HTMLDivElement>(null);
@@ -313,11 +317,8 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
             aria-label={`Cadeau de ${names[g.giver] ?? "?"}`}
             onClick={(e) => {
               e.stopPropagation();
-              startTransition(async () => {
-                const res = await openGift(roomId, g.id);
-                setFarm(res.farm);
-                if (res.gift) setToast(`${names[res.gift.giver] ?? "Quelqu'un"} t'a offert une fleur !`);
-              });
+              setGiftFocus(g.id);
+              setGiftShown(true);
             }}
             className="absolute animate-bounce p-[3px]"
             style={{ ...box(GRID_W - 1 - (i % GRID_W), H - 1 - Math.floor(i / GRID_W), 1, 1), zIndex: 900 }}
@@ -404,11 +405,6 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
         <button onClick={() => setPlacing(null)} className="btn-soft w-full py-3">Annuler</button>
       )}
       {msg && !open && <p role="alert" className="text-center text-sm text-red-700">{msg}</p>}
-      {toast && (
-        <button onClick={() => setToast("")} className="animate-pop flex w-full items-center justify-center gap-2 rounded-2xl bg-pink-50 px-4 py-3 text-sm font-medium text-pink-700">
-          <ItemIcon id="flower" size={20} /> {toast}
-        </button>
-      )}
 
       {!owner && (
         <section>
@@ -428,6 +424,61 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
             ))}
           </div>
         </section>
+      )}
+
+      {!owner && farm.collection.length > 0 && (
+        <section>
+          <h3 className="eyebrow mb-1">Collection de fleurs · {farm.collection.length}</h3>
+          <div className="rows">
+            {farm.collection.map((g) => (
+              <div key={g.id} className="flex items-start gap-3 py-2.5">
+                <ItemIcon id="flower" size={28} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm italic text-zinc-700">« {g.message ?? "Une fleur pour toi."} »</span>
+                  <span className="text-xs text-zinc-500">
+                    {names[g.giver] ?? "?"} · {new Date(`${g.day}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!owner && (revealed || (giftShown && waiting)) && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6" role="dialog" aria-modal>
+          <div className="absolute inset-0 bg-black/35" />
+          <div className="animate-pop relative w-full max-w-xs rounded-[1.75rem] bg-white p-6 text-center shadow-2xl">
+            {revealed ? (
+              <>
+                <div className="animate-pop mx-auto size-24"><ItemIcon id="flower" size={96} /></div>
+                <p className="mt-3 text-lg font-semibold italic leading-snug">« {revealed.message ?? "Une fleur pour toi."} »</p>
+                <p className="mt-2 text-sm text-zinc-500">— {names[revealed.giver] ?? "Quelqu'un"}</p>
+                <p className="mt-4 text-xs text-zinc-400">Ajoutée à ta collection de fleurs.</p>
+                <button onClick={() => { setRevealed(null); setGiftFocus(null); }} className="btn mt-4 w-full">Merci !</button>
+              </>
+            ) : (
+              waiting && (
+                <>
+                  <div className="mx-auto size-24 animate-bounce"><GiftArt /></div>
+                  <p className="mt-3 text-lg font-semibold">{names[waiting.giver] ?? "Quelqu'un"} t&apos;a laissé un cadeau</p>
+                  <button
+                    disabled={pending}
+                    onClick={() => startTransition(async () => {
+                      const res = await openGift(roomId, waiting.id);
+                      setFarm(res.farm);
+                      setRevealed(res.gift ?? { ...waiting });
+                    })}
+                    className="btn mt-4 w-full"
+                  >
+                    Ouvrir
+                  </button>
+                  <button onClick={() => setGiftShown(false)} className="mt-2 text-sm text-zinc-500">Plus tard</button>
+                </>
+              )
+            )}
+          </div>
+        </div>
       )}
 
       {sheet && (

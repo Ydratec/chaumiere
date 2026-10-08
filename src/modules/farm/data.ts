@@ -4,8 +4,9 @@ import { START_CAT, START_COINS, START_OBJECTS, isItem, type Inventory } from ".
 import { activeProjects, type Project } from "./projects";
 import type { Cell, Tile } from "./rules";
 
-export type Gift = { id: number; giver: string; item: string };
-export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; now: number }; // now : heure du serveur
+export type Gift = { id: number; giver: string; item: string; message: string | null; day: string };
+/** gifts : cadeaux à ouvrir ; collection : fleurs reçues (cadeaux ouverts), gardées. */
+export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; collection: Gift[]; now: number }; // now : heure du serveur
 export type ProjectState = Project & { progress: Inventory; givers: Record<string, number> };
 export type Offer = { id: number; seller: string; give: Inventory; want: Inventory };
 
@@ -35,10 +36,13 @@ export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
     admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_items").select("item, qty").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_cats").select("x, y").eq("room_id", roomId).eq("user_id", uid).maybeSingle(),
-    admin.from("farm_gifts").select("id, giver, item").eq("room_id", roomId).eq("receiver", uid).eq("opened", false).order("id"),
+    admin.from("farm_gifts").select("id, giver, item, message, day, opened").eq("room_id", roomId).eq("receiver", uid).order("id", { ascending: false }),
     loadUnlocks(roomId),
   ]);
-  return { tiles: (tiles ?? []) as Tile[], items: toInventory(items ?? []), unlocks, cat: cat ?? START_CAT, gifts: (gifts ?? []) as Gift[], now: Date.now() };
+  return { tiles: (tiles ?? []) as Tile[], items: toInventory(items ?? []), unlocks, cat: cat ?? START_CAT, gifts: ((gifts ?? []) as (Gift & { opened: boolean })[]).filter((g) => !g.opened).reverse(),
+    collection: ((gifts ?? []) as (Gift & { opened: boolean })[]).filter((g) => g.opened),
+    now: Date.now(),
+  };
 }
 
 /** Projets en cours de la salle, avec ce qui a déjà été donné et par qui. */

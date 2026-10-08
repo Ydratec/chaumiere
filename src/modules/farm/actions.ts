@@ -6,7 +6,8 @@ import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
-import { loadFarm, loadProjects, type Farm } from "./data";
+import { loadFarm, loadProjects, type Farm, type Gift } from "./data";
+import { randomGiftMessage } from "./gift-messages";
 import { isComplete, remaining } from "./projects";
 import { duration, gridH, negate, offerError, placeError, recipeOf, startError, tileAt, type FarmMove } from "./rules";
 
@@ -157,7 +158,7 @@ export async function giveGift(roomId: string, receiver: string) {
   const c = await getRoomContext(roomId);
   if (!c) throw new Error("Non autorisé");
   if (receiver === c.user.id || !c.names[receiver]) return "Impossible.";
-  const { error } = await adminDb().rpc("farm_gift", { r: roomId, g: c.user.id, rcv: receiver, it: "flower" });
+  const { error } = await adminDb().rpc("farm_gift", { r: roomId, g: c.user.id, rcv: receiver, it: "flower", msg: randomGiftMessage() });
   if (error) return error.code === "23505" ? "Déjà offert aujourd'hui." : "Récolte une fleur d'abord.";
   after(() => notify([receiver], "farm", {
     title: "Un cadeau t'attend",
@@ -169,10 +170,10 @@ export async function giveGift(roomId: string, receiver: string) {
   return "";
 }
 
-/** Ouvrir un cadeau reçu : la fleur rejoint la réserve. Renvoie la serre à jour et qui l'a offert. */
+/** Ouvrir un cadeau reçu : la fleur rejoint la collection. Renvoie la serre à jour et le cadeau (qui, quel mot). */
 export async function openGift(roomId: string, giftId: number) {
   const uid = await member(roomId);
   const { data } = await adminDb().rpc("farm_open_gift", { gid: giftId, rcv: uid });
-  const g = (data as { giver: string; item: string }[] | null)?.[0] ?? null;
+  const g = (data as Gift[] | null)?.[0] ?? null;
   return { farm: await loadFarm(roomId, uid), gift: g };
 }
