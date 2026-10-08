@@ -59,6 +59,14 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Comme une app : pas de barre de défilement visible (on fait toujours défiler au doigt). */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
