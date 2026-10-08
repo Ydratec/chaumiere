@@ -5,8 +5,8 @@ import type { Chapter, Goal, Quest } from "./types.ts";
 
 const DAY_MS = 86_400_000;
 
-/** Jour du chapitre (1 le jour où il commence). */
-export const chapterDay = (startedAt: string | number, now: number) => Math.max(1, Math.floor((now - new Date(startedAt).getTime()) / DAY_MS) + 1);
+/** Jour du chapitre (1 le jour où il commence ; 0 ou moins avant, l'histoire n'a pas commencé). */
+export const chapterDay = (startedAt: string | number, now: number) => Math.floor((now - new Date(startedAt).getTime()) / DAY_MS) + 1;
 
 /** Acte le plus avancé déjà sorti ce jour-là. */
 export const openAct = (c: Chapter, day: number) => c.acts.reduce((a, x) => (x.day <= day ? x.n : a), 0);

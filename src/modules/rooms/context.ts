@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { db } from "@/src/lib/db/server";
 import { readCharacter, type Character } from "@/src/modules/characters/catalog";
+import { chapterDay } from "@/src/modules/farm/story/state";
 
 export type Member = { user_id: string; username: string; role: "admin" | "member"; avatar_url: string | null; character: Character };
 /** Ce qu'il faut pour afficher quelqu'un : pseudo, photo, personnage. */
@@ -27,10 +28,10 @@ export const getRoomContext = cache(async (roomId: string) => {
   // Une seule requête : tous les membres (la RLS ne renvoie rien si on n'est pas membre) + la salle.
   const { data } = await sb
     .from("room_members")
-    .select("user_id, username, role, avatar_url, character, rooms(name, avatar_url, vote_locked, question_hour)")
+    .select("user_id, username, role, avatar_url, character, rooms(name, avatar_url, vote_locked, question_hour, chapter, chapter_started_at)")
     .eq("room_id", roomId)
     .order("username")
-    .returns<(Omit<Member, "character"> & { character: unknown; rooms: { name: string; avatar_url: string | null; vote_locked: boolean; question_hour: number } })[]>();
+    .returns<(Omit<Member, "character"> & { character: unknown; rooms: { name: string; avatar_url: string | null; vote_locked: boolean; question_hour: number; chapter: number; chapter_started_at: string } })[]>();
   const me = data?.find((m) => m.user_id === user.id);
   if (!me) return null;
 
@@ -49,6 +50,8 @@ export const getRoomContext = cache(async (roomId: string) => {
     roomAvatar: me.rooms?.avatar_url ?? null,
     voteLocked: !!me.rooms?.vote_locked,
     questionHour: me.rooms?.question_hour ?? 0,
+    chapter: me.rooms?.chapter ?? 1,
+    storyDay: me.rooms ? chapterDay(me.rooms.chapter_started_at, Date.now()) : 1, // 0 ou moins : l'histoire de la serre n'a pas commencé
     isAdmin: me.role === "admin",
     members,
     names,

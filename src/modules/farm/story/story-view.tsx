@@ -46,8 +46,8 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
 
       <header className="space-y-1">
         <p className="eyebrow">Chapitre {chapter.n} · {chapter.title}</p>
-        <h2 className="text-2xl font-bold tracking-tight">{chapter.actTitle || "Prologue"}</h2>
-        <p className="text-sm text-zinc-500">Jour {chapter.day} · {chapter.done} / {chapter.total} quêtes</p>
+        <h2 className="text-2xl font-bold tracking-tight">{chapter.day < 1 ? "Bientôt…" : chapter.actTitle}</h2>
+        {chapter.day >= 1 && <p className="text-sm text-zinc-500">Jour {chapter.day} · {chapter.done} / {chapter.total} quêtes</p>}
       </header>
 
       {story.events.map((e) => (
@@ -117,6 +117,7 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
         </section>
       )}
 
+      {story.orders.length > 0 && (
       <section className="space-y-3">
         <h3 className="eyebrow">Commandes du village · aujourd&apos;hui</h3>
         <div className="space-y-2">
@@ -141,6 +142,7 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
           })}
         </div>
       </section>
+      )}
 
       {msg && <p role="status" className="rounded-2xl bg-indigo-50 px-4 py-3 text-sm text-indigo-800">{msg}</p>}
 

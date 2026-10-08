@@ -4,6 +4,8 @@
 alter table rooms
   add column chapter int not null default 1,
   add column chapter_started_at timestamptz not null default now();
+-- Les salles existantes : l'histoire commence demain à minuit (heure de Paris). D'ici là, la serre garde ses règles actuelles.
+update rooms set chapter_started_at = (date_trunc('day', now() at time zone 'Europe/Paris') + interval '1 day') at time zone 'Europe/Paris';
 
 -- Quêtes terminées (par chapitre). « legacy » : les joueurs qui avaient déjà une serre gardent leurs bâtiments.
 create table farm_quest_done (

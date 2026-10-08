@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { SwipeNav } from "@/src/components/swipe-nav";
 import { TabBar } from "@/src/components/tab-bar";
+import { chapterOf } from "@/src/modules/farm/story";
+import { StoryTeaser } from "@/src/modules/farm/story/teaser";
 import { getMyRooms, getRoomContext } from "@/src/modules/rooms/context";
 import { RoomSwitcher } from "@/src/modules/rooms/room-switcher";
 
@@ -24,6 +26,7 @@ export default async function RoomLayout({
         </div>
       </header>
       <main className="mx-auto max-w-md space-y-8 px-4 py-4">{children}</main>
+      {chapterOf(ctx.chapter) && <StoryTeaser roomId={roomId} chapter={ctx.chapter} phase={ctx.storyDay < 1 ? "soon" : "live"} />}
       <TabBar roomId={roomId} isAdmin={ctx.isAdmin} />
       <SwipeNav roomId={roomId} isAdmin={ctx.isAdmin} />
     </div>

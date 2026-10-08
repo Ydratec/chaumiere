@@ -81,6 +81,7 @@ export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   const unlocks = [
     ...roomUnlocks,
     ...(ch ? personalUnlocks(ch, story.done) : []),
+    ...(story.day < 1 ? ["b:coop", "b:oven", "cap:planter:99", "cap:pot:99"] : []), // l'histoire n'a pas commencé : règles d'avant
     ...eventKeys(story.day),
     ...(story.catch.speed < 1 ? [`speed:${story.catch.speed.toFixed(3)}`] : []),
   ];

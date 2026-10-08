@@ -96,8 +96,13 @@ export function Chat({
 
   // Suivre la conversation seulement si on est déjà en bas de la page (ou si c'est notre message) :
   // pas de saut quand on lit la question en haut.
+  // À l'arrivée sur la page on ne défile pas (on lit d'abord la question) : seulement quand quelque chose change.
   const lastMine = messages.at(-1)?.user_id === userId;
+  const shown = useRef({ n: messages.length, t: typing.length });
   useEffect(() => {
+    const changed = messages.length !== shown.current.n || typing.length !== shown.current.t;
+    shown.current = { n: messages.length, t: typing.length };
+    if (!changed) return;
     const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200;
     if (atBottom || lastMine) bottom.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [messages.length, typing.length, lastMine]);

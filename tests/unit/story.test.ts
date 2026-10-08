@@ -51,6 +51,9 @@ test("histoire : on peut toujours finir la quête suivante avec ce que les préc
 test("calendrier : jour du chapitre, actes qui sortent, quête en cours, prochain épisode", () => {
   const start = Date.parse("2026-01-01T10:00:00Z");
   const day = (n: number) => chapterDay(new Date(start).toISOString(), start + (n - 1) * 86_400_000 + 3_600_000);
+  assert.equal(chapterDay(new Date(start + 86_400_000).toISOString(), start), 0, "avant le début : jour 0");
+  assert.equal(currentQuest(ch1, [], 0), null);
+  assert.equal(nextAct(ch1, 0)?.n, 1, "on annonce le premier épisode");
   assert.equal(day(1), 1);
   assert.equal(day(8), 8);
   assert.equal(openAct(ch1, 1), 1);

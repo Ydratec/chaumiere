@@ -36,7 +36,7 @@ export async function loadStory(roomId: string, uid: string, farm: Farm): Promis
     admin.from("farm_orders").select("id, npc, wants, reward, done, slot").eq("room_id", roomId).eq("user_id", uid).eq("day", today).order("slot"),
   ]);
   let orders = existing ?? [];
-  if (!orders.length) {
+  if (!orders.length && farm.story.day >= 1) {
     const rows = dailyOrders(uid, today, producible(farm.unlocks)).map((o) => ({ room_id: roomId, user_id: uid, day: today, ...o }));
     await admin.from("farm_orders").upsert(rows, { onConflict: "room_id,user_id,day,slot", ignoreDuplicates: true });
     orders = (await admin.from("farm_orders").select("id, npc, wants, reward, done, slot").eq("room_id", roomId).eq("user_id", uid).eq("day", today).order("slot")).data ?? [];
@@ -52,7 +52,7 @@ export async function loadStory(roomId: string, uid: string, farm: Farm): Promis
   return {
     chapter: { n: ch.n, title: ch.title, actTitle: act?.title ?? "", day, total: ch.quests.length, done: questsDone(done).length },
     quest: q ? { ...q, progress: goalProgress(q.goal, farm.items, farm.tiles, counters, cu.cost) } : null,
-    next: nx ? { title: nx.title, inDays: nx.day - day, teaser: ch.acts.find((a) => a.n === nx.n - 1)?.teaser ?? "" } : null,
+    next: nx ? { title: nx.title, inDays: nx.day - day, teaser: (nx.n === 1 ? nx : ch.acts.find((a) => a.n === nx.n - 1))?.teaser ?? "" } : null,
     finished: ch.quests.every((x) => done.includes(x.id)),
     orders: orders.map((o) => ({ id: o.id as number, npc: o.npc as Who, wants: o.wants as Inventory, reward: o.reward as number, done: o.done as boolean })),
     events: activeEvents(day).map((e) => ({ id: e.id, title: e.title, text: e.text, scene: e.scene && !seen.has(`event:${e.id}`) ? e.scene.lines : null })),

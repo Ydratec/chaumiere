@@ -78,9 +78,11 @@ async function storyNews() {
     if (!act && !events.length) continue;
     const { data: members } = await admin.from("room_members").select("user_id").eq("room_id", r.id);
     const everyone = (members ?? []).map((m) => m.user_id as string);
-    if (act && act.n > 1) {
+    if (act) {
       const to = await throttle(everyone, `act:${r.chapter}:${act.n}:${r.id}`);
-      await notify(to, "farm", { title: `Épisode ${act.n} · ${act.title}`, body: "Un courrier de Mirabelle est arrivé à la serre…", url: `/r/${r.id}/farm`, tag: `act-${r.id}` });
+      await notify(to, "farm", act.n === 1
+        ? { title: ch.title, body: "L'histoire commence : un courrier de Mirabelle vous attend à la serre…", url: `/r/${r.id}/farm`, tag: `act-${r.id}` }
+        : { title: `Épisode ${act.n} · ${act.title}`, body: "Un courrier de Mirabelle est arrivé à la serre…", url: `/r/${r.id}/farm`, tag: `act-${r.id}` });
       sent += to.length;
     }
     for (const e of events) {
