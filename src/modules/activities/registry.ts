@@ -9,7 +9,7 @@ export type Activity = {
   day?: string;
   slot?: number; // 0 = question du jour, 1, 2… = questions achetées
   bought_by?: string | null;
-  payload: { text: string; kind?: "open" | "vote"; theme?: string | null };
+  payload: { text: string; kind?: "open" | "vote"; theme?: string | null; n?: number };
 };
 export type Answer = { user_id: string; content: string };
 export type ActivityProps = {

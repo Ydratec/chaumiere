@@ -19,7 +19,7 @@ export async function buyQuestion(roomId: string, theme: string | null): Promise
   after(async () =>
     notify(await roomMembers(roomId, c.user.id), "question", {
       title: theme ? `${who} a ouvert le pack « ${THEMES[theme]} »` : `${who} a ajouté une question`,
-      body: theme ? `${PACK_SIZE} nouvelles questions, dont : ${data.payload.text}` : data.payload.text,
+      body: theme ? `Une question par jour pendant ${PACK_SIZE} jours. Aujourd'hui : ${data.payload.text}` : data.payload.text,
       url: `/r/${roomId}/question?a=${data.id}`,
     }),
   );

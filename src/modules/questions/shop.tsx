@@ -40,7 +40,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
         <span className="text-sm font-semibold">{coin(coins)}</span>
       </div>
       {chip("extra", "Question en plus")}
-      <p className="eyebrow pt-1">Packs à thème · {PACK_SIZE} questions</p>
+      <p className="eyebrow pt-1">Packs à thème · 1 question par jour pendant {PACK_SIZE} jours</p>
       <div className="grid grid-cols-2 gap-2">{(Object.entries(THEMES) as [Theme, string][]).map(([t, name]) => chip(t, name))}</div>
       {picked && (
         <button onClick={buy} disabled={pending || cost(picked) > coins} className="btn w-full">
@@ -48,7 +48,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
         </button>
       )}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-      <p className="text-xs text-zinc-500">Elles s&apos;ajoutent à la question du jour pour toute la salle. Le prix double à chaque achat, puis redescend un peu chaque jour.</p>
+      <p className="text-xs text-zinc-500">Elles s&apos;ajoutent à la question du jour, pour toute la salle. Le prix double à chaque achat, puis redescend un peu chaque jour.</p>
     </section>
   );
 }

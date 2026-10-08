@@ -1,6 +1,7 @@
 -- Questions achetées avec les pièces de la serre : elles s'ajoutent à la question du jour (même journée, leur propre discussion).
 -- Prix par salle : 1 000 pièces, il double à chaque achat (« chaleur » +1) puis redescend un peu chaque jour (chaleur -0,35/jour).
--- Un pack à thème ajoute d'un coup 3 questions d'un pack « theme:… » (jamais tirées pour la question du jour) et coûte 5 fois le prix.
+-- Un pack à thème (5 fois le prix) : 7 questions d'un pack « theme:… » (jamais tirées pour la question du jour),
+-- une par jour pendant une semaine, chacune remplacée par la suivante au changement de jour comme la question du jour.
 
 alter table rooms
   add column question_heat real not null default 0,
@@ -45,8 +46,8 @@ $$
   from rooms where id = r
 $$;
 
--- Achat (tout ou rien) : paie, tire des questions pas encore posées si possible (1, ou 3 pour un pack à thème),
--- les ajoute à la journée, fait monter le prix. Renvoie la première.
+-- Achat (tout ou rien) : paie, tire des questions pas encore posées si possible (1 pour aujourd'hui, ou 7 pour un pack :
+-- aujourd'hui et les 6 jours suivants, créées d'avance), fait monter le prix. Renvoie celle d'aujourd'hui.
 create function buy_question(r uuid, u uuid, theme text) returns daily_activities
   language plpgsql as
 $$
@@ -72,11 +73,11 @@ begin
       then x.pack = 'base' or exists (select 1 from room_unlocks k where k.room_id = r and k.key = 'pack:' || x.pack)
       else x.pack = 'theme:' || theme end
     order by exists (select 1 from daily_activities y where y.room_id = r and (y.payload->>'qid')::int = x.id), random()
-    limit case when theme is null then 1 else 3 end
+    limit case when theme is null then 1 else 7 end
   loop
     insert into daily_activities (room_id, day, slot, bought_by, payload)
-    values (r, d, coalesce((select max(slot) from daily_activities where room_id = r and day = d and type = 'question'), 0) + 1, u,
-            jsonb_build_object('qid', q.id, 'text', q.text, 'kind', q.kind, 'theme', theme, 'price', price))
+    values (r, d + n, coalesce((select max(slot) from daily_activities where room_id = r and day = d + n and type = 'question'), 0) + 1, u,
+            jsonb_build_object('qid', q.id, 'text', q.text, 'kind', q.kind, 'theme', theme, 'price', price, 'n', n + 1))
     returning * into a;
     if n = 0 then first := a; end if;
     n := n + 1;
