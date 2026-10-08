@@ -5,9 +5,10 @@ import { answer } from "@/app/actions";
 import { Avatar } from "@/src/components/avatar";
 import type { ActivityProps } from "../activities/registry";
 import { tally } from "./tally";
+import { questionLabel } from "./themes";
 
 /** Question de vote : on choisit un membre ; ensuite, histogramme des voix avec les bulles des votants. */
-export function VoteActivity({ activity, userId, people, answers: saved, voteLocked }: ActivityProps) {
+export function VoteActivity({ activity, userId, names, people, answers: saved, voteLocked }: ActivityProps) {
   // Le vote s'affiche tout de suite ; le serveur confirme ensuite (et corrige si besoin).
   const [answers, vote] = useOptimistic(saved, (all, target: string) => [
     ...all.filter((a) => a.user_id !== userId),
@@ -58,7 +59,7 @@ export function VoteActivity({ activity, userId, people, answers: saved, voteLoc
   return (
     <>
       <section className="pt-2">
-        <p className="eyebrow">Question du jour · vote</p>
+        <p className="eyebrow">{questionLabel(activity, names)} · vote</p>
         <h2 className="mt-2 text-[1.7rem] font-bold leading-tight tracking-tight">{activity.payload.text}</h2>
       </section>
 

@@ -74,7 +74,7 @@ export async function newQuestion(roomId: string, kind: "open" | "vote") {
   const { data: qs } = await admin.from("questions").select("id, text, kind").eq("kind", kind);
   if (!qs?.length) return kind === "vote" ? "Aucune question de vote : lance la migration 0013." : "Aucune question.";
   const q = qs[Math.floor(Math.random() * qs.length)];
-  await admin.from("daily_activities").delete().eq("room_id", roomId).eq("day", day).eq("type", "question");
+  await admin.from("daily_activities").delete().eq("room_id", roomId).eq("day", day).eq("type", "question").eq("slot", 0);
   const { error } = await admin.from("daily_activities").insert({ room_id: roomId, day, type: "question", payload: { qid: q.id, text: q.text, kind: q.kind } });
   return done(roomId, error ? error.message : `Nouvelle question : « ${q.text} »`);
 }

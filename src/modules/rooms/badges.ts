@@ -2,11 +2,12 @@
 
 import type { Activity } from "@/src/modules/activities/registry";
 import { readyCount } from "@/src/modules/farm/data";
+import { todayExtras } from "@/src/modules/questions/extras";
 import { getRoomContext } from "./context";
 
 export type Badges = {
   activityId: string | null;
-  answered: boolean;
+  answered: boolean; // à la question du jour et à toutes les questions achetées du jour
   lastMessage: { id: number; mine: boolean } | null; // comparé côté appareil au dernier message lu
   games: number; // défis reçus + parties où c'est mon tour
   farm: number; // récoltes prêtes + cadeaux à ouvrir
@@ -18,8 +19,9 @@ export async function getBadges(roomId: string): Promise<Badges | null> {
   if (!c) return null;
   const me = c.user.id;
   const { data: activity } = await c.sb.rpc("today_activity", { r: roomId }).single<Activity>();
+  const extras = await todayExtras(c.sb, activity);
   const [answer, last, games, farm, gifts] = await Promise.all([
-    activity ? c.sb.from("answers").select("user_id").eq("activity_id", activity.id).eq("user_id", me).maybeSingle() : null,
+    activity ? c.sb.from("answers").select("activity_id").in("activity_id", [activity, ...extras].map((x) => x!.id)).eq("user_id", me) : null,
     activity ? c.sb.from("messages").select("id, user_id").eq("activity_id", activity.id).order("id", { ascending: false }).limit(1).maybeSingle() : null,
     c.sb.from("games").select("creator, target, opponent, status, state").eq("room_id", roomId).in("status", ["open", "playing"]),
     readyCount(roomId, me),
@@ -32,7 +34,7 @@ export async function getBadges(roomId: string): Promise<Badges | null> {
   ).length;
   return {
     activityId: activity?.id ?? null,
-    answered: !!answer?.data,
+    answered: (answer?.data?.length ?? 0) === extras.length + 1,
     lastMessage: last?.data ? { id: last.data.id, mine: last.data.user_id === me } : null,
     games: todo,
     farm: farm + (gifts.count ?? 0),

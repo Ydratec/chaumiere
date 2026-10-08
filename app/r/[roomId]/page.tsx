@@ -6,7 +6,11 @@ import { Icon } from "@/src/components/icons";
 import type { Activity } from "@/src/modules/activities/registry";
 import { ItemIcon } from "@/src/modules/farm/art";
 import { readyCount } from "@/src/modules/farm/data";
+import { adminDb } from "@/src/lib/db/server";
 import { GamesLive } from "@/src/modules/games/live";
+import { questionPrice, todayExtras } from "@/src/modules/questions/extras";
+import { QuestionShop } from "@/src/modules/questions/shop";
+import { questionLabel } from "@/src/modules/questions/themes";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 export default async function RoomHome({ params }: { params: Promise<{ roomId: string }> }) {
@@ -19,7 +23,12 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     .from("games").select("id", { count: "exact", head: true })
     .eq("room_id", roomId).eq("status", "open").neq("creator", ctx.user.id)
     .or(`target.is.null,target.eq.${ctx.user.id}`);
-  const ready = await readyCount(roomId, ctx.user.id);
+  const [ready, extras, price, { data: wallet }] = await Promise.all([
+    readyCount(roomId, ctx.user.id),
+    todayExtras(ctx.sb, activity),
+    questionPrice(roomId),
+    adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("item", "coins").maybeSingle(),
+  ]);
 
   return (
     <>
@@ -32,6 +41,17 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
         <h2 className="mt-3 pb-2 pr-14 text-2xl font-bold leading-snug tracking-tight">{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
         <span className="absolute -right-3 -top-2 opacity-90"><Cat coat={4} mood="wow" size={76} /></span>
       </Link>
+
+      {extras.length > 0 && (
+        <div className="space-y-2">
+          {extras.map((x) => (
+            <Link key={x.id} href={`/r/${roomId}/question?a=${x.id}`} className="block rounded-[1.25rem] bg-white p-4 shadow-sm transition active:scale-[0.98]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-600">{questionLabel(x, ctx.names)}</p>
+              <p className="mt-1 font-semibold leading-snug">{x.payload.text}</p>
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-4">
         <Link href={`/r/${roomId}/games`} className="group flex items-center gap-4">
@@ -53,6 +73,8 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
           <span className="text-zinc-400 transition group-hover:translate-x-0.5"><Icon name="arrow" size={18} /></span>
         </Link>
       </div>
+
+      <QuestionShop roomId={roomId} price={price} coins={wallet?.qty ?? 0} />
 
       <section>
         <h2 className="eyebrow mb-3">Membres · {ctx.members.length}</h2>

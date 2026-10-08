@@ -1,5 +1,6 @@
 import type { ActivityProps } from "../activities/registry";
 import { AnswerForm } from "./answer-form";
+import { questionLabel } from "./themes";
 import { VoteActivity } from "./vote";
 
 export function QuestionActivity(props: ActivityProps) {
@@ -10,7 +11,7 @@ export function QuestionActivity(props: ActivityProps) {
   return (
     <>
       <section className="pt-2">
-        <p className="eyebrow">Question du jour</p>
+        <p className="eyebrow">{questionLabel(activity, names)}</p>
         <h2 className="mt-2 text-[1.7rem] font-bold leading-tight tracking-tight">{activity.payload.text}</h2>
       </section>
 
