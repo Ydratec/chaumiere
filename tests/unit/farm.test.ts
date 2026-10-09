@@ -137,3 +137,20 @@ test("coup appliqué tout de suite : planter, récolter, vendre, construire, dé
   f = ok(applyMove(f, { kind: "clear", x: 6, y: 6 }, 0));
   assert.equal(f.tiles.length, 1);
 });
+
+test("serres aux règles : on retire d'abord les objets au repos, puis les récoltes prêtes, puis les moins avancés", async () => {
+  const { excessTiles } = await import("../../src/modules/farm/rules.ts");
+  const now = Date.parse("2026-01-01T12:00:00Z");
+  const t = (x: number, y: number, ready: string | null = null): Tile => ({ x, y, kind: "pot", item: ready ? "flower" : null, started_at: null, ready_at: ready });
+  const pret = "2026-01-01T11:00:00Z", tot = "2026-01-01T12:04:00Z", tard = "2026-01-01T12:30:00Z";
+  // plafond de départ : 3 pots. 5 pots → 2 en trop, les deux au repos, les plus bas d'abord
+  const repos = [t(0, 0), t(1, 0), t(2, 0, pret), t(3, 5), t(4, 5)];
+  assert.deepEqual(excessTiles(repos, [], now).map((x) => [x.x, x.y]), [[4, 5], [3, 5]]);
+  assert.deepEqual(excessTiles(repos, ["cap:pot:5"], now), []);
+  // tous occupés : la récolte prête part avant, puis celui qui a le moins avancé (prêt le plus tard)
+  const occupes = [t(0, 0, tot), t(1, 0, tard), t(2, 0, pret), t(3, 0, tot)];
+  assert.deepEqual(excessTiles(occupes, [], now).map((x) => x.x), [2]);
+  const cinq = [...occupes, t(4, 0, tard)];
+  assert.deepEqual(excessTiles(cinq, [], now).map((x) => x.x), [2, 1]); // le prêt, puis un des deux « prêts le plus tard »
+  assert.deepEqual(excessTiles([], [], now), []);
+});

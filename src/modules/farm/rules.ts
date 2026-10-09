@@ -86,6 +86,24 @@ export function placeError(tiles: Tile[], inv: Inventory, kind: BuildingId, x: n
   return null;
 }
 
+/**
+ * Objets en trop par rapport aux plafonds (maxOf) : à retirer pour que la serre respecte les règles.
+ * On retire d'abord ceux qui sont au repos (les plus bas et à droite), puis ceux dont la récolte est prête
+ * (on la leur donne), enfin les moins avancés (on rend les ingrédients).
+ */
+export function excessTiles(tiles: Tile[], unlocks: string[] = [], now = 0): Tile[] {
+  const out: Tile[] = [];
+  const rank = (t: Tile) => (!t.item ? 0 : isReady(t, now) ? 1 : 2);
+  for (const kind of Object.keys(BUILDINGS) as BuildingId[]) {
+    const max = maxOf(kind, unlocks);
+    const mine = tiles.filter((t) => t.kind === kind);
+    if (max === undefined || mine.length <= max) continue;
+    const order = [...mine].sort((a, b) => rank(a) - rank(b) || (rank(a) === 2 ? Date.parse(b.ready_at ?? "") - Date.parse(a.ready_at ?? "") : b.y - a.y || b.x - a.x));
+    out.push(...order.slice(0, mine.length - max));
+  }
+  return out;
+}
+
 /** Pourquoi on ne peut pas lancer cette recette sur cet objet (null = possible). */
 export function startError(tile: Tile | undefined, inv: Inventory, recipe: string) {
   if (!tile) return "Rien à cet endroit.";

@@ -7,6 +7,7 @@ import { ITEMS, isItem } from "@/src/modules/farm/catalog";
 import { PROJECTS } from "@/src/modules/farm/projects";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { questionDay } from "@/src/modules/questions/day";
+import { enforceRules } from "@/src/modules/farm/enforce";
 import { isSuperAdmin } from "./guard";
 
 /** Outils de test : réservés aux super-admins (SUPERADMINS), vérifiés à chaque appel. */
@@ -95,4 +96,14 @@ export async function resetStory(roomId: string) {
     ["farm_quest_done", "farm_stats", "farm_orders", "farm_journal", "farm_secrets"].map((t) => admin.from(t).delete().eq("room_id", roomId).eq("user_id", uid)),
   );
   return done(roomId, "Ton histoire repart du début.");
+}
+
+/** Remet toutes les serres aux règles : retire les objets en trop (au repos) et rembourse leur prix. `apply` faux : compte seulement. */
+export async function trimFarms(roomId: string, apply: boolean) {
+  await guard(roomId);
+  const report = await enforceRules(apply);
+  const count = report.reduce((n, r) => n + Object.values(r.removed).reduce((a, b) => a + b, 0), 0);
+  const coins = report.reduce((n, r) => n + r.refund, 0);
+  const detail = report.map((r) => Object.entries(r.removed).map(([k, v]) => `${v} ${k}`).join(", ")).join(" · ");
+  return done(roomId, count ? `${apply ? "Retiré" : "À retirer"} : ${count} objet(s) dans ${report.length} serre(s), ${coins} pièces ${apply ? "remboursées" : "à rembourser"} (récoltes prêtes données, ingrédients rendus). ${detail}` : "Toutes les serres respectent déjà les règles.");
 }

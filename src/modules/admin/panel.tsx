@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ITEMS, type ItemId } from "@/src/modules/farm/catalog";
-import { advanceStory, finishTimers, giveItems, newQuestion, resetFarm, resetStory, resetUnlocks, unlockAll, unlockSkins } from "./actions";
+import { advanceStory, finishTimers, trimFarms, giveItems, newQuestion, resetFarm, resetStory, resetUnlocks, unlockAll, unlockSkins } from "./actions";
 
 export function AdminPanel({ roomId }: { roomId: string }) {
   const [msg, setMsg] = useState("");
@@ -29,6 +29,12 @@ export function AdminPanel({ roomId }: { roomId: string }) {
         <h2 className="eyebrow">Histoire</h2>
         <button disabled={pending} className={btn} onClick={() => run(() => advanceStory(roomId), "Faire sortir l'acte suivant (+7 jours) ?")}>Avancer le calendrier d&apos;une semaine</button>
         <button disabled={pending} className={btn} onClick={() => run(() => resetStory(roomId), "Recommencer ton histoire (quêtes, commandes, journal, secrets) ?")}>Recommencer mon histoire</button>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="eyebrow">Règles des serres</h2>
+        <button disabled={pending} className={btn} onClick={() => run(() => trimFarms(roomId, false))}>Compter les objets en trop (sans rien changer)</button>
+        <button disabled={pending} className={btn} onClick={() => run(() => trimFarms(roomId, true), "Retirer les objets en trop dans TOUTES les serres (remboursés au prix de construction) ?")}>Appliquer les règles à toutes les serres</button>
       </section>
 
       <section className="space-y-2">
