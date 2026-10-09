@@ -1,7 +1,7 @@
 // Lancer : node --test 'tests/unit/*.test.ts'
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EDGES, H, PIECES, W, buildGrid, centerAt, generate, mix, pieceCells, pieceSize, placementError, play, rotateInPlace, start, trace, wave, type Grid } from "../../src/modules/games/orapa.ts";
+import { gridProblems, EDGES, H, PIECES, W, buildGrid, centerAt, generate, mix, pieceCells, pieceSize, placementError, play, rotateInPlace, start, trace, wave, type Grid } from "../../src/modules/games/orapa.ts";
 
 const empty = (): Grid => Array(W * H).fill(null);
 const at = (x: number, y: number) => y * W + x;
@@ -76,6 +76,34 @@ test("grille composée : valide, ou refusée si hors grille, chevauchement ou co
   assert.equal(buildGrid(moved(6, { x: 0, y: 0, rot: 0 })), null); // chevauche le triangle jaune
   assert.equal(buildGrid(moved(6, { x: 2, y: 1, rot: 0 })), null); // touche le triangle jaune par un côté
   assert.equal(buildGrid(PLACEMENTS.slice(1)), null); // une gemme manque
+});
+
+test("contacts : pointe contre pointe ou contre côté droit permis ; deux côtés droits refusés ; bloc noir sans contact", () => {
+  const moved = (k: number, p: object) => PLACEMENTS.map((q, i) => (i === k ? p : q));
+  // le triangle transparent à côté du triangle jaune : sa pointe touche la pointe, puis le côté droit du jaune
+  assert.ok(buildGrid(moved(5, { x: 2, y: 1, rot: 0 })), "pointe contre pointe");
+  assert.ok(buildGrid(moved(5, { x: 1, y: 0, rot: 0 })), "pointe contre côté droit");
+  // jaune (côté droit en bas) au-dessus du carré du parallélogramme (côté droit en haut) : refusé, et on dit où
+  const p = gridProblems([{ x: 0, y: 0, rot: 0 }, { x: 0, y: 2, rot: 0 }]);
+  assert.equal(p.length, 1);
+  assert.deepEqual(p[0].pieces, [0, 1]);
+  assert.deepEqual(p[0].cells.sort((a, b) => a - b), [9, 17]); // (1,1) et (1,2)
+  assert.match(p[0].text, /deux côtés droits/);
+  // bloc noir : même un coin touché est refusé
+  const noir = gridProblems([{ x: 0, y: 0, rot: 0 }, null, null, null, null, null, { x: 2, y: 2, rot: 0 }]); // (1,1) du jaune, (2,2) du noir
+  assert.equal(noir.length, 1);
+  assert.match(noir[0].text, /bloc noir/);
+  // chevauchement et hors plateau
+  assert.match(gridProblems([{ x: 0, y: 0, rot: 0 }, null, null, null, null, null, { x: 0, y: 0, rot: 0 }])[0].text, /chevauchent/);
+  assert.match(gridProblems([null, null, null, null, null, null, { x: 7, y: 9, rot: 0 }])[0].text, /sort du plateau/);
+  assert.deepEqual(gridProblems(PLACEMENTS), []);
+});
+
+test("grilles générées : respectent les mêmes règles", () => {
+  for (let n = 0; n < 50; n++) {
+    const g = generate();
+    assert.equal(g.filter(Boolean).length, 26);
+  }
 });
 
 test("partie : chacun pose sa grille, puis devine celle de l'autre", () => {

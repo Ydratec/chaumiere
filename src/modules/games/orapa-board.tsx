@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { BoardProps } from "./labels";
 import {
-  buildGrid, centerAt, EDGES, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W,
+  centerAt, EDGES, gridProblems, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W, type Problem,
   type Cell, type Color, type Grid, type LogEntry, type OrapaState, type Placement, type Shape,
 } from "./orapa";
 
@@ -109,8 +109,9 @@ type Editor = ReturnType<typeof useDraft>;
 
 type Ghost = { k: number; p: Placement; ok: boolean };
 
-function Plateau({ grid, crosses, ghost, boardRef, onCellDown, onEdge, waves = [], active, faded }: {
+function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, waves = [], active, faded }: {
   grid: Grid;
+  bad?: number[]; // cases en cause quand la grille est refusée
   crosses?: number[];
   ghost?: Ghost | null; // gemme en cours de glisser
   boardRef?: React.Ref<HTMLDivElement>;
@@ -163,7 +164,7 @@ function Plateau({ grid, crosses, ghost, boardRef, onCellDown, onEdge, waves = [
               <div
                 key={`c${x}-${y}`}
                 onPointerDown={onCellDown ? (e) => onCellDown(x, y, e) : undefined}
-                className="relative aspect-square bg-slate-700/80 shadow-[inset_0_0_0_0.5px_#475569]"
+                className={`relative aspect-square shadow-[inset_0_0_0_0.5px_#475569] ${bad?.includes(i) ? "bg-red-500/50 ring-2 ring-inset ring-red-400" : "bg-slate-700/80"}`}
               >
                 <Gem cell={grid[i]} />
                 {!grid[i] && crosses?.includes(i) && (
@@ -315,7 +316,7 @@ const Rules = () => (
   <details className="text-sm">
     <summary className="cursor-pointer font-medium text-zinc-600">Règles</summary>
     <p className="mt-2 leading-6 text-zinc-600">
-      Chacun cache ses 7 gemmes (elles ne se touchent pas par un côté). Ensuite, à ton tour, touche un repère du bord pour
+      Chacun cache ses 7 gemmes (une pointe peut toucher une pointe ou un côté droit, mais deux côtés droits ne se touchent pas, et le bloc noir ne touche aucune gemme). Ensuite, à ton tour, touche un repère du bord pour
       envoyer une onde dans la grille adverse : elle avance tout droit, fait demi-tour sur un côté droit, tourne d&apos;un
       quart sur une diagonale, prend la couleur des gemmes touchées (les couleurs se mélangent) et ressort. La gemme
       transparente dévie sans colorer, le bloc noir absorbe. Vérifie ta déduction quand tu veux : ça ne fait pas passer le
@@ -341,7 +342,8 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
   const guess = useDraft(`orapa:${gameId}:guess`);
   const [tab, setTab] = useState(0);
   const [sel, setSel] = useState<number | null>(null);
-  const [error, setError] = useState("");
+  const [problems, setProblems] = useState<{ at: string; found: Problem[] } | null>(null);
+  const shown = problems && problems.at === JSON.stringify(setup.placed) ? problems : null; // s'efface dès qu'on touche à la grille
 
   if (!s.ready || s.players.length !== 2) return <p className="text-center text-sm text-zinc-500">Partie d&apos;une ancienne version : abandonne-la et relance un défi.</p>;
 
@@ -368,14 +370,20 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
       );
     async function submit() {
       const placements = setup.placed as Placement[];
-      if (!buildGrid(placements)) return setError("Deux gemmes ne doivent pas se toucher par un côté.");
-      setError("");
+      const found = gridProblems(placements);
+      if (found.length) return setProblems({ at: JSON.stringify(placements), found });
+      setProblems(null);
       await play({ kind: "setup", placements });
     }
     return (
       <div className="space-y-4">
-        <EditableBoard ed={setup} />
-        {error && <p role="alert" className="text-center text-sm text-red-700">{error}</p>}
+        <EditableBoard ed={setup} plateau={{ bad: shown?.found.flatMap((f) => f.cells) }} />
+        {shown && (
+          <div role="alert" className="space-y-1 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p className="font-semibold">Ta grille n&apos;est pas valide : les cases en cause sont en rouge.</p>
+            <ul className="list-disc pl-5">{shown.found.map((f) => <li key={f.text}>{f.text}</li>)}</ul>
+          </div>
+        )}
         <button disabled={setup.left > 0} onClick={submit} className="btn w-full">
           {setup.left ? `Pose encore ${setup.left} gemme${setup.left > 1 ? "s" : ""}` : "Valider ma grille"}
         </button>

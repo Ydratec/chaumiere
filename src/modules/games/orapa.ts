@@ -90,10 +90,12 @@ export function generate(rand = Math.random): Grid {
         const ox = Math.floor(rand() * (W - mw + 1)), oy = Math.floor(rand() * (H - mh + 1));
         const abs = cells.map(([x, y, s]): PieceCell => [x + ox, y + oy, s]);
         const touches = abs.some(([x, y]) =>
-          [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+          [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => {
             const xx = x + dx, yy = y + dy;
-            return xx >= 0 && yy >= 0 && xx < W && yy < H && grid[yy * W + xx];
-          }),
+            const c = xx >= 0 && yy >= 0 && xx < W && yy < H ? grid[yy * W + xx] : null;
+            // contact par un côté, ou par un coin si le bloc noir est concerné : refusé (le reste des coins est permis)
+            return !!c && (!dx || !dy || p.color === "black" || c.c === "black");
+          })),
         );
         if (touches) continue;
         abs.forEach(([x, y, s]) => (grid[y * W + x] = { s, c: p.color }));
@@ -190,29 +192,70 @@ export function placementError(placed: (Placement | null)[], k: number, p: Place
   return null;
 }
 
+export type Problem = { text: string; cells: number[]; pieces: number[] }; // cells : indices y*W+x des cases en cause
+
+const BLACK = PIECES.findIndex((p) => p.color === "black");
+const SIDE_AFTER: [number, number, Side, Side][] = [[1, 0, "E", "W"], [0, 1, "S", "N"]]; // voisin à droite, voisin en dessous
+
 /**
- * Grille formée des 5 gemmes (dans l'ordre de PIECES), ou null si une gemme sort de la grille,
- * en chevauche une autre ou la touche par un côté.
+ * Ce qui ne va pas dans une disposition de gemmes (`placed[i]` : gemme i, ou null si pas posée) ; vide = grille valide.
+ * Règles : dans le plateau, pas de chevauchement, deux côtés droits ne se touchent pas (une pointe peut toucher une pointe
+ * ou un côté droit), et le bloc noir ne touche aucune gemme, pas même par un coin.
  */
-export function buildGrid(placements: unknown): Grid | null {
-  if (!Array.isArray(placements) || placements.length !== PIECES.length) return null;
-  const grid: Grid = Array(W * H).fill(null);
+export function gridProblems(placed: (Placement | null)[]): Problem[] {
+  const found = new Map<string, Problem>();
+  const add = (key: string, text: string, cells: number[], pieces: number[]) => {
+    const f = found.get(key) ?? { text, cells: [], pieces };
+    f.cells.push(...cells);
+    found.set(key, f);
+  };
+  const name = (k: number) => `« ${PIECES[k].name} »`;
   const owner: number[] = Array(W * H).fill(-1);
-  for (const [k, p] of placements.entries()) {
-    const { x, y, rot } = (p ?? {}) as Partial<Placement>;
-    if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(rot)) return null;
-    for (const [cx, cy, sh] of pieceCells(k, rot!, x!, y!)) {
-      if (cx < 0 || cy < 0 || cx >= W || cy >= H || owner[cy * W + cx] >= 0) return null;
-      owner[cy * W + cx] = k;
-      grid[cy * W + cx] = { s: sh, c: PIECES[k].color };
+  const shape: Shape[] = Array(W * H).fill("sq");
+
+  placed.forEach((p, k) => {
+    if (!p) return;
+    for (const [x, y, s] of pieceCells(k, p.rot, p.x, p.y)) {
+      if (x < 0 || y < 0 || x >= W || y >= H) { add(`out${k}`, `${name(k)} sort du plateau.`, [], [k]); continue; }
+      const i = y * W + x;
+      if (owner[i] >= 0) add(`over${owner[i]}-${k}`, `${name(owner[i])} et ${name(k)} se chevauchent.`, [i], [owner[i], k]);
+      else { owner[i] = k; shape[i] = s; }
     }
-  }
+  });
+
   for (let i = 0; i < W * H; i++) {
     const o = owner[i];
     if (o < 0) continue;
-    const right = i % W < W - 1 ? owner[i + 1] : -1, below = i + W < W * H ? owner[i + W] : -1;
-    if ((right >= 0 && right !== o) || (below >= 0 && below !== o)) return null;
+    const x = i % W, y = Math.floor(i / W);
+    for (const [dx, dy, mine, theirs] of SIDE_AFTER) {
+      if (x + dx >= W || y + dy >= H) continue;
+      const j = i + dy * W + dx, q = owner[j];
+      if (q >= 0 && q !== o && LEGS[shape[i]].includes(mine) && LEGS[shape[j]].includes(theirs))
+        add(`side${Math.min(o, q)}-${Math.max(o, q)}`, `${name(o)} et ${name(q)} se touchent par deux côtés droits (une pointe peut toucher une pointe ou un côté droit, pas deux côtés droits).`, [i, j], [o, q]);
+    }
+    if (o !== BLACK) continue;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy;
+        const q = xx >= 0 && yy >= 0 && xx < W && yy < H ? owner[yy * W + xx] : -1;
+        if (q >= 0 && q !== BLACK) add(`black${q}`, `Le bloc noir ne doit toucher aucune gemme, pas même par un coin : ${name(q)} est trop près.`, [i, yy * W + xx], [BLACK, q]);
+      }
   }
+  return [...found.values()].map((f) => ({ ...f, cells: [...new Set(f.cells)] }));
+}
+
+/** Grille formée des gemmes (dans l'ordre de PIECES), ou null si la disposition est invalide (voir gridProblems). */
+export function buildGrid(placements: unknown): Grid | null {
+  if (!Array.isArray(placements) || placements.length !== PIECES.length) return null;
+  const placed: Placement[] = [];
+  for (const p of placements) {
+    const { x, y, rot } = (p ?? {}) as Partial<Placement>;
+    if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(rot)) return null;
+    placed.push({ x: x!, y: y!, rot: rot! });
+  }
+  if (gridProblems(placed).length) return null;
+  const grid: Grid = Array(W * H).fill(null);
+  placed.forEach((p, k) => { for (const [x, y, s] of pieceCells(k, p.rot, p.x, p.y)) grid[y * W + x] = { s, c: PIECES[k].color }; });
   return grid;
 }
 
