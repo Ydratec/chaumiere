@@ -14,7 +14,7 @@ function setup() {
 }
 
 /** Envoie à ces personnes (celles qui n'ont pas coupé ce type ; « test » ignore les préférences), sur tous leurs appareils. */
-export async function notify(userIds: string[], kind: Kind | "test", msg: Message) {
+export async function notify(userIds: string[], kind: Kind | "test" | "admin", msg: Message) {
   const ids = [...new Set(userIds)];
   if (!ids.length || !setup()) return;
   const admin = adminDb();

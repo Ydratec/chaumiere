@@ -5,6 +5,7 @@ import { ThemePicker } from "@/src/components/theme-picker";
 import { isSuperAdmin } from "@/src/modules/admin/guard";
 import { loadOwnedSkins } from "@/src/modules/characters/data";
 import { CharacterEditor } from "@/src/modules/characters/editor";
+import { FeedbackForms } from "@/src/modules/feedback/forms";
 import { NotificationSettings } from "@/src/modules/notifications/settings";
 import { adminDb } from "@/src/lib/db/server";
 import { loadUnlocks } from "@/src/modules/farm/data";
@@ -44,6 +45,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ roomId
         <h2 className="eyebrow mb-3">Mon personnage</h2>
         <CharacterEditor roomId={roomId} saved={me.character} owned={owned} unlocks={unlocks} coins={coins} />
       </section>
+
+      <FeedbackForms roomId={roomId} coins={coins} />
 
       <section>
         <h2 className="eyebrow mb-3">Notifications</h2>

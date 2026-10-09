@@ -7,6 +7,9 @@ import type { Activity } from "@/src/modules/activities/registry";
 import { ItemIcon } from "@/src/modules/farm/art";
 import { readyCount } from "@/src/modules/farm/data";
 import { adminDb } from "@/src/lib/db/server";
+import { isSuperAdmin } from "@/src/modules/admin/guard";
+import { loadInbox } from "@/src/modules/feedback/data";
+import { FeedbackInbox } from "@/src/modules/feedback/inbox";
 import { GamesLive } from "@/src/modules/games/live";
 import { questionPrice, todayExtras } from "@/src/modules/questions/extras";
 import { QuestionShop } from "@/src/modules/questions/shop";
@@ -23,6 +26,7 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     .from("games").select("id", { count: "exact", head: true })
     .eq("room_id", roomId).eq("status", "open").neq("creator", ctx.user.id)
     .or(`target.is.null,target.eq.${ctx.user.id}`);
+  const inbox = isSuperAdmin(ctx.user) ? await loadInbox() : [];
   const [ready, extras, price, { data: wallet }] = await Promise.all([
     readyCount(roomId, ctx.user.id),
     todayExtras(ctx.sb, activity),
@@ -33,6 +37,7 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
   return (
     <>
       <GamesLive roomId={roomId} />
+      {inbox.length > 0 && <FeedbackInbox roomId={roomId} items={inbox} />}
       <Link
         href={`/r/${roomId}/question`}
         className="relative block overflow-hidden rounded-[1.75rem] bg-indigo-600 p-6 text-white transition hover:bg-indigo-700"
