@@ -17,9 +17,10 @@ type PieceCell = [x: number, y: number, s: Shape];
 
 const TINTS: Color[] = ["red", "yellow", "blue", "white"]; // les seules qui colorent l'onde
 
-export const PIECES: { name: string; color: Color; cells: PieceCell[] }[] = [
+/** `mirror` : gemme qui n'est pas identique à son image dans un miroir (on peut la poser « retournée »). */
+export const PIECES: { name: string; color: Color; cells: PieceCell[]; mirror?: true }[] = [
   { name: "Triangle jaune", color: "yellow", cells: [[0, 0, "sw"], [0, 1, "sq"], [1, 1, "sw"]] },
-  { name: "Parallélogramme rouge", color: "red", cells: [[0, 0, "se"], [1, 0, "sq"], [2, 0, "nw"]] },
+  { name: "Parallélogramme rouge", color: "red", cells: [[0, 0, "se"], [1, 0, "sq"], [2, 0, "nw"]], mirror: true },
   { name: "Grand triangle bleu", color: "blue", cells: [[1, 0, "se"], [2, 0, "sw"], [0, 1, "se"], [1, 1, "sq"], [2, 1, "sq"], [3, 1, "sw"]] },
   { name: "Grand triangle blanc", color: "white", cells: [[1, 0, "se"], [2, 0, "sw"], [0, 1, "se"], [1, 1, "sq"], [2, 1, "sq"], [3, 1, "sw"]] },
   { name: "Losange blanc", color: "white", cells: [[0, 0, "se"], [1, 0, "sw"], [0, 1, "ne"], [1, 1, "nw"]] },
@@ -63,15 +64,23 @@ const edgeAt = (side: Side, i: number) => EDGES.find((e) => e.side === side && e
 const ROT: Record<Shape, Shape> = { sq: "sq", sw: "nw", nw: "ne", ne: "se", se: "sw" }; // quart de tour horaire
 const LEGS: Record<Shape, Side[]> = { sq: ["N", "S", "W", "E"], sw: ["S", "W"], se: ["S", "E"], nw: ["N", "W"], ne: ["N", "E"] };
 
+const MIRROR: Record<Shape, Shape> = { sq: "sq", sw: "se", se: "sw", nw: "ne", ne: "nw" }; // symétrie gauche-droite
+
+/** Image dans un miroir (gauche-droite). */
+export function mirrorCells(cells: PieceCell[]): PieceCell[] {
+  const mx = Math.max(...cells.map((c) => c[0]));
+  return cells.map(([x, y, s]): PieceCell => [mx - x, y, MIRROR[s]]);
+}
+
 export function rotate(cells: PieceCell[]): PieceCell[] {
   const r = cells.map(([x, y, s]): PieceCell => [-y, x, ROT[s]]);
   const mx = Math.min(...r.map((c) => c[0])), my = Math.min(...r.map((c) => c[1]));
   return r.map(([x, y, s]) => [x - mx, y - my, s]);
 }
 
-/** Cases de la gemme n°k tournée `rot` quarts de tour, coin haut-gauche en (ox, oy). */
-export function pieceCells(k: number, rot: number, ox = 0, oy = 0): PieceCell[] {
-  let cells = PIECES[k].cells;
+/** Cases de la gemme n°k (retournée en miroir si `flip`, puis) tournée `rot` quarts de tour, coin haut-gauche en (ox, oy). */
+export function pieceCells(k: number, rot: number, ox = 0, oy = 0, flip = false): PieceCell[] {
+  let cells = flip && PIECES[k].mirror ? mirrorCells(PIECES[k].cells) : PIECES[k].cells;
   for (let r = 0; r < rot % 4; r++) cells = rotate(cells);
   return cells.map(([x, y, s]) => [x + ox, y + oy, s]);
 }
@@ -84,7 +93,7 @@ export function generate(rand = Math.random): Grid {
     for (const p of PIECES) {
       let placed = false;
       for (let t = 0; t < 200 && !placed; t++) {
-        let cells = p.cells;
+        let cells = p.mirror && rand() < 0.5 ? mirrorCells(p.cells) : p.cells;
         for (let k = Math.floor(rand() * 4); k > 0; k--) cells = rotate(cells);
         const mw = Math.max(...cells.map((c) => c[0])) + 1, mh = Math.max(...cells.map((c) => c[1])) + 1;
         const ox = Math.floor(rand() * (W - mw + 1)), oy = Math.floor(rand() * (H - mh + 1));
@@ -150,29 +159,35 @@ export function wave(grid: Grid, from: string): { to: string | null; colors: Col
   return { to, colors };
 }
 
-export type Placement = { x: number; y: number; rot: number };
+export type Placement = { x: number; y: number; rot: number; flip?: boolean };
 
 // ---------- Placement des gemmes (éditeur) ----------
 
 /** Taille (largeur, hauteur) de la gemme k tournée `rot` fois. */
-export function pieceSize(k: number, rot: number) {
-  const cells = pieceCells(k, rot);
+export function pieceSize(k: number, rot: number, flip = false) {
+  const cells = pieceCells(k, rot, 0, 0, flip);
   return { w: Math.max(...cells.map((c) => c[0])) + 1, h: Math.max(...cells.map((c) => c[1])) + 1 };
 }
 
 const clampTo = (v: number, max: number) => Math.max(0, Math.min(max, v));
 
 /** Coin haut-gauche pour que la gemme soit centrée sur la case (cx, cy), recalée dans le plateau. */
-export function centerAt(k: number, rot: number, cx: number, cy: number): Placement {
-  const { w, h } = pieceSize(k, rot);
-  return { x: clampTo(cx - Math.floor((w - 1) / 2), W - w), y: clampTo(cy - Math.floor((h - 1) / 2), H - h), rot };
+export function centerAt(k: number, rot: number, cx: number, cy: number, flip = false): Placement {
+  const { w, h } = pieceSize(k, rot, flip);
+  return { x: clampTo(cx - Math.floor((w - 1) / 2), W - w), y: clampTo(cy - Math.floor((h - 1) / 2), H - h), rot, ...(flip ? { flip } : {}) };
 }
 
 /** Quart de tour en gardant (à peu près) le même centre, recalé dans le plateau. */
 export function rotateInPlace(k: number, p: Placement): Placement {
-  const { w, h } = pieceSize(k, p.rot);
+  const { w, h } = pieceSize(k, p.rot, p.flip);
   const rot = (p.rot + 1) % 4;
-  return centerAt(k, rot, p.x + Math.floor((w - 1) / 2), p.y + Math.floor((h - 1) / 2));
+  return centerAt(k, rot, p.x + Math.floor((w - 1) / 2), p.y + Math.floor((h - 1) / 2), p.flip);
+}
+
+/** Retourne la gemme en miroir en gardant (à peu près) le même centre. */
+export function flipInPlace(k: number, p: Placement): Placement {
+  const { w, h } = pieceSize(k, p.rot, p.flip);
+  return centerAt(k, p.rot, p.x + Math.floor((w - 1) / 2), p.y + Math.floor((h - 1) / 2), !p.flip);
 }
 
 /**
@@ -183,9 +198,9 @@ export function rotateInPlace(k: number, p: Placement): Placement {
 export function placementError(placed: (Placement | null)[], k: number, p: Placement) {
   const taken = new Set<number>();
   placed.forEach((q, i) => {
-    if (q && i !== k) pieceCells(i, q.rot, q.x, q.y).forEach(([x, y]) => taken.add(y * W + x));
+    if (q && i !== k) pieceCells(i, q.rot, q.x, q.y, q.flip).forEach(([x, y]) => taken.add(y * W + x));
   });
-  for (const [x, y] of pieceCells(k, p.rot, p.x, p.y)) {
+  for (const [x, y] of pieceCells(k, p.rot, p.x, p.y, p.flip)) {
     if (x < 0 || y < 0 || x >= W || y >= H) return "Hors du plateau.";
     if (taken.has(y * W + x)) return "Une autre gemme est déjà là.";
   }
@@ -215,7 +230,7 @@ export function gridProblems(placed: (Placement | null)[]): Problem[] {
 
   placed.forEach((p, k) => {
     if (!p) return;
-    for (const [x, y, s] of pieceCells(k, p.rot, p.x, p.y)) {
+    for (const [x, y, s] of pieceCells(k, p.rot, p.x, p.y, p.flip)) {
       if (x < 0 || y < 0 || x >= W || y >= H) { add(`out${k}`, `${name(k)} sort du plateau.`, [], [k]); continue; }
       const i = y * W + x;
       if (owner[i] >= 0) add(`over${owner[i]}-${k}`, `${name(owner[i])} et ${name(k)} se chevauchent.`, [i], [owner[i], k]);
@@ -249,20 +264,23 @@ export function buildGrid(placements: unknown): Grid | null {
   if (!Array.isArray(placements) || placements.length !== PIECES.length) return null;
   const placed: Placement[] = [];
   for (const p of placements) {
-    const { x, y, rot } = (p ?? {}) as Partial<Placement>;
+    const { x, y, rot, flip } = (p ?? {}) as Partial<Placement>;
     if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(rot)) return null;
-    placed.push({ x: x!, y: y!, rot: rot! });
+    placed.push({ x: x!, y: y!, rot: rot!, flip: flip === true });
   }
   if (gridProblems(placed).length) return null;
   const grid: Grid = Array(W * H).fill(null);
-  placed.forEach((p, k) => { for (const [x, y, s] of pieceCells(k, p.rot, p.x, p.y)) grid[y * W + x] = { s, c: PIECES[k].color }; });
+  placed.forEach((p, k) => { for (const [x, y, s] of pieceCells(k, p.rot, p.x, p.y, p.flip)) grid[y * W + x] = { s, c: PIECES[k].color }; });
   return grid;
 }
 
-export type LogEntry = { by: string; from: string; to: string | null; colors: Color[] } | { by: string; guess: true };
+export type LogEntry = { by: string; from: string; to: string | null; colors: Color[] } | { by: string; guess: true; right?: true };
 export type OrapaState = Base & {
   phase: "setup" | "play"; // setup : chacun compose sa grille en secret
   players: string[];
+  first: string; // qui joue en premier (il aura toujours un tour d'avance)
+  guessed: string[]; // ceux qui ont déjà utilisé leur unique essai
+  found: string | null; // a trouvé la grille en jouant en premier : l'autre a une dernière chance pour l'égalité
   ready: string[];
   log: LogEntry[]; // ondes et essais de chaque joueur, toujours dans la grille de l'adversaire
   solutions: Record<string, Grid> | null; // révélées en fin de partie
@@ -270,7 +288,8 @@ export type OrapaState = Base & {
 export type Secrets = Record<string, Grid>; // grille de chaque joueur
 
 export function start(a: string, b: string, rand = Math.random) {
-  const state: OrapaState = { turn: rand() < 0.5 ? a : b, winner: null, phase: "setup", players: [a, b], ready: [], log: [], solutions: null };
+  const turn = rand() < 0.5 ? a : b;
+  const state: OrapaState = { turn, first: turn, winner: null, phase: "setup", players: [a, b], guessed: [], found: null, ready: [], log: [], solutions: null };
   return { state, secret: {} as Secrets };
 }
 
@@ -286,13 +305,16 @@ function sameGrid(a: Grid, b: unknown) {
  * Coups :
  * - { kind: "setup", placements } : poser sa grille secrète (une fois, pendant la préparation) ;
  * - { kind: "wave", from } : à son tour, envoyer une onde dans la grille adverse (le tour passe) ;
- * - { kind: "guess", grid } : à tout moment, vérifier sa déduction (ne fait pas passer le tour).
+ * - { kind: "guess", grid } : à son tour, tenter sa grille : un seul essai par joueur, et il compte comme le tour.
+ *   Juste : on gagne, sauf si on jouait en premier (l'autre a un tour de moins) : l'autre a alors une dernière chance
+ *   (un essai, s'il lui en reste un), juste = égalité. Raté : le tour passe ; quand les deux ont raté, c'est l'égalité.
  * `secretPatch` : la part du secret à fusionner (la grille du joueur qui vient de la poser).
  */
 export function play(state: OrapaState, secrets: Secrets, move: unknown, player: string): { state: OrapaState; secretPatch?: Secrets } | null {
   const m = move as { kind?: unknown; from?: unknown; grid?: unknown; placements?: unknown } | null;
   if (state.winner || !state.players.includes(player)) return null;
   const other = state.players.find((p) => p !== player)!;
+  const guessed = state.guessed ?? [], first = state.first ?? state.players[0]; // (parties d'avant cette règle : valeurs par défaut)
 
   if (m?.kind === "setup") {
     const grid = buildGrid(m.placements);
@@ -304,14 +326,25 @@ export function play(state: OrapaState, secrets: Secrets, move: unknown, player:
   const target = secrets[other];
   if (state.phase !== "play" || !target) return null;
   if (m?.kind === "wave") {
-    if (state.turn !== player) return null;
+    if (state.turn !== player || state.found) return null; // pendant la dernière chance, on ne peut plus qu'essayer sa grille
     const from = String(m.from);
     if (!EDGES.some((e) => e.id === from)) return null;
     return { state: { ...state, log: [...state.log, { by: player, from, ...wave(target, from) }], turn: other } };
   }
   if (m?.kind === "guess") {
-    if (sameGrid(target, m.grid)) return { state: { ...state, winner: player, solutions: secrets } };
-    return { state: { ...state, log: [...state.log, { by: player, guess: true }] } };
+    if (state.turn !== player || guessed.includes(player)) return null;
+    const right = sameGrid(target, m.grid);
+    const used = [...guessed, player];
+    const done = (winner: string) => ({ state: { ...state, guessed: used, found: state.found, winner, log: [...state.log, { by: player, guess: true as const, ...(right ? { right: true as const } : {}) }], solutions: secrets } });
+    if (state.found) return done(right ? "draw" : state.found); // dernière chance : juste = égalité, raté = l'autre a gagné
+    if (right) {
+      // jouer en premier = un tour d'avance : l'autre a une dernière chance s'il lui reste son essai
+      if (player === first && !guessed.includes(other))
+        return { state: { ...state, guessed: used, found: player, turn: other, log: [...state.log, { by: player, guess: true, right: true }] } };
+      return done(player);
+    }
+    if (used.length === 2) return done("draw"); // les deux ont raté
+    return { state: { ...state, guessed: used, turn: other, log: [...state.log, { by: player, guess: true }] } };
   }
   return null;
 }

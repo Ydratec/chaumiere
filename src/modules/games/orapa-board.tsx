@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { BoardProps } from "./labels";
 import {
-  centerAt, EDGES, gridProblems, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W, type Problem,
+  centerAt, EDGES, flipInPlace, gridProblems, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W, type Problem,
   type Cell, type Color, type Grid, type LogEntry, type OrapaState, type Placement, type Shape,
 } from "./orapa";
 
@@ -30,8 +30,8 @@ function Gem({ cell }: { cell: Cell }) {
   );
 }
 
-function PieceIcon({ k, rot = 0, size = 14 }: { k: number; rot?: number; size?: number }) {
-  const cells = pieceCells(k, rot);
+function PieceIcon({ k, rot = 0, size = 14, flip = false }: { k: number; rot?: number; size?: number; flip?: boolean }) {
+  const cells = pieceCells(k, rot, 0, 0, flip);
   const w = Math.max(...cells.map((c) => c[0])) + 1, h = Math.max(...cells.map((c) => c[1])) + 1;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width={w * size} height={h * size}>
@@ -67,7 +67,7 @@ function layout(placed: (Placement | null)[]) {
   const owner: number[] = Array(W * H).fill(-1);
   placed.forEach((p, k) => {
     if (!p) return;
-    pieceCells(k, p.rot, p.x, p.y).forEach(([x, y, sh]) => {
+    pieceCells(k, p.rot, p.x, p.y, p.flip).forEach(([x, y, sh]) => {
       if (x < 0 || y < 0 || x >= W || y >= H) return;
       grid[y * W + x] = { s: sh, c: PIECES[k].color };
       owner[y * W + x] = k;
@@ -89,7 +89,7 @@ function useDraft(key: string) {
   /** Pose (ou déplace) la gemme k ; refusé si elle chevauche ou sort. Les croix sous la gemme disparaissent. */
   function place(k: number, p: Placement) {
     if (placementError(d.placed, k, p)) return false;
-    const covered = new Set(pieceCells(k, p.rot, p.x, p.y).map(([x, y]) => y * W + x));
+    const covered = new Set(pieceCells(k, p.rot, p.x, p.y, p.flip).map(([x, y]) => y * W + x));
     setD({ placed: d.placed.map((q, i) => (i === k ? p : q)), crosses: d.crosses.filter((c) => !covered.has(c)) });
     return true;
   }
@@ -99,6 +99,7 @@ function useDraft(key: string) {
     any: d.placed.some(Boolean),
     remove: (k: number) => setD({ ...d, placed: d.placed.map((q, i) => (i === k ? null : q)) }),
     rotate: (k: number) => d.placed[k] && place(k, rotateInPlace(k, d.placed[k]!)),
+    flip: (k: number) => d.placed[k] && place(k, flipInPlace(k, d.placed[k]!)),
     toggleCross: (i: number) =>
       owner[i] < 0 && setD({ ...d, crosses: d.crosses.includes(i) ? d.crosses.filter((c) => c !== i) : [...d.crosses, i] }),
   };
@@ -127,7 +128,7 @@ function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, wave
     ports.set(w.from, r);
     if (w.to) ports.set(w.to, r);
   }
-  const ghostCells = new Map(ghost ? pieceCells(ghost.k, ghost.p.rot, ghost.p.x, ghost.p.y).map(([x, y, s]) => [y * W + x, s] as const) : []);
+  const ghostCells = new Map(ghost ? pieceCells(ghost.k, ghost.p.rot, ghost.p.x, ghost.p.y, ghost.p.flip).map(([x, y, s]) => [y * W + x, s] as const) : []);
 
   const edge = (side: string, i: number) => {
     const id = EDGES.find((e) => e.side === side && e.i === i)!.id;
@@ -200,6 +201,8 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
   const [tool, setTool] = useState<"gems" | "cross">("gems");
   const [cur, setCur] = useState<number | null>(null); // gemme choisie dans la réserve (pour la poser d'un toucher)
   const [ghost, setGhost] = useState<Ghost | null>(null);
+  const [trayFlip, setTrayFlip] = useState(false); // le parallélogramme rouge de la réserve est-il retourné ?
+  const red = PIECES.findIndex((p) => p.mirror);
 
   /** Case du plateau sous le doigt (null hors du plateau). */
   function cellAt(clientX: number, clientY: number) {
@@ -210,7 +213,7 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
   }
 
   /** Suit le doigt ; au lâcher : pose (si possible) ou retire (si lâchée hors du plateau). `tap` si le doigt n'a pas bougé. */
-  function drag(k: number, rot: number, e: React.PointerEvent, tap: () => void) {
+  function drag(k: number, rot: number, flip: boolean, e: React.PointerEvent, tap: () => void) {
     const x0 = e.clientX, y0 = e.clientY;
     let moved = false, last: Ghost | null = null;
     const others = ed.placed.map((q, i) => (i === k ? null : q));
@@ -218,7 +221,7 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
       if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
       moved = true;
       const c = cellAt(ev.clientX, ev.clientY);
-      const p = c ? centerAt(k, rot, c.x, c.y) : null;
+      const p = c ? centerAt(k, rot, c.x, c.y, flip) : null;
       last = p ? { k, p, ok: !placementError(others, k, p) } : null;
       setGhost(last);
     };
@@ -240,8 +243,8 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
     const i = y * W + x;
     const k = ed.owner[i];
     if (tool === "cross") return k < 0 && ed.toggleCross(i);
-    if (k >= 0) return drag(k, ed.placed[k]!.rot, e, () => ed.rotate(k)); // toucher = tourner, glisser = déplacer
-    if (cur !== null && !ed.placed[cur] && ed.place(cur, centerAt(cur, 0, x, y))) setCur(null);
+    if (k >= 0) return drag(k, ed.placed[k]!.rot, !!ed.placed[k]!.flip, e, () => ed.rotate(k)); // toucher = tourner, glisser = déplacer
+    if (cur !== null && !ed.placed[cur] && ed.place(cur, centerAt(cur, 0, x, y, cur === red && trayFlip))) setCur(null);
   }
 
   const tray = PIECES.map((p, k) => ({ p, k })).filter(({ k }) => !ed.placed[k]);
@@ -255,6 +258,16 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
           </button>
         ))}
       </div>
+      {tool === "gems" && (
+        <button
+          type="button"
+          onClick={() => (ed.placed[red] ? ed.flip(red) : setTrayFlip(!trayFlip))}
+          className="btn-soft w-full gap-2 py-2 text-sm"
+        >
+          <span className="inline-flex"><PieceIcon k={red} size={9} flip={ed.placed[red] ? !!ed.placed[red]!.flip : trayFlip} /></span>
+          Retourner le parallélogramme rouge (miroir)
+        </button>
+      )}
       {tray.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2" data-no-swipe>
           {tray.map(({ p, k }) => (
@@ -262,10 +275,10 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
               key={p.name}
               aria-label={p.name}
               aria-pressed={cur === k}
-              onPointerDown={(e) => drag(k, 0, e, () => setCur(cur === k ? null : k))}
+              onPointerDown={(e) => drag(k, 0, k === red && trayFlip, e, () => setCur(cur === k ? null : k))}
               className={`flex h-16 min-w-16 shrink-0 touch-none items-center justify-center rounded-2xl px-2 transition ${cur === k ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-zinc-100"}`}
             >
-              <PieceIcon k={k} />
+              <PieceIcon k={k} flip={k === red && trayFlip} />
             </button>
           ))}
         </div>
@@ -289,7 +302,7 @@ function WaveLog({ entries, name, active, onSel, check }: {
           return (
             <li key={k} className="py-2 text-sm text-zinc-500">
               <span className="mr-3 inline-block w-5 text-right tabular-nums text-zinc-400">{n + 1}</span>
-              {name(e.by)} a vérifié une grille : fausse
+              {name(e.by)} a tenté sa grille : {e.right ? "juste !" : "raté"}
             </li>
           );
         const r = result(e);
@@ -319,8 +332,9 @@ const Rules = () => (
       Chacun cache ses 7 gemmes (une pointe peut toucher une pointe ou un côté droit, mais deux côtés droits ne se touchent pas, et le bloc noir ne touche aucune gemme). Ensuite, à ton tour, touche un repère du bord pour
       envoyer une onde dans la grille adverse : elle avance tout droit, fait demi-tour sur un côté droit, tourne d&apos;un
       quart sur une diagonale, prend la couleur des gemmes touchées (les couleurs se mélangent) et ressort. La gemme
-      transparente dévie sans colorer, le bloc noir absorbe. Vérifie ta déduction quand tu veux : ça ne fait pas passer le
-      tour. Le premier qui trouve gagne.
+      transparente dévie sans colorer, le bloc noir absorbe. Quand tu penses avoir trouvé, tente ta grille à ton tour : tu n&apos;as droit qu&apos;à un seul essai, et il compte comme ton
+      tour. Si celui qui joue en premier trouve, l&apos;autre a une dernière chance de faire égalité ; deux essais ratés, c&apos;est l&apos;égalité.
+      Le parallélogramme rouge peut aussi se poser retourné (miroir).
     </p>
   </details>
 );
@@ -402,6 +416,7 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
   const active = picked && "from" in picked ? picked : null;
   const solution = s.solutions?.[owner] ?? null;
   const guessing = isPlayer && tab === 0 && !solution;
+  const used = (s.guessed ?? []).includes(userId); // son unique essai est déjà utilisé
   const known = solution ?? (isPlayer && tab === 1 ? (priv as Grid | null) : null); // grille réelle, si on la connaît
 
   // L'hypothèse explique-t-elle chaque onde observée ? (calcul seulement, rien n'est dessiné)
@@ -409,7 +424,7 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
   const tabs = isPlayer ? [`Grille de ${name(p1)}`, "Ma grille"] : [`Grille de ${name(p1)}`, `Grille de ${name(p0)}`];
   const r = active && result(active);
   const ports = {
-    onEdge: myTurn && tab === 0 ? (from: string) => play({ kind: "wave", from }) : undefined,
+    onEdge: myTurn && tab === 0 && !s.found ? (from: string) => play({ kind: "wave", from }) : undefined,
     waves, active, faded: check,
   };
 
@@ -422,6 +437,16 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
           </button>
         ))}
       </div>
+
+      {s.found && !s.winner && (
+        <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-800">
+          {s.found === userId
+            ? `Tu as trouvé la grille ! ${name(s.players.find((p) => p !== userId)!)} a une dernière chance de faire égalité.`
+            : s.turn === userId
+              ? `${name(s.found)} a trouvé ta grille et avait un tour d'avance : dernière chance, tente la sienne pour faire égalité.`
+              : `${name(s.found)} a trouvé la grille. Dernière chance pour ${name(s.turn)}…`}
+        </p>
+      )}
 
       <p className="flex min-h-7 items-center justify-center gap-2 text-sm">
         {active && r ? (
@@ -440,8 +465,12 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
       {guessing ? (
         <>
           <EditableBoard ed={guess} plateau={ports} />
-          <button disabled={guess.left > 0} onClick={() => play({ kind: "guess", grid: guess.grid })} className="btn w-full">
-            {guess.left ? `Pose encore ${guess.left} gemme${guess.left > 1 ? "s" : ""} pour vérifier` : "Vérifier ma grille"}
+          <button
+            disabled={guess.left > 0 || !myTurn || used}
+            onClick={() => confirm("Tenter cette grille ? Tu n'as droit qu'à UN seul essai, et il compte comme ton tour.") && play({ kind: "guess", grid: guess.grid })}
+            className="btn w-full"
+          >
+            {used ? "Tu as déjà tenté ta chance" : guess.left ? `Pose encore ${guess.left} gemme${guess.left > 1 ? "s" : ""} pour tenter` : !myTurn ? "Attends ton tour pour tenter ta grille" : "Tenter ma grille (un seul essai)"}
           </button>
         </>
       ) : (

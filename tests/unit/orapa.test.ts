@@ -1,7 +1,7 @@
 // Lancer : node --test 'tests/unit/*.test.ts'
 import assert from "node:assert/strict";
 import test from "node:test";
-import { gridProblems, EDGES, H, PIECES, W, buildGrid, centerAt, generate, mix, pieceCells, pieceSize, placementError, play, rotateInPlace, start, trace, wave, type Grid } from "../../src/modules/games/orapa.ts";
+import { flipInPlace, gridProblems, mirrorCells, EDGES, H, PIECES, W, buildGrid, centerAt, generate, mix, pieceCells, pieceSize, placementError, play, rotateInPlace, start, trace, wave, type Grid } from "../../src/modules/games/orapa.ts";
 
 const empty = (): Grid => Array(W * H).fill(null);
 const at = (x: number, y: number) => y * W + x;
@@ -130,14 +130,97 @@ test("partie : chacun pose sa grille, puis devine celle de l'autre", () => {
   assert.equal(s.turn, b);
   assert.equal(go({ kind: "wave", from: "H2" }, a), null); // pas son tour
 
-  go({ kind: "guess", grid: empty() }, a); // vérifier est permis hors de son tour…
-  assert.equal(s.turn, b); // …et ne fait pas passer le tour
-  assert.equal(s.winner, null);
+  assert.equal(go({ kind: "guess", grid: empty() }, a), null); // un essai ne se tente qu'à son tour
   assert.equal(go({ kind: "guess", grid: empty() }, "C"), null); // spectateur
+  go({ kind: "wave", from: "H2" }, b);
+  assert.equal(s.turn, a);
+});
 
-  go({ kind: "guess", grid: buildGrid(a === "A" ? gridB : PLACEMENTS) }, a);
-  assert.equal(s.winner, a);
-  assert.deepEqual(Object.keys(s.solutions!).sort(), ["A", "B"]);
+/** Partie prête à jouer : A joue en premier ; la grille de A est PLACEMENTS, celle de B est `gridB`. */
+function ready() {
+  let { state: s } = start("A", "B", () => 0);
+  let secrets = {};
+  const go = (move: object, p: string) => {
+    const r = play(s, secrets, move, p);
+    if (r) { s = r.state; secrets = { ...secrets, ...r.secretPatch }; }
+    return r;
+  };
+  const gridB = PLACEMENTS.map((p, k) => (k === 6 ? { x: 6, y: 9, rot: 0 } : p));
+  go({ kind: "setup", placements: PLACEMENTS }, "A");
+  go({ kind: "setup", placements: gridB }, "B");
+  return { go, st: () => s, right: (by: string) => ({ kind: "guess", grid: buildGrid(by === "A" ? gridB : PLACEMENTS) }), wrong: { kind: "guess", grid: empty() } };
+}
+
+test("essai : un seul par joueur, à son tour, et il coûte le tour ; une confirmation côté interface", () => {
+  const g = ready();
+  assert.equal(g.st().turn, "A");
+  assert.ok(g.go(g.wrong, "A"));
+  assert.equal(g.st().turn, "B"); // le tour passe
+  assert.equal(g.st().winner, null);
+  assert.deepEqual(g.st().log.at(-1), { by: "A", guess: true });
+  assert.equal(g.go(g.wrong, "A"), null); // pas son tour
+  g.go({ kind: "wave", from: "H1" }, "B");
+  assert.equal(g.go(g.wrong, "A"), null); // son unique essai est déjà utilisé
+  assert.ok(g.go({ kind: "wave", from: "H1" }, "A")); // mais il peut encore envoyer des ondes
+});
+
+test("essai : celui qui joue en premier et trouve laisse une dernière chance à l'autre (égalité s'il trouve)", () => {
+  const g = ready();
+  g.go(g.right("A"), "A"); // A joue en premier : B a un tour de moins
+  assert.equal(g.st().winner, null);
+  assert.equal(g.st().found, "A");
+  assert.equal(g.st().turn, "B");
+  assert.equal(g.go({ kind: "wave", from: "H1" }, "B"), null); // dernière chance : seulement un essai
+  g.go(g.right("B"), "B");
+  assert.equal(g.st().winner, "draw");
+  assert.deepEqual(Object.keys(g.st().solutions!).sort(), ["A", "B"]);
+
+  const h = ready();
+  h.go(h.right("A"), "A");
+  h.go(h.wrong, "B");
+  assert.equal(h.st().winner, "A"); // l'autre a raté sa dernière chance
+
+  // si l'autre a déjà gâché son essai, pas de dernière chance : le premier gagne tout de suite
+  const k = ready();
+  k.go({ kind: "wave", from: "H1" }, "A");
+  k.go(k.wrong, "B");
+  k.go({ kind: "wave", from: "H2" }, "A");
+  k.go({ kind: "wave", from: "H3" }, "B");
+  k.go(k.right("A"), "A");
+  assert.equal(k.st().winner, "A");
+});
+
+test("essai : le second joueur qui trouve gagne tout de suite ; deux essais ratés = égalité", () => {
+  const g = ready();
+  g.go({ kind: "wave", from: "H1" }, "A");
+  g.go(g.right("B"), "B"); // tours égaux
+  assert.equal(g.st().winner, "B");
+
+  const h = ready();
+  h.go(h.wrong, "A");
+  assert.equal(h.st().winner, null);
+  h.go(h.wrong, "B");
+  assert.equal(h.st().winner, "draw");
+});
+
+test("miroir : le parallélogramme rouge peut être posé retourné, les autres gemmes sont identiques à leur reflet", () => {
+  const red = PIECES.findIndex((p) => p.color === "red");
+  assert.deepEqual(pieceCells(red, 0), [[0, 0, "se"], [1, 0, "sq"], [2, 0, "nw"]]);
+  assert.deepEqual(pieceCells(red, 0, 0, 0, true), [[2, 0, "sw"], [1, 0, "sq"], [0, 0, "ne"]]);
+  // le reflet n'est aucune rotation du modèle d'origine (sinon il n'y aurait rien à retourner)
+  const keys = (cells: ReturnType<typeof pieceCells>) => JSON.stringify([...cells].sort());
+  assert.ok(![0, 1, 2, 3].some((r) => keys(pieceCells(red, r)) === keys(pieceCells(red, 0, 0, 0, true))));
+  assert.deepEqual(pieceSize(red, 1, true), pieceSize(red, 1));
+  const p = centerAt(red, 0, 4, 4, true);
+  assert.equal(p.flip, true);
+  assert.ok(!flipInPlace(red, p).flip);
+  assert.ok(buildGrid(PLACEMENTS.map((q, i) => (i === red ? { ...q, flip: true } : q))), "grille valide avec la gemme retournée");
+  // les autres gemmes : le reflet est une rotation du modèle d'origine
+  PIECES.forEach((pc, k) => {
+    if (pc.mirror) return;
+    const flipped = keys(mirrorCells(pc.cells).map(([x, y, sh]) => [x, y, sh] as const) as never);
+    assert.ok([0, 1, 2, 3].some((r) => keys(pieceCells(k, r)) === flipped), pc.name);
+  });
 });
 
 test("éditeur : gemme centrée sous le doigt, recalée aux bords, rotation sur place, chevauchement", () => {
