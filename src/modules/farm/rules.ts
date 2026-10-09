@@ -203,7 +203,8 @@ export function applyMove(f: FarmState, m: FarmMove, now: number): { state: Farm
       if (!r) return { error: "Rien à récolter." };
       if (!isReady(tile, now)) return { error: "Pas encore prêt." };
       const t = { ...tile, item: null, started_at: null, ready_at: null };
-      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? t : x)), items: plus(f.items, { [r.out]: r.qty }) } };
+      // La fleur qui pousse est tirée au sort par le serveur : on libère le pot, la fleur arrive avec la réponse.
+      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? t : x)), items: r.out === "flower" ? f.items : plus(f.items, { [r.out]: r.qty }) } };
     }
     case "clear": {
       if (!tile || tile.item) return { error: "Attends que ce soit fini avant de démolir." };

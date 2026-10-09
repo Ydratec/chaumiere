@@ -5,7 +5,8 @@ import { CharacterSprite } from "@/src/components/character-sprite";
 import type { Character } from "@/src/modules/characters/catalog";
 import { farmAction, moveCat, openGift, type FarmMove } from "./actions";
 import { foundSecret } from "./story/actions";
-import { GiftArt, ItemIcon, ObjectArt } from "./art";
+import { BouquetArt, GiftArt, ItemIcon, ObjectArt } from "./art";
+import { FLOWERS, rarityOf } from "./flowers";
 import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
 import type { Farm, Gift } from "./data";
@@ -40,6 +41,11 @@ function Cost({ need, have }: { need: Inventory; have: Inventory }) {
 type Placing = { kind: BuildingId; moving?: Tile };
 
 /** Sa serre (ou celle d'un ami en lecture seule, avec `owner`). Le chat se déplace en touchant le sol. */
+/** Ce que contient un cadeau : une fleur, ou un bouquet. */
+function GiftContents({ gift, size }: { gift: Gift; size: number }) {
+  return gift.item === "bouquet" && gift.contents ? <BouquetArt contents={gift.contents} size={size} /> : <ItemIcon id={(isItem(gift.item) ? gift.item : "flower")} size={size} />;
+}
+
 export function FarmView({ roomId, initial, character, owner, names }: { roomId: string; initial: Farm; character: Character; owner?: string; names: Record<string, string> }) {
   const [farm, setFarm] = useState(initial);
   const [now, setNow] = useState(initial.now);
@@ -75,6 +81,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
   const inflight = useRef(0);
   function act(move: FarmMove, close = true) {
     const predicted = applyMove(farm, move, now); // même horloge que l'affichage
+    setNotice("");
     if ("error" in predicted) return setMsg(predicted.error);
     setFarm((f) => ({ ...f, ...predicted.state }));
     setMsg("");
@@ -439,22 +446,39 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
         </section>
       )}
 
-      {!owner && farm.collection.length > 0 && (
-        <section>
-          <h3 className="eyebrow mb-1">Collection de fleurs · {farm.collection.length}</h3>
-          <div className="rows">
-            {farm.collection.map((g) => (
-              <div key={g.id} className="flex items-start gap-3 py-2.5">
-                <ItemIcon id="flower" size={28} />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm italic text-zinc-700">« {g.message ?? "Une fleur pour toi."} »</span>
-                  <span className="text-xs text-zinc-500">
-                    {names[g.giver] ?? "?"} · {new Date(`${g.day}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                  </span>
-                </span>
-              </div>
-            ))}
+      {!owner && (
+        <section className="space-y-4">
+          <h3 className="eyebrow">Album de fleurs · {FLOWERS.filter((f) => (farm.album[f.id] ?? 0) > 0 || (farm.items[f.id] ?? 0) > 0).length} / {FLOWERS.length}</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {FLOWERS.map((f) => {
+              const seen = (farm.album[f.id] ?? 0) > 0 || (farm.items[f.id] ?? 0) > 0;
+              return (
+                <div key={f.id} className={`flex flex-col items-center rounded-2xl p-2 text-center ${seen ? "bg-white shadow-sm" : "bg-zinc-100"}`}>
+                  <span className={seen ? "" : "opacity-20 brightness-0"}><ItemIcon id={f.id} size={34} /></span>
+                  <span className="mt-0.5 w-full truncate text-[10px] font-medium">{seen ? ITEMS[f.id].name : "?"}</span>
+                  <span className="text-[10px] text-zinc-400">{seen ? rarityOf(f.id) : "à trouver"}</span>
+                </div>
+              );
+            })}
           </div>
+          {farm.collection.length > 0 && (
+            <>
+              <h3 className="eyebrow">Cadeaux reçus · {farm.collection.length}</h3>
+              <div className="rows">
+                {farm.collection.map((g) => (
+                  <div key={g.id} className="flex items-start gap-3 py-2.5">
+                    <GiftContents gift={g} size={40} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm italic text-zinc-700">{g.message ? `« ${g.message} »` : "Sans un mot."}</span>
+                      <span className="text-xs text-zinc-500">
+                        {names[g.giver] ?? "?"} · {new Date(`${g.day}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </section>
       )}
 
@@ -464,10 +488,10 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
           <div className="animate-pop relative w-full max-w-xs rounded-[1.75rem] bg-white p-6 text-center shadow-2xl">
             {revealed ? (
               <>
-                <div className="animate-pop mx-auto size-24"><ItemIcon id="flower" size={96} /></div>
-                <p className="mt-3 text-lg font-semibold italic leading-snug">« {revealed.message ?? "Une fleur pour toi."} »</p>
+                <div className="animate-pop mx-auto w-fit"><GiftContents gift={revealed} size={96} /></div>
+                <p className="mt-3 text-lg font-semibold italic leading-snug">{revealed.message ? `« ${revealed.message} »` : "Un cadeau, sans un mot."}</p>
                 <p className="mt-2 text-sm text-zinc-500">— {names[revealed.giver] ?? "Quelqu'un"}</p>
-                <p className="mt-4 text-xs text-zinc-400">Ajoutée à ta collection de fleurs.</p>
+                <p className="mt-4 text-xs text-zinc-400">Ajouté à ta collection (et à ton album).</p>
                 <button onClick={() => { setRevealed(null); setGiftFocus(null); }} className="btn mt-4 w-full">Merci !</button>
               </>
             ) : (

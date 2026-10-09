@@ -63,6 +63,90 @@ const ART: Record<ItemId, React.ReactNode> = {
       <circle cx="12" cy="9.5" r="2" fill="#facc15" />
     </>
   ),
+  poppy: (
+    <>
+      <path d="M12 22v-8" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 19c2-2 4-2 5-1-1 2-3 2-5 1z" fill={GREEN} />
+      {[[8.6, 8], [15.4, 8], [8.6, 13], [15.4, 13]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r="4.2" fill="#e5383b" />)}
+      <circle cx="12" cy="10.5" r="2" fill="#2b2b2b" />
+      {[10.6, 12, 13.4].map((x) => <circle key={x} cx={x} cy="10.5" r=".35" fill="#f5c542" />)}
+    </>
+  ),
+  tulip: (
+    <>
+      <path d="M12 22v-8" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 20c-3-1-5-4-5-6 3 0 5 2 5 6zM12 20c3-1 5-4 5-6-3 0-5 2-5 6z" fill="#7cb342" />
+      <path d="M7.5 5c0 6 1.5 10 4.5 10s4.5-4 4.5-10l-2.4 2.2L12 4.4 9.9 7.2z" fill="#a855f7" />
+      <path d="M12 4.4 9.9 7.2c.4 3 1 5.4 2.1 7.8 1.1-2.4 1.7-4.8 2.1-7.8z" fill="#c084fc" />
+    </>
+  ),
+  sunflower: (
+    <>
+      <path d="M12 23v-8" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" />
+      {Array.from({ length: 12 }, (_, i) => i * 30).map((a) => (
+        <ellipse key={a} cx="12" cy="4.4" rx="1.7" ry="3.2" fill="#facc15" transform={`rotate(${a} 12 10.5)`} />
+      ))}
+      <circle cx="12" cy="10.5" r="3.6" fill="#7c4a1d" />
+      {[[10.8, 9.6], [13.2, 9.6], [12, 11.8], [10.4, 11.8], [13.6, 11.8]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r=".5" fill="#4a2a0f" />)}
+    </>
+  ),
+  lavender: (
+    <>
+      <path d="M12 23V8" stroke="#6b8f3a" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 18c-2-1-3.5-1-4.5 0 1.4 1.6 3 1.6 4.5 0z" fill={GREEN} />
+      {[3.4, 6, 8.6, 11.2, 13.8].map((y, i) => (
+        <g key={y} fill={i % 2 ? "#a78bfa" : "#8b5cf6"}>
+          <ellipse cx={10.7 + (i % 2) * 0.2} cy={y} rx="1.5" ry="1.7" />
+          <ellipse cx={13.3 - (i % 2) * 0.2} cy={y} rx="1.5" ry="1.7" />
+        </g>
+      ))}
+      <ellipse cx="12" cy="2.3" rx="1.2" ry="1.5" fill="#8b5cf6" />
+    </>
+  ),
+  rose: (
+    <>
+      <path d="M12 23v-7" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 20c2-2 4-2 5.5-1.2-1.4 2-3.4 2-5.5 1.2z" fill={GREEN} />
+      <circle cx="12" cy="9.5" r="7" fill="#be123c" />
+      <circle cx="12" cy="9.5" r="5" fill="#e11d48" />
+      <path d="M12 9.5c-1.6-1.4-3.2.4-1.6 1.8 1.8 1.4 4.2-.4 3.4-2.6-.9-2.4-4.6-1.6-5 1.2" fill="none" stroke="#9f1239" strokeWidth=".9" strokeLinecap="round" />
+    </>
+  ),
+  orchid: (
+    <>
+      <path d="M12 23v-9" stroke="#5f8f2f" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M12 18c-3-.4-5-2-5.5-4 3 0 5 1.5 5.5 4z" fill={GREEN} />
+      <ellipse cx="12" cy="5.4" rx="2.4" ry="3.8" fill="#fdf2f8" stroke="#f9a8d4" strokeWidth=".6" />
+      <ellipse cx="6.6" cy="9" rx="4.2" ry="2.6" fill="#fbcfe8" stroke="#f472b6" strokeWidth=".6" transform="rotate(-20 6.6 9)" />
+      <ellipse cx="17.4" cy="9" rx="4.2" ry="2.6" fill="#fbcfe8" stroke="#f472b6" strokeWidth=".6" transform="rotate(20 17.4 9)" />
+      <path d="M12 9.6c-3 1-4 4-3 6 1.5 1 4.5 1 6 0 1-2 0-5-3-6z" fill="#a21caf" />
+      <circle cx="12" cy="10" r="1.3" fill="#fde047" />
+    </>
+  ),
+  moonflower: (
+    <>
+      <defs>
+        <radialGradient id="moonglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#e0f2ff" stopOpacity=".95" />
+          <stop offset="1" stopColor="#93c5fd" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="moonpetal" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#bfdbfe" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="10.5" r="11" fill="url(#moonglow)" />
+      <path d="M12 23v-7" stroke="#6b9f6a" strokeWidth="1.5" strokeLinecap="round" />
+      {Array.from({ length: 8 }, (_, i) => i * 45).map((a) => (
+        <ellipse key={a} cx="12" cy="4.6" rx="2" ry="4.4" fill="url(#moonpetal)" stroke="#93c5fd" strokeWidth=".45" transform={`rotate(${a} 12 10.5)`} />
+      ))}
+      <circle cx="12" cy="10.5" r="2.3" fill="#fde68a" />
+      <circle cx="12" cy="10.5" r="1.2" fill="#fffbeb" />
+      {[[3.2, 3.5], [20.5, 4.5], [21, 17], [3, 15.5]].map(([x, y]) => (
+        <path key={`${x}${y}`} d={`M${x} ${y - 1.3}l.4 .9 .9 .4-.9 .4-.4 .9-.4-.9-.9-.4.9-.4z`} fill="#fef9c3" />
+      ))}
+    </>
+  ),
   egg: <ellipse cx="12" cy="13" rx="6" ry="8" fill="#f7efe0" stroke="#e2d3b7" strokeWidth="1.2" />,
   bread: (
     <>
@@ -231,3 +315,22 @@ export const GiftArt = () => (
     <path d="M12 7.5c-2-4-6-4-5.5-1.5.4 1.8 3.5 1.5 5.5 1.5zM12 7.5c2-4 6-4 5.5-1.5-.4 1.8-3.5 1.5-5.5 1.5z" fill="#fde68a" stroke="#f59e0b" strokeWidth=".6" />
   </svg>
 );
+
+/** Un bouquet : les fleurs choisies en éventail, nouées d'un ruban. `contents` : { variété: nombre }. */
+export function BouquetArt({ contents, size = 96 }: { contents: Partial<Record<ItemId, number>>; size?: number }) {
+  const flowers = Object.entries(contents).flatMap(([id, n]) => Array.from({ length: n ?? 0 }, () => id as ItemId)).slice(0, 7);
+  const n = flowers.length;
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
+      {flowers.map((id, i) => {
+        const a = n === 1 ? 0 : -34 + (68 * i) / (n - 1);
+        return (
+          <g key={i} transform={`translate(24 42) rotate(${a}) scale(1.45) translate(-12 -22.5)`}>{ART[id]}</g>
+        );
+      })}
+      <path d="M16 38c4 2.6 12 2.6 16 0l-3 9H19z" fill="#f9a8d4" />
+      <path d="M16 38c4 2.6 12 2.6 16 0" stroke="#ec4899" strokeWidth="1.6" fill="none" />
+      <path d="M24 40.5l-3.6 4 3.6-1.2 3.6 1.2z" fill="#ec4899" />
+    </svg>
+  );
+}

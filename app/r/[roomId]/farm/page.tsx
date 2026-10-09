@@ -31,7 +31,7 @@ export default async function FarmPage({
       <div className="space-y-6">
         <Link href={`/r/${roomId}/farm`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900">← Ma serre</Link>
         <FarmView roomId={roomId} initial={farm} character={ctx.people[u].character} owner={ctx.names[u]} names={ctx.names} />
-        <GiftButton roomId={roomId} receiver={u} done={done} flowers={mine.items.flower ?? 0} />
+        <GiftButton roomId={roomId} receiver={u} done={done} items={mine.items} />
       </div>
     );
   }

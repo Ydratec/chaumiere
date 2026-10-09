@@ -10,7 +10,9 @@ export const START_OBJECTS: { kind: "planter"; x: number; y: number }[] = [
 ];
 export const START_CAT = { x: 6, y: 8 };
 
-export type ItemId = "coins" | "wheat" | "carrot" | "corn" | "strawberry" | "flower" | "egg" | "bread" | "cake";
+export type ItemId =
+  | "coins" | "wheat" | "carrot" | "corn" | "strawberry" | "egg" | "bread" | "cake"
+  | "flower" | "poppy" | "tulip" | "sunflower" | "lavender" | "rose" | "orchid" | "moonflower"; // les fleurs : voir flowers.ts
 
 /** `price` : prix de vente au village (réduit depuis la refonte : les commandes et les chantiers paient mieux que la vente en vrac). */
 export const ITEMS: Record<ItemId, { name: string; price: number }> = {
@@ -19,7 +21,14 @@ export const ITEMS: Record<ItemId, { name: string; price: number }> = {
   carrot: { name: "Carotte", price: 3 },
   corn: { name: "Maïs", price: 5 },
   strawberry: { name: "Fraise", price: 12 },
-  flower: { name: "Fleur", price: 2 },
+  flower: { name: "Cosmos", price: 2 },
+  poppy: { name: "Coquelicot", price: 3 },
+  tulip: { name: "Tulipe", price: 4 },
+  sunflower: { name: "Tournesol", price: 6 },
+  lavender: { name: "Lavande", price: 10 },
+  rose: { name: "Rose", price: 16 },
+  orchid: { name: "Orchidée", price: 40 },
+  moonflower: { name: "Fleur de lune", price: 150 },
   egg: { name: "Œuf", price: 5 },
   bread: { name: "Pain", price: 7 },
   cake: { name: "Gâteau", price: 27 },
@@ -46,7 +55,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
   },
   pot: {
     name: "Pot de fleurs", size: [1, 1], cost: 8, verb: "Semer",
-    recipes: [{ id: "flower", out: "flower", qty: 1, minutes: 5, inputs: { coins: 1 } }],
+    recipes: [{ id: "flower", out: "flower", qty: 1, minutes: 5, inputs: { coins: 1 } }], // « flower » : la graine ; la fleur qui pousse est tirée au sort (flowers.ts)
   },
   coop: {
     name: "Poulailler", size: [2, 2], cost: 60, max: 1, verb: "Nourrir", requires: "b:coop",

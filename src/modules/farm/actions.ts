@@ -5,11 +5,11 @@ import { after } from "next/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
-import { BUILDINGS, GRID_W, isBuilding, isItem, type Inventory } from "./catalog";
+import { isFlower, giftError, MESSAGE_MAX, pickFlower, rarityOf } from "./flowers";
+import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
 import { loadFarm, loadProjects, touchActivity, type Farm, type Gift } from "./data";
 import { grantSecret } from "./story/grant";
 import { paris } from "@/src/modules/questions/day";
-import { randomGiftMessage } from "./gift-messages";
 import { isComplete, remaining } from "./projects";
 import { duration, gridH, sellPrice, negate, offerError, placeError, recipeOf, startError, tileAt, type FarmMove } from "./rules";
 
@@ -70,10 +70,13 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
       const { data } = await where(tiles().update({ item: null, started_at: null, ready_at: null }))
         .eq("item", r.id).lte("ready_at", new Date().toISOString()).select("x");
       if (!data?.length) return done("Pas encore prêt.");
-      await add({ [r.out]: r.qty });
+      const out = r.out === "flower" ? pickFlower() : r.out; // la graine donne une fleur au hasard
+      await add({ [out]: r.qty });
       await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `harvest:${r.out}`, n: r.qty });
-      const night = paris(new Date()).hour === 3;
-      return done(undefined, night ? await grantSecret(roomId, uid, "minuit") : null);
+      if (isFlower(out)) await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `bloom:${out}`, n: r.qty });
+      const night = paris(new Date()).hour === 3 ? await grantSecret(roomId, uid, "minuit") : null;
+      const rare = isFlower(out) && rarityOf(out) !== "commune" && rarityOf(out) !== "peu commune";
+      return done(undefined, night ?? (isFlower(out) ? `Une fleur a poussé : ${ITEMS[out].name}${rare ? ` (${rarityOf(out)} !)` : ""}` : null));
     }
     case "clear": {
       if (!tile || tile.item) return done("Attends que ce soit fini avant de démolir.");
@@ -160,16 +163,19 @@ export async function moveCat(roomId: string, x: number, y: number) {
   await adminDb().from("farm_cats").upsert({ room_id: roomId, user_id: uid, x, y });
 }
 
-/** Laisser une fleur dans la serre d'un ami (une fois par jour et par ami, vérifié par la base). */
-export async function giveGift(roomId: string, receiver: string) {
+/** Laisser des fleurs (une, ou un bouquet) dans la serre d'un ami, avec un mot écrit par soi : une fois par jour et par ami (la base le vérifie). */
+export async function giveGift(roomId: string, receiver: string, items: Inventory, message: string) {
   const c = await getRoomContext(roomId);
   if (!c) throw new Error("Non autorisé");
   if (receiver === c.user.id || !c.names[receiver]) return "Impossible.";
-  const { error } = await adminDb().rpc("farm_gift", { r: roomId, g: c.user.id, rcv: receiver, it: "flower", msg: randomGiftMessage() });
-  if (error) return error.code === "23505" ? "Déjà offert aujourd'hui." : "Récolte une fleur d'abord.";
+  const err = giftError(items);
+  if (err) return err;
+  const { error } = await adminDb().rpc("farm_gift", { r: roomId, g: c.user.id, rcv: receiver, items, msg: String(message ?? "").slice(0, MESSAGE_MAX) });
+  if (error) return error.code === "23505" ? "Déjà offert aujourd'hui." : "Tu n'as pas assez de ces fleurs.";
+  const bouquet = Object.values(items).reduce((n, v) => n + (v ?? 0), 0) > 1;
   after(() => notify([receiver], "farm", {
     title: "Un cadeau t'attend",
-    body: `${c.names[c.user.id]} t'a laissé une fleur dans ta serre.`,
+    body: `${c.names[c.user.id]} t'a laissé ${bouquet ? "un bouquet" : "une fleur"} dans ta serre.`,
     url: `/r/${roomId}/farm`,
     tag: `gift-${roomId}`,
   }));

@@ -8,9 +8,9 @@ import { eventKeys } from "./story/events";
 import { chapterOf } from "./story";
 import { chapterDay, personalUnlocks, questsDone } from "./story/state";
 
-export type Gift = { id: number; giver: string; item: string; message: string | null; day: string };
+export type Gift = { id: number; giver: string; item: string; contents: Inventory | null; message: string | null; day: string }; // contents : le bouquet, ou null (une fleur : item)
 /** gifts : cadeaux à ouvrir ; collection : fleurs reçues (cadeaux ouverts), gardées. */
-export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; collection: Gift[]; now: number; story: StoryCore }; // now : heure du serveur
+export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; collection: Gift[]; album: Record<string, number>; now: number; story: StoryCore }; // now : heure du serveur
 /** Ce qu'il faut savoir de l'histoire pour jouer : chapitre, quêtes finies, rattrapage. */
 export type StoryCore = { chapter: number; day: number; done: string[]; catch: CatchUp; activeAt: string | null };
 export type ProjectState = Project & { progress: Inventory; givers: Record<string, number> };
@@ -68,11 +68,12 @@ export async function touchActivity(roomId: string, uid: string, story: StoryCor
 export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   const admin = adminDb();
   const now = Date.now();
-  const [{ data: tiles }, { data: items }, { data: cat }, { data: gifts }, roomUnlocks, story] = await Promise.all([
+  const [{ data: tiles }, { data: items }, { data: cat }, { data: gifts }, { data: bloom }, roomUnlocks, story] = await Promise.all([
     admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_items").select("item, qty").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_cats").select("x, y").eq("room_id", roomId).eq("user_id", uid).maybeSingle(),
-    admin.from("farm_gifts").select("id, giver, item, message, day, opened").eq("room_id", roomId).eq("receiver", uid).order("id", { ascending: false }),
+    admin.from("farm_gifts").select("id, giver, item, contents, message, day, opened").eq("room_id", roomId).eq("receiver", uid).order("id", { ascending: false }),
+    admin.from("farm_stats").select("key, count").eq("room_id", roomId).eq("user_id", uid).like("key", "bloom:%"),
     loadUnlocks(roomId),
     loadStoryCore(roomId, uid, now),
   ]);
@@ -87,6 +88,7 @@ export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   ];
   return { tiles: (tiles ?? []) as Tile[], items: toInventory(items ?? []), unlocks, cat: cat ?? START_CAT, gifts: ((gifts ?? []) as (Gift & { opened: boolean })[]).filter((g) => !g.opened).reverse(),
     collection: ((gifts ?? []) as (Gift & { opened: boolean })[]).filter((g) => g.opened),
+    album: Object.fromEntries((bloom ?? []).map((b) => [b.key.slice(6), b.count as number])),
     now,
     story,
   };
