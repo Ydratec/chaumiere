@@ -5,7 +5,7 @@ import { VoteActivity } from "./vote";
 
 export function QuestionActivity(props: ActivityProps) {
   if (props.activity.payload.kind === "vote") return <VoteActivity {...props} />;
-  const { activity, userId, names, answers } = props;
+  const { activity, userId, names, answers, voteLocked } = props;
   const mine = answers.find((a) => a.user_id === userId);
   const others = answers.filter((a) => a.user_id !== userId);
   return (
@@ -15,7 +15,7 @@ export function QuestionActivity(props: ActivityProps) {
         <h2 className="mt-2 text-[1.7rem] font-bold leading-tight tracking-tight">{activity.payload.text}</h2>
       </section>
 
-      <AnswerForm activityId={activity.id} mine={mine?.content} />
+      <AnswerForm activityId={activity.id} mine={mine?.content} locked={voteLocked} />
 
       {mine && (
         <section>

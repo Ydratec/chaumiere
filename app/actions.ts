@@ -61,11 +61,11 @@ export async function answer(f: FormData) {
   if (a?.payload?.kind === "vote") {
     const { data: m } = await sb.from("room_members").select("user_id").eq("room_id", a.room_id).eq("user_id", content).maybeSingle();
     if (!m) return;
-    if (a.rooms?.vote_locked) {
-      const me = await getAuthUser();
-      const { data: voted } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
-      if (voted) return;
-    }
+  }
+  if (a?.rooms?.vote_locked) { // réponses définitives (votes comme questions ouvertes)
+    const me = await getAuthUser();
+    const { data: voted } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
+    if (voted) return;
   }
   await sb.from("answers").upsert({ activity_id: activityId, content });
   revalidatePath(a ? `/r/${a.room_id}/question` : "/", a ? "page" : "layout"); // seule la page de la question change

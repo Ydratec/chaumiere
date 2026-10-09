@@ -17,8 +17,8 @@ export function RoomOptions({ roomId, voteLocked, questionHour }: { roomId: stri
     <div className="rows">
       <label className="flex items-center justify-between gap-3 py-3 text-sm">
         <span>
-          <span className="block font-medium">Vote définitif</span>
-          <span className="text-zinc-500">On ne peut pas changer son vote.</span>
+          <span className="block font-medium">Réponses définitives</span>
+          <span className="text-zinc-500">On ne peut plus changer son vote ni sa réponse.</span>
         </span>
         <input type="checkbox" checked={locked} onChange={() => save(!locked, hour)} className="size-5 accent-indigo-600" />
       </label>
