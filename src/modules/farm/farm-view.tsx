@@ -11,7 +11,7 @@ import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
 import type { Farm, Gift } from "./data";
 import {
-  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, progress, recipeOf, sellPrice, sizeOf, tileAt,
+  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, producedOf, progress, recipeOf, sellPrice, sizeOf, tileAt,
   type Cell, type Tile,
 } from "./rules";
 
@@ -315,11 +315,11 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
               key={`${t.x}-${t.y}`}
               onClick={(e) => { e.stopPropagation(); tapObject(t); }}
               {...pressHandlers(t)}
-              aria-label={`${BUILDINGS[t.kind as BuildingId]?.name ?? t.kind}${r ? `, ${ITEMS[r.out].name}${done ? " prêt" : " en cours"}` : ""}`}
+              aria-label={`${BUILDINGS[t.kind as BuildingId]?.name ?? t.kind}${r ? `, ${ITEMS[producedOf(t)!].name}${done ? " prêt" : " en cours"}` : ""}`}
               className={`absolute p-[2px] transition-opacity ${placing ? "pointer-events-none" : ""} ${moving ? "opacity-30" : ""} ${selected ? "rounded-xl ring-2 ring-indigo-500" : ""}`}
               style={{ ...box(t.x, t.y, w, h), zIndex: (t.y + h) * 2, touchAction: "none" }}
             >
-              <ObjectArt kind={t.kind} item={r ? r.out : null} growth={done ? 1 : progress(t, now)} />
+              <ObjectArt kind={t.kind} item={r ? producedOf(t)! : null} growth={done ? 1 : progress(t, now)} />
               {r && !done && (
                 <span className="absolute inset-x-[18%] bottom-[6%] h-1 overflow-hidden rounded-full bg-black/20">
                   <span className="block h-full rounded-full bg-white" style={{ width: `${progress(t, now) * 100}%` }} />
@@ -357,7 +357,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
               className="pointer-events-none absolute flex size-7 -translate-x-1/2 -translate-y-1/2 animate-bounce items-center justify-center rounded-full bg-white shadow-md"
               style={{ left: `${((t.x + w / 2) / GRID_W) * 100}%`, top: `${(t.y / H) * 100}%`, zIndex: 900 }}
             >
-              <ItemIcon id={r.out} size={18} />
+              <ItemIcon id={producedOf(t)!} size={18} />
             </span>
           );
         })}
@@ -602,9 +602,9 @@ function TileSheet({ tile, farm, now, pending, act }: {
       <>
         {head}
         <div className="flex items-center gap-4">
-          <ItemIcon id={r.out} size={44} />
+          <ItemIcon id={producedOf(tile)!} size={44} />
           <div className="flex-1">
-            <p className="font-medium">{ITEMS[r.out].name} × {r.qty}</p>
+            <p className="font-medium">{ITEMS[producedOf(tile)!].name} × {r.qty}</p>
             <p className="text-sm text-zinc-500">{left > 0 ? `Prêt dans ${fmt(left)}` : "Prêt !"}</p>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
               <div className="h-full rounded-full bg-indigo-600 transition-[width]" style={{ width: `${progress(tile, now) * 100}%` }} />

@@ -3,7 +3,7 @@ import { adminDb } from "@/src/lib/db/server";
 import { BUILDINGS, isBuilding } from "./catalog";
 import type { Inventory } from "./catalog";
 import { isFlower, pickFlower } from "./flowers";
-import { excessTiles, recipeOf, isReady, type Tile } from "./rules";
+import { excessTiles, producedOf, recipeOf, isReady, type Tile } from "./rules";
 import { chapterOf } from "./story";
 import { chapterDay, personalUnlocks } from "./story/state";
 
@@ -42,7 +42,7 @@ export async function enforceRules(apply: boolean): Promise<Trimmed[]> {
         refund += isBuilding(t.kind) ? BUILDINGS[t.kind].cost : 0;
         const r = recipeOf(t.kind, t.item);
         if (r) {
-          if (isReady(t, Date.now())) give(r.out === "flower" ? pickFlower() : r.out, r.qty);
+          if (isReady(t, Date.now())) give(producedOf(t) === "flower" && !t.item?.includes(":") ? pickFlower() : producedOf(t)!, r.qty);
           else for (const [k, v] of Object.entries(r.inputs)) give(k, v ?? 0);
         }
         if (apply) await admin.from("farm_tiles").delete().eq("room_id", room.id).eq("user_id", user).eq("x", t.x).eq("y", t.y);

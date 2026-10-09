@@ -2,7 +2,7 @@
 // envoie les notifications programmées (question du jour à l'heure de chaque salle, récoltes prêtes).
 import { adminDb } from "@/src/lib/db/server";
 import { ITEMS, isItem } from "@/src/modules/farm/catalog";
-import { recipeOf } from "@/src/modules/farm/rules";
+import { producedOf, type Tile } from "@/src/modules/farm/rules";
 import { chapterOf } from "@/src/modules/farm/story";
 import { activeEvents } from "@/src/modules/farm/story/events";
 import { chapterDay } from "@/src/modules/farm/story/state";
@@ -26,7 +26,7 @@ async function harvests() {
   const byFarm = new Map<string, { room: string; user: string; items: string[] }>();
   for (const t of data ?? []) {
     const k = `${t.room_id}:${t.user_id}`;
-    const out = recipeOf(t.kind, t.item)?.out;
+    const out = producedOf(t as unknown as Tile);
     if (!byFarm.has(k)) byFarm.set(k, { room: t.room_id, user: t.user_id, items: [] });
     if (out && isItem(out)) byFarm.get(k)!.items.push(ITEMS[out].name);
   }

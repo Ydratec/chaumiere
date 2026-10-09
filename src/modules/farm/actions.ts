@@ -11,7 +11,7 @@ import { loadFarm, loadProjects, touchActivity, type Farm, type Gift } from "./d
 import { grantSecret } from "./story/grant";
 import { paris } from "@/src/modules/questions/day";
 import { isComplete, remaining } from "./projects";
-import { duration, gridH, sellPrice, negate, offerError, placeError, recipeOf, startError, tileAt, type FarmMove } from "./rules";
+import { duration, gridH, sellPrice, negate, offerError, placeError, producedOf, recipeOf, startError, tileAt, type FarmMove } from "./rules";
 
 export type { FarmMove };
 
@@ -58,7 +58,9 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
       const { error } = await add(negate(r.inputs));
       if (error) return done("Il te manque des ingrédients.");
       const now = Date.now();
-      const { data } = await where(tiles().update({ notified: false, item: r.id, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, farm.unlocks)).toISOString() }))
+      // Un pot : la fleur qui poussera est tirée au sort dès la plantation (« flower:poppy »), pour l'afficher pendant qu'elle pousse.
+      const planted = r.out === "flower" ? `flower:${pickFlower()}` : r.id;
+      const { data } = await where(tiles().update({ notified: false, item: planted, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, farm.unlocks)).toISOString() }))
         .is("item", null).select("x");
       if (!data?.length) await add(r.inputs); // déjà lancé entre-temps : remboursement
       return done(data?.length ? undefined : "Déjà occupé.");
@@ -68,9 +70,9 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
       if (!r) return done("Rien à récolter.");
       // Condition sur l'objet et l'échéance : une seule récolte possible, même avec deux clics.
       const { data } = await where(tiles().update({ item: null, started_at: null, ready_at: null }))
-        .eq("item", r.id).lte("ready_at", new Date().toISOString()).select("x");
+        .eq("item", tile!.item!).lte("ready_at", new Date().toISOString()).select("x");
       if (!data?.length) return done("Pas encore prêt.");
-      const out = r.out === "flower" ? pickFlower() : r.out; // la graine donne une fleur au hasard
+      const out = producedOf(tile!) === "flower" && !tile!.item?.includes(":") ? pickFlower() : producedOf(tile!)!; // ancienne graine sans variété : tirée à la récolte
       await add({ [out]: r.qty });
       await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `harvest:${r.out}`, n: r.qty });
       if (isFlower(out)) await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `bloom:${out}`, n: r.qty });

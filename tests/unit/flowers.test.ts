@@ -37,3 +37,16 @@ test("cadeau : une fleur ou un bouquet de fleurs seulement, taille limitée", ()
   assert.equal(giftError({ rose: 1.5 }), "Choisis des fleurs à offrir.");
   assert.equal(giftError({ rose: BOUQUET_MAX, tulip: 1 }), `Un bouquet compte au plus ${BOUQUET_MAX} fleurs.`);
 });
+
+test("pot : la fleur est tirée à la plantation (« flower:poppy ») et reste la même jusqu'à la récolte", async () => {
+  const { producedOf, recipeOf, applyMove } = await import("../../src/modules/farm/rules.ts");
+  const pot = (item: string | null) => ({ x: 0, y: 0, kind: "pot", item, started_at: null, ready_at: item ? "2026-01-01T00:00:00Z" : null });
+  assert.equal(recipeOf("pot", "flower:poppy")?.id, "flower");
+  assert.equal(producedOf(pot("flower:poppy")), "poppy");
+  assert.equal(producedOf(pot("flower")), "flower"); // ancienne graine : pas encore de variété
+  assert.equal(producedOf({ ...pot("wheat"), kind: "planter" }), "wheat");
+  assert.equal(producedOf(pot(null)), undefined);
+  const f = { tiles: [pot("flower:moonflower")], items: {}, unlocks: [] };
+  const r = applyMove(f, { kind: "collect", x: 0, y: 0 }, Date.parse("2026-01-02T00:00:00Z"));
+  assert.ok("state" in r && r.state.items.moonflower === 1, "la fleur de lune arrive dans la réserve");
+});

@@ -1,12 +1,21 @@
 // Règles de la ferme : fonctions pures (testées dans tests/unit/farm.test.ts).
+import { isFlower } from "./flowers.ts";
 import { BASE_CAP, BUILDINGS, GRID_H, GRID_W, ITEMS, isBuilding, isItem, type BuildingId, type Inventory, type ItemId, type Recipe } from "./catalog.ts";
 
 /** Un objet posé : (x, y) = son coin haut-gauche. */
 export type Tile = { x: number; y: number; kind: string; item: string | null; started_at: string | null; ready_at: string | null };
 export type Cell = { x: number; y: number };
 
+/** `id` : la recette en cours ; pour un pot, « flower:poppy » = graine plantée dont la fleur (déjà tirée au sort) sera un coquelicot. */
 export const recipeOf = (kind: string, id: string | null): Recipe | undefined =>
-  isBuilding(kind) && id ? BUILDINGS[kind].recipes.find((r) => r.id === id) : undefined;
+  isBuilding(kind) && id ? BUILDINGS[kind].recipes.find((r) => r.id === id.split(":")[0]) : undefined;
+
+/** Ce que produit cet objet : pour une fleur, la variété qui pousse (si on la connaît déjà). */
+export function producedOf(t: Tile): ItemId | undefined {
+  const r = recipeOf(t.kind, t.item);
+  const grown = t.item?.split(":")[1];
+  return r && grown && isFlower(grown) ? grown : r?.out;
+}
 
 export const sizeOf = (kind: string): [number, number] => (isBuilding(kind) ? BUILDINGS[kind].size : [1, 1]);
 
@@ -222,7 +231,7 @@ export function applyMove(f: FarmState, m: FarmMove, now: number): { state: Farm
       if (!isReady(tile, now)) return { error: "Pas encore prêt." };
       const t = { ...tile, item: null, started_at: null, ready_at: null };
       // La fleur qui pousse est tirée au sort par le serveur : on libère le pot, la fleur arrive avec la réponse.
-      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? t : x)), items: r.out === "flower" ? f.items : plus(f.items, { [r.out]: r.qty }) } };
+      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? t : x)), items: plus(f.items, { [producedOf(tile)!]: r.qty }) } }; // (une ancienne fleur sans variété : « flower », comme avant)
     }
     case "clear": {
       if (!tile || tile.item) return { error: "Attends que ce soit fini avant de démolir." };
