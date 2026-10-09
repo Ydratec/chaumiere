@@ -63,7 +63,7 @@ export const ch1: Chapter = {
       intro: [{ who: "mirabelle", text: "Construis-moi ce four, mon petit chou. Là, à côté des bacs. Et pas de travers, hein : je vois tout." }],
       outro: [{ who: "mirabelle", text: "Il est de travers. Je plaisante ! Il est magnifique. Allume-le, on va faire des miches." }],
       goal: { kind: "own", building: "oven", n: 1 },
-      reward: { coins: 60, unlocks: ["cap:planter:4"] },
+      reward: { coins: 60, unlocks: ["cap:planter:7"] },
       page: { title: "La pierre chaude", text: "Il suffit d'une pierre chaude pour qu'une cuisine devienne une maison. Je dis ça parce que la mienne est restée tiède trente ans." },
     },
     {
@@ -74,7 +74,7 @@ export const ch1: Chapter = {
         { who: "mirabelle", text: "Aujourd'hui, il n'y a plus que la brume. Tiens, je te débloque le poulailler : un peu de vie ici ne ferait pas de mal." },
       ],
       goal: { kind: "harvest", item: "bread", n: 3 },
-      reward: { coins: 40, unlocks: ["b:coop", "cap:pot:5"] },
+      reward: { coins: 40, unlocks: ["b:coop", "cap:pot:7"] },
       page: { title: "Le pain du dimanche", text: "Le dimanche, je laissais une miche sur le rebord de la fenêtre, pour celui qui passerait. C'est Armand qui la prenait toujours. Il faisait semblant de ne pas la voir, et il la prenait." },
     },
     {
@@ -86,7 +86,7 @@ export const ch1: Chapter = {
         { who: "pistache", text: "De la famille ? Quelle famille ? Je n'ai jamais dit… Bon. D'accord. Un petit. Un seul." },
       ],
       goal: { kind: "own", building: "coop", n: 1 },
-      reward: { coins: 50, unlocks: ["cap:planter:5"] },
+      reward: { coins: 50, unlocks: ["cap:planter:9"] },
       page: { title: "Pistache", text: "Un renard rôde depuis cet hiver. Il croit que je ne le vois pas. Il repart toujours avec les plus petits œufs, jamais avec les gros. Un voleur qui laisse les gros œufs, ça cache quelque chose." },
     },
     {
@@ -101,7 +101,7 @@ export const ch1: Chapter = {
         { who: "mirabelle", text: "Il y a une lettre, dans la cave. Pas encore, mon petit chou. Pas encore." },
       ],
       goal: { kind: "deliver", items: { egg: 4 } },
-      reward: { coins: 80, unlocks: ["cap:pot:6"] },
+      reward: { coins: 80, unlocks: ["cap:pot:9"] },
       page: { title: "Une promesse", text: "Ce soir, un renard a dit merci. Ça faisait trente ans que personne ne m'avait remercié de rien. Je crois que je pleure. Les fantômes pleurent-ils ? Mon drap est tout mouillé." },
     },
 
@@ -117,7 +117,7 @@ export const ch1: Chapter = {
         { who: "mirabelle", text: "Zinnia, ma petite. Elle a mes mains pour les fleurs. Et mon sale caractère, quand elle s'y met." },
       ],
       goal: { kind: "harvest", item: "flower", n: 8 },
-      reward: { coins: 50, unlocks: ["cap:pot:8"] },
+      reward: { coins: 50, unlocks: ["cap:pot:11"] },
       page: { title: "Zinnia", text: "La petite Zinnia est passée à la serre. Elle n'ose pas me voir, mais elle sent que je suis là : elle parle un peu plus bas que d'habitude. C'est comme ça qu'on parle aux fantômes. C'est comme ça qu'on parle aux absents." },
     },
     {
@@ -131,7 +131,7 @@ export const ch1: Chapter = {
         { who: "zinnia", text: "Ça faisait si longtemps que je n'avais pas vu quelqu'un franchir un seuil pour moi." },
       ],
       goal: { kind: "deliver", items: { carrot: 6, flower: 4 } },
-      reward: { coins: 70, unlocks: ["cap:planter:6"] },
+      reward: { coins: 70, unlocks: ["cap:planter:11"] },
       page: { title: "La soupe", text: "On dit qu'une soupe partagée vaut dix discours. J'en ai fait des centaines, de ces soupes. Dommage que je n'aie jamais su faire un seul bon discours." },
     },
     {
@@ -159,7 +159,7 @@ export const ch1: Chapter = {
         { who: "mirabelle", text: "Ce n'est pas le maïs, Armand… Pour qui l'allumes-tu, cette lanterne, tu crois ?" },
       ],
       goal: { kind: "deliver", items: { corn: 8 } },
-      reward: { coins: 90, unlocks: ["cap:planter:8", "cap:coop:2"] },
+      reward: { coins: 90, unlocks: ["cap:planter:13", "cap:coop:2"] },
       page: { title: "La lanterne", text: "Il y a une lanterne, derrière la brume, qui brille chaque soir à la même fenêtre. Depuis trente ans. Je la vois depuis la serre. C'est ma façon de savoir qu'il pense encore à ce soir-là." },
     },
     {
@@ -173,7 +173,7 @@ export const ch1: Chapter = {
         { who: "mirabelle", text: "…Ah. Ça, mon petit chou, c'est une longue histoire." },
       ],
       goal: { kind: "harvest", item: "strawberry", n: 10 },
-      reward: { coins: 120, unlocks: ["cap:pot:10", "cap:planter:10"] },
+      reward: { coins: 120, unlocks: ["cap:pot:14", "cap:planter:15"] },
       page: { title: "La Fête", text: "On l'appelait la Fête des Brumes. Une nuit par an, on suspendait des lanternes à toutes les fenêtres pour guider les voyageurs. Je ne sais pas combien de fois j'ai préparé cette fête. Je sais combien de fois j'aurais voulu la préparer une dernière fois." },
     },
     {
@@ -191,7 +191,7 @@ export const ch1: Chapter = {
         { who: "mirabelle", text: "Non… pas déjà." },
       ],
       goal: { kind: "deliver", items: { cake: 2, egg: 4 } },
-      reward: { coins: 200, unlocks: ["cap:planter:12"] },
+      reward: { coins: 200, unlocks: ["cap:planter:18"] },
       page: { title: "Le pont", text: "Quelqu'un est arrivé sur le vieux pont. Ça fait trente ans que personne n'y a mis les pieds. J'ai peur, mon petit chou. J'ai très peur, et je ne sais plus pourquoi je suis la seule à avoir peur." },
     },
   ],

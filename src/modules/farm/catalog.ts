@@ -74,5 +74,5 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
   fountain: { name: "Vasque", size: [2, 2], cost: 80, max: 1, verb: "", recipes: [], requires: "cosmetic:decor" },
 };
 /** Plafond de départ des objets sans `max` : l'histoire le relève (clés « cap:bac:5 » dans les déblocages personnels). */
-export const BASE_CAP: Partial<Record<BuildingId, number>> = { planter: 3, pot: 3 };
+export const BASE_CAP: Partial<Record<BuildingId, number>> = { planter: 5, pot: 5 };
 export const isBuilding = (id: string): id is BuildingId => id in BUILDINGS;

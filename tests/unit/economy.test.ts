@@ -29,7 +29,7 @@ test("économie : chaque recette rapporte plus qu'elle ne coûte, mais plafonné
 });
 
 test("économie : les plafonds de départ existent et l'histoire les relève", () => {
-  assert.ok(BASE_CAP.planter && BASE_CAP.planter <= 3);
+  assert.ok(BASE_CAP.planter && BASE_CAP.planter <= 6);
   const fin = personalUnlocks(ch1, ch1.quests.map((q) => q.id));
   assert.ok((maxOf("planter", fin) ?? 0) > (maxOf("planter", []) ?? 0));
 });

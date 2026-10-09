@@ -72,14 +72,14 @@ test("calendrier : jour du chapitre, actes qui sortent, quête en cours, prochai
 test("déblocages personnels : joueurs d'avant l'histoire, plafonds qui montent", () => {
   assert.deepEqual(personalUnlocks(ch1, ["legacy"]).sort(), ["b:coop", "b:oven"]);
   const u = personalUnlocks(ch1, ["pain", "four"]);
-  assert.ok(u.includes("b:oven") && u.includes("cap:planter:4") && !u.includes("b:coop"));
-  assert.equal(maxOf("planter", []), 3);
+  assert.ok(u.includes("b:oven") && u.includes("cap:planter:7") && !u.includes("b:coop"));
+  assert.equal(maxOf("planter", []), 5);
   assert.equal(maxOf("planter", ["cap:planter:4", "cap:planter:8"]), 8);
-  const trois = [0, 1, 2].map((i) => ({ ...tile("planter"), x: i * 2 }));
-  assert.match(placeError(trois, { coins: 100 }, "planter", 8, 0)!, /Tu en as déjà 3/);
-  assert.equal(placeError(trois, { coins: 100 }, "planter", 8, 0, ["cap:planter:4"]), null);
+  const cinq = [0, 1, 2, 3, 4].map((i) => ({ ...tile("planter"), x: i * 2 }));
+  assert.match(placeError(cinq, { coins: 100 }, "planter", 0, 4)!, /Tu en as déjà 5/);
+  assert.equal(placeError(cinq, { coins: 100 }, "planter", 0, 4, ["cap:planter:7"]), null);
   // un joueur qui avait déjà plus que le plafond garde ses objets (seul le fait d'en construire est bloqué)
-  const six = [0, 1, 2, 3, 4, 5].map((i) => ({ ...tile("pot"), x: i, y: 5 }));
+  const six = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ ...tile("pot"), x: i, y: 5 }));
   assert.match(placeError(six, { coins: 100 }, "pot", 0, 8)!, /Tu en as déjà/);
   assert.equal(placeError(six, { coins: 100 }, "pot", 0, 5, [], six[0]), null);
 });

@@ -51,6 +51,9 @@ export async function enforceRules(apply: boolean): Promise<Trimmed[]> {
         const delta: Inventory = { ...given, coins: (given.coins ?? 0) + refund };
         await admin.rpc("farm_add_items", { r: room.id, u: user, delta });
         for (const [k, v] of Object.entries(given)) if (isFlower(k)) await admin.rpc("farm_stat_add", { r: room.id, u: user, k: `bloom:${k}`, n: v ?? 0 });
+        // Mot laissé au joueur : la fenêtre « serres remises aux règles » lit cette ligne (format : trim:<date>|bac=27;pot=13|<pièces>).
+        const what = Object.entries(removed).map(([k, v]) => `${k}=${v}`).join(";");
+        await admin.from("farm_journal").insert({ room_id: room.id, user_id: user, page: `trim:${Date.now()}|${what}|${refund}` });
       }
       report.push({ room: room.id, user, removed, refund, given });
     }
