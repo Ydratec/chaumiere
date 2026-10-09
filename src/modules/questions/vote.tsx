@@ -54,7 +54,8 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
     </form>
   );
 
-  const { rows, total } = tally(answers, members);
+  const { rows: all, total } = tally(answers, members);
+  const rows = all.filter((r) => r.voters.length > 0); // seulement ceux qui ont des voix
 
   return (
     <>
