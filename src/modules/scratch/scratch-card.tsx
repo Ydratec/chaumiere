@@ -18,6 +18,9 @@ function Face({ id, win }: { id: string; win?: boolean }) {
   );
 }
 
+/** Part grattée à partir de laquelle le reste se révèle tout seul (après une pause). */
+const AUTO = 0.8;
+
 const THEME: Record<Kind, string> = {
   small: "from-emerald-100 to-emerald-200 ring-emerald-300",
   medium: "from-amber-100 to-amber-200 ring-amber-300",
@@ -26,7 +29,8 @@ const THEME: Record<Kind, string> = {
 
 /**
  * Un ticket à gratter : le contenu est dessous, une pellicule argentée (canvas) au-dessus qu'on efface au doigt.
- * Quand environ 60 % est gratté (ou sur « Tout révéler »), tout se révèle et le lot est versé une seule fois.
+ * Quand environ 80 % est gratté, on laisse un temps pour voir, puis le reste s'efface doucement (ou tout de suite avec « Tout révéler ») ;
+ * le lot est versé une seule fois.
  */
 export function ScratchCard({ roomId, card, onDone }: { roomId: string; card: Card; onDone: (prize: string | null) => void }) {
   const kind = card.kind as Kind;
@@ -59,13 +63,18 @@ export function ScratchCard({ roomId, card, onDone }: { roomId: string; card: Ca
       for (let x = (((y / dpr) | 0) % 2 ? 40 : 0) * dpr; x < c.width + 80 * dpr; x += 80 * dpr) g.fillText("GRATTE", x, y);
   }, []);
 
-  function reveal() {
-    if (revealed) return;
-    setRevealed(true);
-    try {
-      navigator.vibrate?.(won ? [60, 40, 60] : 20);
-    } catch {}
-    void claimTicket(roomId, card.id).then(() => onDone(won));
+  const revealing = useRef(false);
+  /** Révèle tout. `delay` : on laisse d'abord le temps de voir ce qu'on vient de gratter, puis le reste s'efface doucement. */
+  function reveal(delay = 0) {
+    if (revealing.current) return;
+    revealing.current = true;
+    setTimeout(() => {
+      setRevealed(true);
+      try {
+        navigator.vibrate?.(won ? [60, 40, 60] : 20);
+      } catch {}
+      void claimTicket(roomId, card.id).then(() => setTimeout(() => onDone(won), 1200)); // le message arrive une fois le ticket bien visible
+    }, delay);
   }
 
   /** Part de la pellicule déjà effacée (on échantillonne un pixel sur quelques-uns). */
@@ -97,7 +106,7 @@ export function ScratchCard({ roomId, card, onDone }: { roomId: string; card: Ca
     last.current = p;
     if (e.timeStamp - lastCheck.current > 250) {
       lastCheck.current = e.timeStamp;
-      if (cleared() > 0.6) reveal();
+      if (cleared() > AUTO) reveal(1500);
     }
   }
 
@@ -140,11 +149,11 @@ export function ScratchCard({ roomId, card, onDone }: { roomId: string; card: Ca
           aria-label="Pellicule à gratter"
           onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); last.current = null; scratch(e); }}
           onPointerMove={scratch}
-          onPointerUp={() => { last.current = null; if (!revealed && cleared() > 0.6) reveal(); }}
-          className={`absolute inset-0 size-full cursor-crosshair transition-opacity duration-500 ${revealed ? "pointer-events-none opacity-0" : ""}`}
+          onPointerUp={() => { last.current = null; if (!revealed && cleared() > AUTO) reveal(1500); }}
+          className={`absolute inset-0 size-full cursor-crosshair transition-opacity duration-[1800ms] ${revealed ? "pointer-events-none opacity-0" : ""}`}
         />
       </div>
-      {!revealed && <button onClick={reveal} className="w-full text-center text-xs font-medium text-zinc-500">Tout révéler</button>}
+      {!revealed && <button onClick={() => reveal()} className="w-full text-center text-xs font-medium text-zinc-500">Tout révéler</button>}
     </div>
   );
 }
