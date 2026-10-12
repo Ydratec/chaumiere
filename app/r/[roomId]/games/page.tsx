@@ -8,7 +8,10 @@ import { acceptGame, createGame, type Game } from "@/src/modules/games/actions";
 import { GAME_TYPES, isGameType } from "@/src/modules/games/labels";
 import { GamesLive } from "@/src/modules/games/live";
 import { GameResult } from "@/src/modules/games/result";
+import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
+import { loadPending } from "@/src/modules/scratch/data";
+import { ScratchShop } from "@/src/modules/scratch/shop";
 
 
 export default async function GamesPage({ params }: { params: Promise<{ roomId: string }> }) {
@@ -19,7 +22,11 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
   const { data } = await ctx.sb
     .from("games").select("*").eq("room_id", roomId).order("created_at", { ascending: false }).limit(30).returns<Game[]>();
   const games = data ?? [];
-  const unlocks = await loadUnlocks(roomId);
+  const [unlocks, pending, { data: wallet }] = await Promise.all([
+    loadUnlocks(roomId),
+    loadPending(roomId, me),
+    adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", me).eq("item", "coins").maybeSingle(),
+  ]);
   const locked = (type: string) => !!GAME_LOCKS[type] && !unlocks.includes(GAME_LOCKS[type]);
   const name = (id: string) => (id === me ? "toi" : (ctx.names[id] ?? "?"));
   const href = (g: Game) => `/r/${roomId}/games/${g.id}`;
@@ -69,6 +76,8 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
         </select>
         <button className="btn w-full">Lancer le défi</button>
       </form>
+
+      <ScratchShop roomId={roomId} coins={wallet?.qty ?? 0} pending={pending} />
 
       {received.length > 0 && (
         <section>
