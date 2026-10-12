@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { drawTicket, evaluate, isKind, jackpot, PRIZES, returnRate, TICKETS, valueOf, winningCells, winRate, type Kind, type Layout } from "../../src/modules/scratch/tickets.ts";
+import { drawTicket, evaluate, oneTrio, isKind, jackpot, PRIZES, returnRate, TICKETS, valueOf, winningCells, winRate, type Kind, type Layout } from "../../src/modules/scratch/tickets.ts";
 
 const KINDS = Object.keys(TICKETS) as Kind[];
 
@@ -35,6 +35,8 @@ test("règles : la disposition donne exactement le lot tiré (ni plus, ni moins)
         assert.ok(layout.win >= 1 && layout.win <= 30);
       } else {
         assert.equal(layout.cells.length, 9);
+        assert.ok(oneTrio(layout.cells), `un seul trio possible : ${layout.cells.join(",")}`);
+        if (layout.rule === "same" && !prize) assert.ok(!Object.values(layout.cells.reduce((m: Record<string, number>, c) => ((m[c] = (m[c] ?? 0) + 1), m), {})).some((x) => x >= 3));
       }
       assert.equal(winningCells(layout).length > 0, prize !== null);
     }
@@ -54,6 +56,8 @@ test("règles : trois alignés ≠ trois identiques en désordre, numéro voisin
   const num: Layout = { rule: "number", win: 12, entries: [{ n: 11, p: "c5000" }, { n: 4, p: "c25" }, { n: 30, p: "c50" }, { n: 1, p: "c100" }, { n: 9, p: "c200" }, { n: 22, p: "c25" }] };
   assert.equal(evaluate(num), null);
   assert.equal(evaluate({ ...num, win: 4 }), "c25");
+  assert.ok(!oneTrio(["c25", "c25", "c25", "c2000", "c2000", "c2000", "c50", "c100", "c200"]), "deux trios : refusé");
+  assert.ok(!oneTrio(["c25", "c25", "c25", "c25", "c50", "c100", "c200", "c500", "c50"]), "quatre identiques : refusé");
 });
 
 test("tickets : fréquences simulées proches des chances annoncées", () => {

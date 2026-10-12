@@ -73,6 +73,14 @@ export function winningCells(l: Layout): number[] {
   return LINES.find((ln) => ln.every((i) => l.cells[i] === p)) ?? [];
 }
 
+/** Au plus un trio sur la grille : une seule valeur peut apparaître 3 fois (jamais plus), les autres au plus 2 fois. */
+export function oneTrio(cells: string[]) {
+  const count: Record<string, number> = {};
+  for (const c of cells) count[c] = (count[c] ?? 0) + 1;
+  const n = Object.values(count);
+  return n.every((x) => x <= 3) && n.filter((x) => x === 3).length <= 1;
+}
+
 type Rand = () => number;
 const pick = <T,>(xs: T[], rand: Rand) => xs[Math.floor(rand() * xs.length)];
 const shuffle = <T,>(xs: T[], rand: Rand) => {
@@ -103,7 +111,7 @@ function grid(kind: Kind, rule: "same" | "line", prize: string | null, rand: Ran
     }
     for (let i = 0; i < 9; i++) cells[i] ??= pick(ids.filter((x) => x !== prize), rand);
     const out = cells as string[];
-    if (evaluate({ rule, cells: out }) === prize) return out;
+    if (oneTrio(out) && evaluate({ rule, cells: out }) === prize) return out;
   }
   throw new Error("disposition impossible"); // ponytail: ne devrait jamais arriver ; la table a assez de lots différents
 }
