@@ -47,6 +47,11 @@ export default async function QuestionPage({ params, searchParams }: { params: P
         </nav>
       )}
       <Today key={activity.id} activity={activity} userId={user.id} names={names} people={people} voteLocked={ctx.voteLocked} answers={answers ?? []} />
+      {!(answers ?? []).some((x) => x.user_id === user.id) ? (
+        <p className="rounded-2xl bg-white px-4 py-5 text-center text-sm text-zinc-500 shadow-sm">
+          {activity.payload.kind === "vote" ? "Vote" : "Réponds"} pour voir la discussion.
+        </p>
+      ) : (
       <Chat
         key={`chat-${activity.id}`}
         activityId={activity.id}
@@ -56,6 +61,7 @@ export default async function QuestionPage({ params, searchParams }: { params: P
         initial={messages ?? []}
         initialReactions={reactions ?? []}
       />
+      )}
     </>
   );
 }

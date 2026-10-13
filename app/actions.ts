@@ -4,7 +4,9 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminDb, db } from "@/src/lib/db/server";
-import { getAuthUser } from "@/src/modules/rooms/context";
+import { after } from "next/server";
+import { notify, roomMembers } from "@/src/modules/notifications/push";
+import { getAuthUser, getRoomContext } from "@/src/modules/rooms/context";
 
 /**
  * Identifiant + PIN. Le compte Supabase est créé à la première connexion :
@@ -57,18 +59,30 @@ export async function answer(f: FormData) {
   const content = String(f.get("content")).trim().slice(0, 500);
   // Question de vote : la réponse doit être un membre de la salle, et si la salle l'a choisi, le vote est définitif.
   const { data: a } = await sb.from("daily_activities").select("room_id, payload, rooms(vote_locked)").eq("id", activityId)
-    .maybeSingle<{ room_id: string; payload: { kind?: string }; rooms: { vote_locked: boolean } | null }>();
+    .maybeSingle<{ room_id: string; payload: { kind?: string; text?: string }; rooms: { vote_locked: boolean } | null }>();
   if (a?.payload?.kind === "vote") {
     const { data: m } = await sb.from("room_members").select("user_id").eq("room_id", a.room_id).eq("user_id", content).maybeSingle();
     if (!m) return;
   }
-  if (a?.rooms?.vote_locked) { // réponses définitives (votes comme questions ouvertes)
-    const me = await getAuthUser();
-    const { data: voted } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
-    if (voted) return;
+  const me = await getAuthUser();
+  const { data: before } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
+  if (before && a?.rooms?.vote_locked) return; // réponses définitives (votes comme questions ouvertes)
+  const { error } = await sb.from("answers").upsert({ activity_id: activityId, content });
+  if (!a) return revalidatePath("/", "layout");
+  // Première réponse : on prévient les autres membres (« Léa a voté »), une notification par question qui se remplace.
+  if (!error && !before && me) {
+    after(async () => {
+      const c = await getRoomContext(a.room_id);
+      const who = c?.names[me.id] ?? "Quelqu'un";
+      await notify(await roomMembers(a.room_id, me.id), "question", {
+        title: a.payload.kind === "vote" ? `${who} a voté` : `${who} a répondu`,
+        body: a.payload.text ?? "",
+        url: `/r/${a.room_id}/question?a=${activityId}`,
+        tag: `answers-${activityId}`,
+      });
+    });
   }
-  await sb.from("answers").upsert({ activity_id: activityId, content });
-  revalidatePath(a ? `/r/${a.room_id}/question` : "/", a ? "page" : "layout"); // seule la page de la question change
+  revalidatePath(`/r/${a.room_id}/question`, "page"); // seule la page de la question change
 }
 
 /** Teinte d'accent personnelle (0-360), lue par app/layout.tsx. */
