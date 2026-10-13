@@ -11,6 +11,7 @@ import { BattleshipBoard } from "./battleship-board";
 import { GAME_TYPES, isGameType, type BoardProps } from "./labels";
 import { MemoryBoard } from "./memory-board";
 import { OrapaBoard } from "./orapa-board";
+import { EndPopup } from "./end-popup";
 import { GameResult } from "./result";
 import type { Person } from "@/src/modules/rooms/context";
 
@@ -121,6 +122,7 @@ export function GameView({
           <button onClick={forfeit} className="text-sm font-medium text-zinc-400 hover:text-red-600">Abandonner</button>
         )}
       </div>
+      {s.winner && <EndPopup game={game} userId={userId} people={people} name={name} />}
       {s.winner ? (
         <GameResult game={game} people={people} me={userId} big />
       ) : (

@@ -102,8 +102,7 @@ export function generate(rand = Math.random): Grid {
           [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => {
             const xx = x + dx, yy = y + dy;
             const c = xx >= 0 && yy >= 0 && xx < W && yy < H ? grid[yy * W + xx] : null;
-            // contact par un côté, ou par un coin si le bloc noir est concerné : refusé (le reste des coins est permis)
-            return !!c && (!dx || !dy || p.color === "black" || c.c === "black");
+            return !!c && (!dx || !dy); // contact par un côté : refusé (les coins sont permis)
           })),
         );
         if (touches) continue;
@@ -129,6 +128,8 @@ export function trace(grid: Grid, from: string) {
   const path: [number, number][] = [[x, y]];
   const done = (to: string | null) => ({ to, colors: TINTS.filter((c) => seen.has(c)), path });
 
+  // L'onde entre toujours dans la case qu'elle touche, puis repart selon la forme de la case (comme le jeu de référence).
+  // Sur un côté droit, elle fait demi-tour et repasse par la case d'avant : si c'est un triangle, sa diagonale la redirige.
   for (let step = 0; step < 1000; step++) {
     const nx = x + dx, ny = y + dy;
     const out = nx < 0 ? "W" : nx >= W ? "E" : ny < 0 ? "N" : ny >= H ? "S" : null;
@@ -136,21 +137,17 @@ export function trace(grid: Grid, from: string) {
       path.push([nx, ny]);
       return done(edgeAt(out, out === "W" || out === "E" ? ny : nx));
     }
-    const cell = grid[ny * W + nx];
-    if (!cell) { x = nx; y = ny; path.push([x, y]); continue; }
-    if (cell.c === "black") { path.push([x + dx / 2, y + dy / 2]); return done(null); }
-    seen.add(cell.c);
-    const entry: Side = dx === 1 ? "W" : dx === -1 ? "E" : dy === 1 ? "N" : "S";
-    if (LEGS[cell.s].includes(entry)) { // côté droit : demi-tour
-      path.push([x + dx / 2, y + dy / 2], [x, y]);
-      dx = -dx; dy = -dy;
-      continue;
-    }
-    [dx, dy] = cell.s === "sw" || cell.s === "ne" ? [dy, dx] : [-dy, -dx]; // diagonale : quart de tour
     x = nx; y = ny;
     path.push([x, y]);
+    const cell = grid[y * W + x];
+    if (!cell) continue;
+    if (cell.c === "black") return { to: null, colors: [], path }; // absorbée : aucune couleur
+    seen.add(cell.c);
+    const entry: Side = dx === 1 ? "W" : dx === -1 ? "E" : dy === 1 ? "N" : "S";
+    if (LEGS[cell.s].includes(entry)) { dx = -dx; dy = -dy; continue; } // côté droit : demi-tour
+    [dx, dy] = cell.s === "sw" || cell.s === "ne" ? [dy, dx] : [-dy, -dx]; // diagonale : quart de tour
   }
-  return done(null);
+  throw new Error(`onde ${from} : boucle sans fin`); // ponytail: impossible (trajet réversible) ; un test le vérifie
 }
 
 /** Résultat d'une onde, sans le tracé (c'est ce qui est enregistré dans la partie). */
@@ -209,13 +206,12 @@ export function placementError(placed: (Placement | null)[], k: number, p: Place
 
 export type Problem = { text: string; cells: number[]; pieces: number[] }; // cells : indices y*W+x des cases en cause
 
-const BLACK = PIECES.findIndex((p) => p.color === "black");
 const SIDE_AFTER: [number, number, Side, Side][] = [[1, 0, "E", "W"], [0, 1, "S", "N"]]; // voisin à droite, voisin en dessous
 
 /**
  * Ce qui ne va pas dans une disposition de gemmes (`placed[i]` : gemme i, ou null si pas posée) ; vide = grille valide.
- * Règles : dans le plateau, pas de chevauchement, deux côtés droits ne se touchent pas (une pointe peut toucher une pointe
- * ou un côté droit), et le bloc noir ne touche aucune gemme, pas même par un coin.
+ * Règles (les mêmes pour toutes les gemmes, bloc noir compris) : dans le plateau, pas de chevauchement, deux côtés droits
+ * ne se touchent pas (une pointe peut toucher une pointe ou un côté droit).
  */
 export function gridProblems(placed: (Placement | null)[]): Problem[] {
   const found = new Map<string, Problem>();
@@ -248,13 +244,6 @@ export function gridProblems(placed: (Placement | null)[]): Problem[] {
       if (q >= 0 && q !== o && LEGS[shape[i]].includes(mine) && LEGS[shape[j]].includes(theirs))
         add(`side${Math.min(o, q)}-${Math.max(o, q)}`, `${name(o)} et ${name(q)} se touchent par deux côtés droits (une pointe peut toucher une pointe ou un côté droit, pas deux côtés droits).`, [i, j], [o, q]);
     }
-    if (o !== BLACK) continue;
-    for (let dy = -1; dy <= 1; dy++)
-      for (let dx = -1; dx <= 1; dx++) {
-        const xx = x + dx, yy = y + dy;
-        const q = xx >= 0 && yy >= 0 && xx < W && yy < H ? owner[yy * W + xx] : -1;
-        if (q >= 0 && q !== BLACK) add(`black${q}`, `Le bloc noir ne doit toucher aucune gemme, pas même par un coin : ${name(q)} est trop près.`, [i, yy * W + xx], [BLACK, q]);
-      }
   }
   return [...found.values()].map((f) => ({ ...f, cells: [...new Set(f.cells)] }));
 }
@@ -307,7 +296,7 @@ function sameGrid(a: Grid, b: unknown) {
  * - { kind: "wave", from } : à son tour, envoyer une onde dans la grille adverse (le tour passe) ;
  * - { kind: "guess", grid } : à son tour, tenter sa grille : un seul essai par joueur, et il compte comme le tour.
  *   Juste : on gagne, sauf si on jouait en premier (l'autre a un tour de moins) : l'autre a alors une dernière chance
- *   (un essai, s'il lui en reste un), juste = égalité. Raté : le tour passe ; quand les deux ont raté, c'est l'égalité.
+ *   (un essai), juste = égalité. Faux : la partie s'arrête, l'autre gagne.
  * `secretPatch` : la part du secret à fusionner (la grille du joueur qui vient de la poser).
  */
 export function play(state: OrapaState, secrets: Secrets, move: unknown, player: string): { state: OrapaState; secretPatch?: Secrets } | null {
@@ -343,8 +332,7 @@ export function play(state: OrapaState, secrets: Secrets, move: unknown, player:
         return { state: { ...state, guessed: used, found: player, turn: other, log: [...state.log, { by: player, guess: true, right: true }] } };
       return done(player);
     }
-    if (used.length === 2) return done("draw"); // les deux ont raté
-    return { state: { ...state, guessed: used, turn: other, log: [...state.log, { by: player, guess: true }] } };
+    return done(other); // essai faux : la partie s'arrête, l'autre gagne
   }
   return null;
 }

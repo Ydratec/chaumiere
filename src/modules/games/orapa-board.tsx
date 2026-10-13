@@ -45,8 +45,9 @@ function PieceIcon({ k, rot = 0, size = 14, flip = false }: { k: number; rot?: n
 type Wave = Extract<LogEntry, { from: string }>;
 const result = (w: { to: string | null; colors: Color[] }) =>
   w.to === null ? { hex: ABSORBED, name: "absorbée" } : mix(w.colors);
+/** Même résultat d'onde : même sortie et même couleur ; une onde absorbée se compare seulement sur le fait d'être absorbée. */
 const same = (a: { to: string | null; colors: Color[] }, b: { to: string | null; colors: Color[] }) =>
-  a.to === b.to && a.colors.join() === b.colors.join();
+  a.to === b.to && (a.to === null || a.colors.join() === b.colors.join());
 
 // ---------- Éditeur : gemmes posées et croix, gardées sur l'appareil ----------
 
@@ -329,11 +330,12 @@ const Rules = () => (
   <details className="text-sm">
     <summary className="cursor-pointer font-medium text-zinc-600">Règles</summary>
     <p className="mt-2 leading-6 text-zinc-600">
-      Chacun cache ses 7 gemmes (une pointe peut toucher une pointe ou un côté droit, mais deux côtés droits ne se touchent pas, et le bloc noir ne touche aucune gemme). Ensuite, à ton tour, touche un repère du bord pour
-      envoyer une onde dans la grille adverse : elle avance tout droit, fait demi-tour sur un côté droit, tourne d&apos;un
-      quart sur une diagonale, prend la couleur des gemmes touchées (les couleurs se mélangent) et ressort. La gemme
-      transparente dévie sans colorer, le bloc noir absorbe. Quand tu penses avoir trouvé, tente ta grille à ton tour : tu n&apos;as droit qu&apos;à un seul essai, et il compte comme ton
-      tour. Si celui qui joue en premier trouve, l&apos;autre a une dernière chance de faire égalité ; deux essais ratés, c&apos;est l&apos;égalité.
+      Chacun cache ses 7 gemmes : une pointe peut toucher une pointe ou un côté droit, mais deux côtés droits ne se touchent
+      pas (même règle pour toutes les gemmes). Ensuite, à ton tour, touche un repère du bord pour envoyer une onde dans la grille
+      adverse : elle avance tout droit, fait demi-tour sur un côté droit, tourne d&apos;un quart sur une diagonale, prend la couleur
+      des gemmes touchées (les couleurs se mélangent) et ressort. La gemme transparente dévie sans colorer, le bloc noir absorbe
+      l&apos;onde (elle ne ressort pas, sans couleur). Quand tu penses avoir trouvé, tente ta grille à ton tour : un seul essai,
+      et s&apos;il est faux, tu perds. Si celui qui joue en premier trouve, l&apos;autre a une dernière chance de faire égalité.
       Le parallélogramme rouge peut aussi se poser retourné (miroir).
     </p>
   </details>
@@ -467,7 +469,7 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
           <EditableBoard ed={guess} plateau={ports} />
           <button
             disabled={guess.left > 0 || !myTurn || used}
-            onClick={() => confirm("Tenter cette grille ? Tu n'as droit qu'à UN seul essai, et il compte comme ton tour.") && play({ kind: "guess", grid: guess.grid })}
+            onClick={() => confirm("Tenter cette grille ? Tu n'as droit qu'à UN seul essai : si elle est fausse, tu perds la partie.") && play({ kind: "guess", grid: guess.grid })}
             className="btn w-full"
           >
             {used ? "Tu as déjà tenté ta chance" : guess.left ? `Pose encore ${guess.left} gemme${guess.left > 1 ? "s" : ""} pour tenter` : !myTurn ? "Attends ton tour pour tenter ta grille" : "Tenter ma grille (un seul essai)"}

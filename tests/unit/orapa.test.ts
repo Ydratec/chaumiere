@@ -31,7 +31,7 @@ test("onde : ligne droite, demi-tour, quart de tour, transparente, absorption", 
 
   g[at(5, 3)] = null;
   g[at(7, 3)] = { s: "sq", c: "black" };
-  assert.deepEqual(wave(g, "H3"), { to: null, colors: ["red"] }); // absorbée par la gemme noire
+  assert.deepEqual(wave(g, "H3"), { to: null, colors: [] }); // absorbée par la gemme noire : aucune couleur
 });
 
 test("tracé : suit l'onde case par case", () => {
@@ -60,6 +60,28 @@ test("plateaux aléatoires : toutes les gemmes, trajets réversibles", () => {
   }
 });
 
+test("onde : demi-tour dans un triangle, la diagonale la redirige (bug de la partie du 10/10, onde D7)", () => {
+  const g = empty();
+  g[at(3, 6)] = { s: "sw", c: "yellow" }; // triangle jaune
+  g[at(3, 5)] = { s: "sq", c: "red" }; // carré rouge au-dessus
+  g[at(3, 7)] = { s: "sq", c: "yellow" }; // carré jaune en dessous
+  // l'onde monte sur la diagonale, cogne le rouge, redescend dans le triangle : sa diagonale la renvoie à droite
+  assert.deepEqual(wave(g, "D7"), { to: "D7", colors: ["red", "yellow"] });
+});
+
+test("onde : jamais de boucle, toujours une sortie (ou le noir), trajets réversibles", () => {
+  let seed = 3;
+  const rand = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let n = 0; n < 300; n++) {
+    const g = generate(rand);
+    for (const e of EDGES) {
+      const r = wave(g, e.id); // lève une erreur en cas de boucle
+      if (r.to) assert.deepEqual(wave(g, r.to), { to: e.id, colors: r.colors }, `${e.id} → ${r.to} n'est pas réversible`);
+      else assert.deepEqual(r.colors, []);
+    }
+  }
+});
+
 test("pièce tournée : 4 quarts de tour reviennent au départ, formes cohérentes", () => {
   PIECES.forEach((p, k) => {
     assert.deepEqual(pieceCells(k, 4), pieceCells(k, 0));
@@ -74,7 +96,8 @@ test("grille composée : valide, ou refusée si hors grille, chevauchement ou co
   const moved = (k: number, p: object) => PLACEMENTS.map((q, i) => (i === k ? p : q));
   assert.equal(buildGrid(moved(6, { x: 7, y: 9, rot: 0 })), null); // hors grille
   assert.equal(buildGrid(moved(6, { x: 0, y: 0, rot: 0 })), null); // chevauche le triangle jaune
-  assert.equal(buildGrid(moved(6, { x: 2, y: 1, rot: 0 })), null); // touche le triangle jaune par un côté
+  assert.equal(buildGrid(moved(6, { x: 1, y: 2, rot: 0 })), null); // côté droit du noir contre le côté droit du triangle jaune
+  assert.ok(buildGrid(moved(6, { x: 2, y: 1, rot: 0 }))); // contre la pointe du jaune : permis
   assert.equal(buildGrid(PLACEMENTS.slice(1)), null); // une gemme manque
 });
 
@@ -89,10 +112,9 @@ test("contacts : pointe contre pointe ou contre côté droit permis ; deux côt�
   assert.deepEqual(p[0].pieces, [0, 1]);
   assert.deepEqual(p[0].cells.sort((a, b) => a - b), [9, 17]); // (1,1) et (1,2)
   assert.match(p[0].text, /deux côtés droits/);
-  // bloc noir : même un coin touché est refusé
-  const noir = gridProblems([{ x: 0, y: 0, rot: 0 }, null, null, null, null, null, { x: 2, y: 2, rot: 0 }]); // (1,1) du jaune, (2,2) du noir
-  assert.equal(noir.length, 1);
-  assert.match(noir[0].text, /bloc noir/);
+  // bloc noir : pas de règle spéciale, il peut toucher une gemme par un coin ou une pointe
+  assert.deepEqual(gridProblems([{ x: 0, y: 0, rot: 0 }, null, null, null, null, null, { x: 2, y: 2, rot: 0 }]), []); // coin contre coin
+  assert.deepEqual(gridProblems([{ x: 0, y: 0, rot: 0 }, null, null, null, null, null, { x: 2, y: 1, rot: 0 }]), []); // pointe du jaune contre le noir
   // chevauchement et hors plateau
   assert.match(gridProblems([{ x: 0, y: 0, rot: 0 }, null, null, null, null, null, { x: 0, y: 0, rot: 0 }])[0].text, /chevauchent/);
   assert.match(gridProblems([null, null, null, null, null, null, { x: 7, y: 9, rot: 0 }])[0].text, /sort du plateau/);
@@ -151,17 +173,15 @@ function ready() {
   return { go, st: () => s, right: (by: string) => ({ kind: "guess", grid: buildGrid(by === "A" ? gridB : PLACEMENTS) }), wrong: { kind: "guess", grid: empty() } };
 }
 
-test("essai : un seul par joueur, à son tour, et il coûte le tour ; une confirmation côté interface", () => {
+test("essai : à son tour seulement ; un essai faux arrête la partie, l'autre gagne", () => {
   const g = ready();
   assert.equal(g.st().turn, "A");
+  assert.equal(g.go(g.wrong, "B"), null); // pas son tour
   assert.ok(g.go(g.wrong, "A"));
-  assert.equal(g.st().turn, "B"); // le tour passe
-  assert.equal(g.st().winner, null);
+  assert.equal(g.st().winner, "B");
   assert.deepEqual(g.st().log.at(-1), { by: "A", guess: true });
-  assert.equal(g.go(g.wrong, "A"), null); // pas son tour
-  g.go({ kind: "wave", from: "H1" }, "B");
-  assert.equal(g.go(g.wrong, "A"), null); // son unique essai est déjà utilisé
-  assert.ok(g.go({ kind: "wave", from: "H1" }, "A")); // mais il peut encore envoyer des ondes
+  assert.deepEqual(Object.keys(g.st().solutions!).sort(), ["A", "B"]); // grilles révélées
+  assert.equal(g.go({ kind: "wave", from: "H1" }, "B"), null); // partie finie
 });
 
 test("essai : celui qui joue en premier et trouve laisse une dernière chance à l'autre (égalité s'il trouve)", () => {
@@ -180,27 +200,13 @@ test("essai : celui qui joue en premier et trouve laisse une dernière chance à
   h.go(h.wrong, "B");
   assert.equal(h.st().winner, "A"); // l'autre a raté sa dernière chance
 
-  // si l'autre a déjà gâché son essai, pas de dernière chance : le premier gagne tout de suite
-  const k = ready();
-  k.go({ kind: "wave", from: "H1" }, "A");
-  k.go(k.wrong, "B");
-  k.go({ kind: "wave", from: "H2" }, "A");
-  k.go({ kind: "wave", from: "H3" }, "B");
-  k.go(k.right("A"), "A");
-  assert.equal(k.st().winner, "A");
 });
 
-test("essai : le second joueur qui trouve gagne tout de suite ; deux essais ratés = égalité", () => {
+test("essai : le second joueur qui trouve gagne tout de suite", () => {
   const g = ready();
   g.go({ kind: "wave", from: "H1" }, "A");
   g.go(g.right("B"), "B"); // tours égaux
   assert.equal(g.st().winner, "B");
-
-  const h = ready();
-  h.go(h.wrong, "A");
-  assert.equal(h.st().winner, null);
-  h.go(h.wrong, "B");
-  assert.equal(h.st().winner, "draw");
 });
 
 test("miroir : le parallélogramme rouge peut être posé retourné, les autres gemmes sont identiques à leur reflet", () => {
