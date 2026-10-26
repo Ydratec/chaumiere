@@ -4,6 +4,7 @@ export const GAME_TYPES = {
   memory: { label: "Memory", desc: "Retrouve les paires de chats." },
   battleship: { label: "Bataille navale", desc: "Coule la flotte adverse." },
   orapa: { label: "Orapa Mine", desc: "Envoie des ondes et déduis où sont cachées les gemmes." },
+  dames: { label: "Dames", desc: "Le jeu de dames, règles internationales : prise obligatoire, dames volantes." },
 } as const;
 export type GameType = keyof typeof GAME_TYPES;
 export const isGameType = (t: string): t is GameType => t in GAME_TYPES;

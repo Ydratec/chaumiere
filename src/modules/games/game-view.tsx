@@ -8,6 +8,7 @@ import { Icon } from "@/src/components/icons";
 import { browserDb } from "@/src/lib/db/client";
 import { acceptGame, cancelGame, forfeitGame, playMove, type Game } from "./actions";
 import { BattleshipBoard } from "./battleship-board";
+import { DamesBoard } from "./dames-board";
 import { GAME_TYPES, isGameType, type BoardProps } from "./labels";
 import { MemoryBoard } from "./memory-board";
 import { OrapaBoard } from "./orapa-board";
@@ -19,6 +20,7 @@ const BOARDS: Record<keyof typeof GAME_TYPES, (p: BoardProps) => React.ReactNode
   memory: MemoryBoard,
   battleship: BattleshipBoard,
   orapa: OrapaBoard,
+  dames: DamesBoard,
 };
 
 // Étape de la partie (statut + phase éventuelle) : quand elle change, on recharge la page serveur

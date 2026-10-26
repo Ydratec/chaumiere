@@ -46,14 +46,14 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
       <form action={createGame} className="space-y-4">
         <input type="hidden" name="room_id" value={roomId} />
         <h2 className="text-2xl font-bold tracking-tight">Lancer un défi</h2>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {Object.entries(GAME_TYPES).map(([type, t], k) => locked(type) ? (
             <Link
               key={type}
               href={`/r/${roomId}/farm`}
               className="flex flex-col items-center gap-2 rounded-2xl bg-white/50 p-3 text-center text-zinc-400"
             >
-              <span className="opacity-40 grayscale"><Cat coat={[0, 6, 1][k]} size={40} /></span>
+              <span className="opacity-40 grayscale"><Cat coat={[0, 6, 1, 3][k] ?? 0} size={40} /></span>
               <span className="text-sm font-semibold leading-tight">{t.label}</span>
               <span className="text-[10px] font-medium">Débloque-le à la serre</span>
             </Link>
@@ -63,7 +63,7 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
               className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl bg-white p-3 text-center shadow-sm ring-1 ring-transparent transition has-[:checked]:bg-indigo-50 has-[:checked]:ring-indigo-500"
             >
               <input type="radio" name="type" value={type} defaultChecked={k === 0} className="sr-only" />
-              <Cat coat={[0, 6, 1][k]} mood={(["happy", "cool", "wow"] as const)[k]} size={40} />
+              <Cat coat={[0, 6, 1, 3][k] ?? 0} mood={(["happy", "cool", "wow", "laugh"] as const)[k] ?? "happy"} size={40} />
               <span className="text-sm font-semibold leading-tight">{t.label}</span>
             </label>
           ))}
