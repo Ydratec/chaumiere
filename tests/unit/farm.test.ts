@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BUILDINGS, ITEMS } from "../../src/modules/farm/catalog.ts";
-import { around, duration, findPath, footprint, has, isReady, negate, placeError, progress, recipeOf, startError, tileAt, type Tile } from "../../src/modules/farm/rules.ts";
+import { applyMove, around, collectAll, duration, findPath, footprint, has, isReady, negate, placeError, progress, recipeOf, startError, tileAt, type FarmState, type Tile } from "../../src/modules/farm/rules.ts";
 
 const field = (item: string | null = null, started = 0, ready = 0): Tile => ({
   x: 0, y: 0, kind: "planter", item,
@@ -153,4 +153,31 @@ test("serres aux règles : on retire d'abord les objets au repos, puis les réco
   const cinq = [...occupes, t(4, 0, tard)];
   assert.deepEqual(excessTiles(cinq, [], now).map((x) => x.x), [2]); // la récolte prête part en premier
   assert.deepEqual(excessTiles([], [], now), []);
+});
+
+test("file d'attente : les recettes s'enchaînent dans un bâtiment, et se récoltent toutes ensemble", () => {
+  const t0 = Date.parse("2026-10-26T12:00:00Z"), min = 60_000;
+  const oven: Tile = { x: 0, y: 0, kind: "oven", item: null, started_at: null, ready_at: null, queue: [] };
+  const bread = recipeOf("oven", "bread")!;
+  let f: FarmState = { tiles: [oven], items: { wheat: 12, coins: 0 }, unlocks: [] };
+  for (let i = 0; i < 4; i++) {
+    const r = applyMove(f, { kind: "start", x: 0, y: 0, recipe: "bread" }, t0);
+    assert.ok("state" in r, `pain n°${i + 1}`);
+    f = (r as { state: FarmState }).state;
+  }
+  assert.equal(f.items.wheat, 0);
+  assert.equal(f.tiles[0].queue!.length, 3);
+  assert.equal(f.tiles[0].queue![2].ready_at, new Date(t0 + 4 * bread.minutes * min).toISOString(), "chaque pain démarre à la fin du précédent");
+  assert.deepEqual(applyMove({ ...f, items: { wheat: 3 } }, { kind: "start", x: 0, y: 0, recipe: "bread" }, t0), { error: "La file d'attente est pleine." });
+  // après 2 pains et demi : on en récolte 2, le 3e devient la recette en cours
+  const res = collectAll(f.tiles[0], t0 + 2.5 * bread.minutes * min)!;
+  assert.equal(res.done.length, 2);
+  assert.equal(res.tile.item, "bread");
+  assert.equal(res.tile.started_at, new Date(t0 + 2 * bread.minutes * min).toISOString());
+  assert.equal(res.tile.queue!.length, 1);
+  const got = applyMove(f, { kind: "collect", x: 0, y: 0 }, t0 + 2.5 * bread.minutes * min);
+  assert.ok("state" in got && got.state.items.bread === 2);
+  // les bacs et les pots ne font qu'une chose à la fois
+  const planter: Tile = { x: 0, y: 0, kind: "planter", item: "wheat", started_at: new Date(t0).toISOString(), ready_at: new Date(t0 + min).toISOString() };
+  assert.equal(startError(planter, { coins: 9 }, "wheat"), "Déjà occupé.");
 });

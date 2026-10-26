@@ -70,7 +70,7 @@ export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   const admin = adminDb();
   const now = Date.now();
   const [{ data: tiles }, { data: items }, { data: cat }, { data: gifts }, { data: bloom }, roomUnlocks, story] = await Promise.all([
-    admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at").eq("room_id", roomId).eq("user_id", uid),
+    admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at, queue").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_items").select("item, qty").eq("room_id", roomId).eq("user_id", uid),
     admin.from("farm_cats").select("x, y").eq("room_id", roomId).eq("user_id", uid).maybeSingle(),
     admin.from("farm_gifts").select("id, giver, item, contents, message, day, opened").eq("room_id", roomId).eq("receiver", uid).order("id", { ascending: false }),

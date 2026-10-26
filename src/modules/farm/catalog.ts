@@ -47,9 +47,10 @@ export type Recipe = { id: string; out: ItemId; qty: number; minutes: number; in
 export type BuildingId = "planter" | "pot" | "coop" | "oven" | "workshop" | "flowers" | "tree" | "fountain" | "pumpkins";
 /**
  * Objets posables. `size` : [largeur, hauteur] en cases. `requires` : déblocage de salle nécessaire.
+ * `queue` : nombre de recettes qu'on peut mettre en attente derrière celle en cours (les bâtiments, pas les bacs ni les pots).
  * `verb` vide = décoration (pas de production).
  */
-export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number]; cost: number; max?: number; verb: string; recipes: Recipe[]; requires?: string }> = {
+export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number]; cost: number; max?: number; verb: string; recipes: Recipe[]; requires?: string; queue?: number }> = {
   planter: {
     name: "Bac potager", size: [2, 2], cost: 20, verb: "Planter",
     recipes: [
@@ -65,11 +66,11 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
     recipes: [{ id: "flower", out: "flower", qty: 1, minutes: 5, inputs: { coins: 1 } }], // « flower » : la graine ; la fleur qui pousse est tirée au sort (flowers.ts)
   },
   coop: {
-    name: "Poulailler", size: [2, 2], cost: 60, max: 1, verb: "Nourrir", requires: "b:coop",
+    name: "Poulailler", size: [2, 2], cost: 60, max: 1, verb: "Nourrir", requires: "b:coop", queue: 2,
     recipes: [{ id: "egg", out: "egg", qty: 1, minutes: 20, inputs: { wheat: 1 } }],
   },
   oven: {
-    name: "Four à pain", size: [2, 2], cost: 120, max: 1, verb: "Cuire",
+    name: "Four à pain", size: [2, 2], cost: 120, max: 1, verb: "Cuire", queue: 3,
     recipes: [
       { id: "bread", out: "bread", qty: 1, minutes: 15, inputs: { wheat: 3 } },
       { id: "cake", out: "cake", qty: 1, minutes: 60, inputs: { wheat: 1, egg: 1, strawberry: 1 } },
@@ -77,7 +78,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
     requires: "b:oven",
   },
   workshop: {
-    name: "Atelier de cuisine", size: [2, 2], cost: 100, max: 1, verb: "Cuisiner",
+    name: "Atelier de cuisine", size: [2, 2], cost: 100, max: 1, verb: "Cuisiner", queue: 3,
     recipes: [
       { id: "sugar", out: "sugar", qty: 1, minutes: 8, inputs: { sugarcane: 2 } },
       { id: "candy-strawberry", out: "candy", qty: 6, minutes: 20, inputs: { sugar: 1, strawberry: 1 }, label: "Bonbons à la fraise" },

@@ -18,7 +18,7 @@ export async function enforceRules(apply: boolean): Promise<Trimmed[]> {
   const admin = adminDb();
   const [{ data: rooms }, { data: tiles }, { data: done }, { data: unlocks }] = await Promise.all([
     admin.from("rooms").select("id, chapter, chapter_started_at"),
-    admin.from("farm_tiles").select("room_id, user_id, x, y, kind, item, started_at, ready_at"),
+    admin.from("farm_tiles").select("room_id, user_id, x, y, kind, item, started_at, ready_at, queue"),
     admin.from("farm_quest_done").select("room_id, user_id, chapter, quest"),
     admin.from("room_unlocks").select("room_id, key"),
   ]);
@@ -44,6 +44,10 @@ export async function enforceRules(apply: boolean): Promise<Trimmed[]> {
         if (r) {
           if (isReady(t, Date.now())) give(producedOf(t) === "flower" && !t.item?.includes(":") ? pickFlower() : producedOf(t)!, r.qty);
           else for (const [k, v] of Object.entries(r.inputs)) give(k, v ?? 0);
+        }
+        for (const j of t.queue ?? []) { // recettes en file : ingrédients rendus
+          const q = recipeOf(t.kind, j.item);
+          if (q) for (const [k, v] of Object.entries(q.inputs)) give(k, v ?? 0);
         }
         if (apply) await admin.from("farm_tiles").delete().eq("room_id", room.id).eq("user_id", user).eq("x", t.x).eq("y", t.y);
       }

@@ -2,8 +2,10 @@
 import { isFlower } from "./flowers.ts";
 import { BASE_CAP, BUILDINGS, GRID_H, GRID_W, ITEMS, isBuilding, isItem, type BuildingId, type Inventory, type ItemId, type Recipe } from "./catalog.ts";
 
-/** Un objet posé : (x, y) = son coin haut-gauche. */
-export type Tile = { x: number; y: number; kind: string; item: string | null; started_at: string | null; ready_at: string | null };
+/** Une recette en attente : elle démarre quand la précédente finit (son échéance est calculée en la mettant en file). */
+export type Job = { item: string; ready_at: string };
+/** Un objet posé : (x, y) = son coin haut-gauche. `item` … `ready_at` : la recette en cours ; `queue` : celles qui attendent. */
+export type Tile = { x: number; y: number; kind: string; item: string | null; started_at: string | null; ready_at: string | null; queue?: Job[] };
 export type Cell = { x: number; y: number };
 
 /** `id` : la recette en cours ; pour un pot, « flower:poppy » = graine plantée dont la fleur (déjà tirée au sort) sera un coquelicot. */
@@ -114,10 +116,14 @@ export function excessTiles(tiles: Tile[], unlocks: string[] = [], now = 0): Til
   return out;
 }
 
-/** Pourquoi on ne peut pas lancer cette recette sur cet objet (null = possible). */
+/** Combien de recettes peuvent attendre derrière celle en cours (0 : une seule à la fois). */
+export const queueMax = (kind: string) => (isBuilding(kind) ? BUILDINGS[kind].queue ?? 0 : 0);
+
+/** Pourquoi on ne peut pas lancer cette recette sur cet objet (null = possible ; occupé = mise en file si le bâtiment le permet). */
 export function startError(tile: Tile | undefined, inv: Inventory, recipe: string) {
   if (!tile) return "Rien à cet endroit.";
-  if (tile.item) return "Déjà occupé.";
+  if (tile.item && !queueMax(tile.kind)) return "Déjà occupé.";
+  if (tile.item && (tile.queue?.length ?? 0) >= queueMax(tile.kind)) return "La file d'attente est pleine.";
   const r = recipeOf(tile.kind, recipe);
   if (!r) return "Impossible ici.";
   if (!has(inv, r.inputs)) return "Il te manque des ingrédients.";
@@ -184,6 +190,36 @@ export function offerError(give: Inventory, want: Inventory) {
   return null;
 }
 
+/** Met la recette `r` (déjà payée) en route, ou en file derrière les autres. */
+export function enqueue(tile: Tile, r: Recipe, item: string, now: number, unlocks: string[] = []): Tile {
+  const ms = duration(r, unlocks);
+  if (!tile.item) return { ...tile, item, started_at: new Date(now).toISOString(), ready_at: new Date(now + ms).toISOString(), queue: [] };
+  const queue = tile.queue ?? [];
+  const after = Math.max(now, Date.parse(queue.at(-1)?.ready_at ?? tile.ready_at!));
+  return { ...tile, queue: [...queue, { item, ready_at: new Date(after + ms).toISOString() }] };
+}
+
+/**
+ * Récolte tout ce qui est prêt : la recette en cours et celles de la file déjà finies. La première pas encore finie
+ * devient la recette en cours. null si rien n'est prêt.
+ */
+export function collectAll(tile: Tile, now: number): { tile: Tile; done: string[] } | null {
+  if (!isReady(tile, now)) return null;
+  const done = [tile.item!];
+  const queue = [...(tile.queue ?? [])];
+  let prevEnd = tile.ready_at!;
+  while (queue.length && Date.parse(queue[0].ready_at) <= now) {
+    const j = queue.shift()!;
+    done.push(j.item);
+    prevEnd = j.ready_at;
+  }
+  const next = queue.shift();
+  return {
+    done,
+    tile: next ? { ...tile, item: next.item, started_at: prevEnd, ready_at: next.ready_at, queue } : { ...tile, item: null, started_at: null, ready_at: null, queue: [] },
+  };
+}
+
 // ---------- Effet d'un coup (affichage immédiat côté client ; le serveur refait la même chose en base) ----------
 
 export type FarmMove =
@@ -223,16 +259,21 @@ export function applyMove(f: FarmState, m: FarmMove, now: number): { state: Farm
       const err = startError(tile, f.items, m.recipe);
       if (err) return { error: err };
       const r = recipeOf(tile!.kind, m.recipe)!;
-      const t = { ...tile!, item: r.id, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, f.unlocks)).toISOString() };
+      const t = enqueue(tile!, r, r.id, now, f.unlocks);
       return { state: { ...f, tiles: f.tiles.map((x) => (same(tile!)(x) ? t : x)), items: plus(f.items, negate(r.inputs)) } };
     }
     case "collect": {
       const r = tile && recipeOf(tile.kind, tile.item);
       if (!r) return { error: "Rien à récolter." };
-      if (!isReady(tile, now)) return { error: "Pas encore prêt." };
-      const t = { ...tile, item: null, started_at: null, ready_at: null };
+      const res = collectAll(tile, now);
+      if (!res) return { error: "Pas encore prêt." };
       // La fleur qui pousse est tirée au sort par le serveur : on libère le pot, la fleur arrive avec la réponse.
-      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? t : x)), items: plus(f.items, { [producedOf(tile)!]: r.qty }) } }; // (une ancienne fleur sans variété : « flower », comme avant)
+      let items = plus(f.items, { [producedOf(tile)!]: r.qty }); // (une ancienne fleur sans variété : « flower », comme avant)
+      for (const id of res.done.slice(1)) {
+        const q = recipeOf(tile.kind, id);
+        if (q) items = plus(items, { [q.out]: q.qty });
+      }
+      return { state: { ...f, tiles: f.tiles.map((x) => (same(tile)(x) ? res.tile : x)), items } };
     }
     case "clear": {
       if (!tile || tile.item) return { error: "Attends que ce soit fini avant de démolir." };

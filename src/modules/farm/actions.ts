@@ -11,7 +11,7 @@ import { loadFarm, loadProjects, touchActivity, type Farm, type Gift } from "./d
 import { grantSecret } from "./story/grant";
 import { paris } from "@/src/modules/questions/day";
 import { isComplete, remaining } from "./projects";
-import { duration, gridH, sellPrice, negate, offerError, placeError, producedOf, recipeOf, startError, tileAt, type FarmMove } from "./rules";
+import { collectAll, duration, enqueue, gridH, sellPrice, negate, offerError, placeError, producedOf, recipeOf, startError, tileAt, type FarmMove } from "./rules";
 
 export type { FarmMove };
 
@@ -58,9 +58,18 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
       const { error } = await add(negate(r.inputs));
       if (error) return done("Il te manque des ingrédients.");
       const now = Date.now();
+      if (tile!.item) {
+        // Bâtiment occupé : la recette part en file d'attente. Condition sur l'état lu (recette en cours et file) :
+        // si quelque chose a bougé entre-temps, on rembourse plutôt que d'écraser.
+        const next = enqueue(tile!, r, r.id, now, farm.unlocks);
+        const { data } = await where(tiles().update({ queue: next.queue }))
+          .eq("item", tile!.item).eq("ready_at", tile!.ready_at!).eq("queue", JSON.stringify(tile!.queue ?? [])).select("x");
+        if (!data?.length) await add(r.inputs);
+        return done(data?.length ? undefined : "Ça a bougé entre-temps, réessaie.");
+      }
       // Un pot : la fleur qui poussera est tirée au sort dès la plantation (« flower:poppy »), pour l'afficher pendant qu'elle pousse.
       const planted = r.out === "flower" ? `flower:${pickFlower()}` : r.id;
-      const { data } = await where(tiles().update({ notified: false, item: planted, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, farm.unlocks)).toISOString() }))
+      const { data } = await where(tiles().update({ notified: false, item: planted, started_at: new Date(now).toISOString(), ready_at: new Date(now + duration(r, farm.unlocks)).toISOString(), queue: [] }))
         .is("item", null).select("x");
       if (!data?.length) await add(r.inputs); // déjà lancé entre-temps : remboursement
       return done(data?.length ? undefined : "Déjà occupé.");
@@ -68,13 +77,25 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
     case "collect": {
       const r = tile && recipeOf(tile.kind, tile.item);
       if (!r) return done("Rien à récolter.");
+      // Tout ce qui est prêt (la recette en cours et celles de la file déjà finies) ; la suivante devient la recette en cours.
+      const res = collectAll(tile!, Date.now());
+      if (!res) return done("Pas encore prêt.");
+      const head = res.tile;
       // Condition sur l'objet et l'échéance : une seule récolte possible, même avec deux clics.
-      const { data } = await where(tiles().update({ item: null, started_at: null, ready_at: null }))
-        .eq("item", tile!.item!).lte("ready_at", new Date().toISOString()).select("x");
+      const { data } = await where(tiles().update({ item: head.item, started_at: head.started_at, ready_at: head.ready_at, queue: head.queue ?? [], notified: false }))
+        .eq("item", tile!.item!).eq("ready_at", tile!.ready_at!).lte("ready_at", new Date().toISOString()).select("x");
       if (!data?.length) return done("Pas encore prêt.");
       const out = producedOf(tile!) === "flower" && !tile!.item?.includes(":") ? pickFlower() : producedOf(tile!)!; // ancienne graine sans variété : tirée à la récolte
-      await add({ [out]: r.qty });
-      await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `harvest:${r.out}`, n: r.qty });
+      const gained: Inventory = { [out]: r.qty };
+      const harvested: Record<string, number> = { [r.out]: r.qty }; // compteurs de l'histoire : par recette (« flower » pour toutes les fleurs)
+      for (const id of res.done.slice(1)) {
+        const q = recipeOf(tile!.kind, id);
+        if (!q) continue;
+        gained[q.out] = (gained[q.out] ?? 0) + q.qty;
+        harvested[q.out] = (harvested[q.out] ?? 0) + q.qty;
+      }
+      await add(gained);
+      for (const [k, n] of Object.entries(harvested)) await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `harvest:${k}`, n });
       if (isFlower(out)) await admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `bloom:${out}`, n: r.qty });
       const night = paris(new Date()).hour === 3 ? await grantSecret(roomId, uid, "minuit") : null;
       const rare = isFlower(out) && rarityOf(out) !== "commune" && rarityOf(out) !== "peu commune";
