@@ -28,6 +28,7 @@ export const gridH = (unlocks: string[] = []) => (unlocks.includes("upgrade:land
 export function maxOf(kind: BuildingId, unlocks: string[] = []) {
   let m = BUILDINGS[kind].max ?? BASE_CAP[kind];
   if (kind === "coop" && unlocks.includes("upgrade:coop2")) m = Math.max(m ?? 0, 2);
+  if (kind === "workshop" && unlocks.includes("upgrade:workshop2")) m = Math.max(m ?? 0, 2);
   for (const u of unlocks) {
     const [p, k, n] = u.split(":");
     if (p === "cap" && k === kind) m = Math.max(m ?? 0, Number(n));

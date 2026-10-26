@@ -8,7 +8,7 @@ import { ITEMS, type Inventory, type ItemId } from "./catalog";
 import type { ProjectState } from "./data";
 import { PROJECTS, remaining } from "./projects";
 
-const KIND = { game: "Mini-jeu", pack: "Questions", cosmetic: "Cosmétique", upgrade: "Amélioration" } as const;
+const KIND = { game: "Mini-jeu", pack: "Questions", cosmetic: "Cosmétique", upgrade: "Amélioration", event: "Fête des Brumes · jusqu'au 31 octobre" } as const;
 
 export function ProjectsView({ roomId, projects, unlocks, items, names }: {
   roomId: string;

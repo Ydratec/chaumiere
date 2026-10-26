@@ -37,6 +37,12 @@ function Accessory({ id }: { id: Accessory }) {
         {PETALS.map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r="1.25" fill="#f472b6" />)}
         <circle r=".9" fill="#facc15" />
       </g>;
+    case "witch":
+      return <>
+        <path d="M-3.8-5.8 1.6-15.6q.9-.7 1.1.4l1.6 9.4z" fill="#4c1d95" />
+        <path d="M-3.4-7.6h7.6l.3 1.8h-8.3z" fill="#f59e0b" />
+        <ellipse cx="0" cy="-5.6" rx="6.8" ry="1.4" fill="#3b0f7a" />
+      </>;
     case "glasses":
       return <>
         <path d="M-2-1.5h2.4" stroke={INK} strokeWidth=".6" />

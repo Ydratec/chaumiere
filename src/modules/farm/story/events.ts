@@ -27,6 +27,22 @@ export const EVENTS: StoryEvent[] = [
     },
   },
   { id: "etoiles", day: 10, days: 2, title: "La nuit d'étoiles", text: "La brume s'écarte ce soir : tout pousse un cinquième plus vite pendant deux jours.", speed: 0.8 },
+  // Jour 17 (la veille de sa sortie) : il est déjà en cours, donc pas de notification en double avec l'annonce (news.ts).
+  {
+    id: "bocal", day: 17, days: 7, title: "Le grand bocal de bonbons",
+    text: "Pour la Fête des Brumes, Zinnia veut remplir le grand bocal du hameau. Atelier de cuisine, canne à sucre, et quatre paliers à débloquer ensemble d'ici la nuit du 31.",
+    scene: {
+      lines: [
+        { who: "zinnia", text: "Tu as vu ce que j'ai trouvé au grenier de la mairie ? Le grand bocal de la Fête ! Il est plus grand que moi." },
+        { who: "zinnia", text: "Avant, le soir de la Fête des Brumes, on le remplissait de bonbons, et chaque enfant qui portait une lanterne pouvait se servir." },
+        { who: "colonel", text: "Hou. Il n'y a plus d'enfants, Zinnia. Il n'y a plus de lanternes. Il n'y a plus de Fête." },
+        { who: "zinnia", text: "Il y aura tout ça. Si le bocal est plein le 31 au soir, il y aura tout ça. J'en suis sûre." },
+        { who: "mirabelle", text: "Plante de la canne à sucre dans tes bacs, mon petit chou, et monte-toi un atelier de cuisine. Bonbons à la fraise, bonbons aux fleurs… et ma confiture, si tu es sage." },
+        { who: "pistache", text: "Je surveillerai le bocal. Personnellement. De très près. Avec la bouche, si besoin." },
+      ],
+      coins: 40,
+    },
+  },
 ];
 
 export const activeEvents = (day: number) => EVENTS.filter((e) => day >= e.day && day < e.day + e.days);

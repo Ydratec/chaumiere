@@ -161,6 +161,48 @@ const ART: Record<ItemId, React.ReactNode> = {
       <circle cx="12" cy="8.5" r="2.2" fill="#e5484d" />
     </>
   ),
+  sugarcane: (
+    <>
+      {[[8, "#8bc34a", -6], [12, "#7cb342", 0], [16, "#9ccc65", 6]].map(([x, c, r]) => (
+        <g key={x as number} transform={`rotate(${r} ${x} 22)`}>
+          <rect x={(x as number) - 1.3} y="4" width="2.6" height="18" rx="1.2" fill={c as string} />
+          {[8, 12.5, 17].map((y) => <path key={y} d={`M${(x as number) - 1.4} ${y}h2.8`} stroke="#5f8f2f" strokeWidth=".9" />)}
+          <path d={`M${x} 5c-2-2-4-2.4-5.5-2 1.4 1.6 3.4 2.2 5.5 2zM${x} 5c2-2 4-2.4 5.5-2-1.4 1.6-3.4 2.2-5.5 2z`} fill="#689f38" />
+        </g>
+      ))}
+    </>
+  ),
+  sugar: (
+    <>
+      {[[5, 12], [12, 12], [8.5, 5.5]].map(([x, y]) => (
+        <g key={`${x}${y}`}>
+          <rect x={x} y={y} width="7" height="7" rx="1.2" fill="#fafafa" stroke="#d4d4d8" strokeWidth=".8" />
+          <path d={`M${x + 1} ${y + 1.2}h4`} stroke="#fff" strokeWidth=".8" />
+          <circle cx={x + 2.4} cy={y + 4.4} r=".4" fill="#e4e4e7" />
+          <circle cx={x + 4.8} cy={y + 3} r=".4" fill="#e4e4e7" />
+        </g>
+      ))}
+    </>
+  ),
+  candy: (
+    <>
+      <path d="M7.6 12 2.5 8.2l1 3.8-1 3.8z" fill="#f472b6" stroke="#db2777" strokeWidth=".6" strokeLinejoin="round" />
+      <path d="M16.4 12l5.1-3.8-1 3.8 1 3.8z" fill="#f472b6" stroke="#db2777" strokeWidth=".6" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="5.2" fill="#ec4899" />
+      <path d="M8.6 9.4c2 1.4 4.6 4 6.6 5.6M8 12.6c1.6.8 3.4 2.2 4.6 3.6M11 7.2c1.8 1.2 3.8 3 5.2 4.6" stroke="#fdf2f8" strokeWidth="1.1" strokeLinecap="round" fill="none" />
+      <circle cx="10" cy="9.6" r="1" fill="#fff" opacity=".7" />
+    </>
+  ),
+  jam: (
+    <>
+      <rect x="6" y="9" width="12" height="12.5" rx="3" fill="#c81e3c" />
+      <rect x="7.5" y="12" width="9" height="6" rx="1.5" fill="#fff4e0" />
+      <circle cx="12" cy="15" r="1.8" fill="#e5484d" />
+      <path d="M5.2 8.8c2.2-2.2 11.4-2.2 13.6 0l-1 2c-3.4-1-8.2-1-11.6 0z" fill="#f2f2f2" />
+      {[7.5, 10.5, 13.5, 16.5].map((x) => <circle key={x} cx={x} cy="8.6" r=".8" fill="#e5484d" />)}
+      <path d="M6.5 10.8h11" stroke="#a16207" strokeWidth=".9" />
+    </>
+  ),
 };
 
 /** Jeune pousse, grandit avec `g` (0 → 1), posée en (cx, cy). */
@@ -299,6 +341,44 @@ export function ObjectArt({ kind, item, growth }: { kind: string; item: ItemId |
         <path d="M24 13c-4-6-9-4-11 3M24 13c4-6 9-4 11 3" stroke="#7dd3fc" strokeWidth="2" fill="none" strokeLinecap="round" />
         <circle cx="13" cy="20" r="1" fill="#7dd3fc" />
         <circle cx="35" cy="20" r="1" fill="#7dd3fc" />
+      </>);
+    case "workshop": // atelier de cuisine : plan de travail, fourneau et marmite
+      return svg(48, 48, <>
+        <Shadow cx={24} cy={46} rx={22} />
+        {busy && <Smoke x={31} y={4} />}
+        <rect x="3" y="4" width="42" height="14" rx="2" fill="#7a5131" />
+        <rect x="5" y="6" width="38" height="2.4" rx="1" fill="#946540" />
+        {[[9, "#e5484d"], [15, "#f5c542"], [21, "#f472b6"]].map(([x, c]) => (
+          <g key={x as number}>
+            <rect x={(x as number) - 2.4} y="9.5" width="4.8" height="6.5" rx="1.4" fill={c as string} />
+            <rect x={(x as number) - 2.6} y="8.6" width="5.2" height="1.8" rx=".8" fill="#f4efe6" />
+          </g>
+        ))}
+        <rect x="3" y="20" width="42" height="25" rx="3" fill="#d9c2a0" />
+        <rect x="3" y="20" width="42" height="4" rx="2" fill="#efe2cc" />
+        <rect x="6" y="27" width="16" height="15" rx="2" fill="#c4a983" />
+        <circle cx="19" cy="34.5" r="1" fill="#8a6a4a" />
+        <rect x="25" y="27" width="17" height="15" rx="2" fill="#3f3f46" />
+        <rect x="27" y="29" width="13" height="8" rx="1.5" fill={busy ? "#f59e0b" : "#27272a"} />
+        {busy && <path d="M30 37c0-3 2-4 2-6 2 2 3 4 3 6zM34.5 37c0-2 1.4-2.6 1.4-4 1.4 1.4 2 2.6 2 4z" fill="#fde68a" />}
+        <path d="M25 14h13l-1.5 8h-10z" fill="#c27a3a" />
+        <ellipse cx="31.5" cy="14" rx="6.8" ry="1.6" fill="#8f5524" />
+        <ellipse cx="31.5" cy="14" rx="5.4" ry="1" fill={busy ? "#f472b6" : "#5b3e26"} />
+        <path d="M24 15.5h-2.4M39 15.5h2.4" stroke="#8f5524" strokeWidth="1.4" strokeLinecap="round" />
+      </>);
+    case "pumpkins": // citrouilles sculptées, qui luisent
+      return svg(24, 24, <>
+        <Shadow cx={12} cy={22.5} rx={10} />
+        <circle cx="15.5" cy="15" r="9" fill="#ffb347" opacity=".18" />
+        {[[7, 16, 5.6, "#e8741e"], [16, 15, 6.6, "#f28c2b"]].map(([x, y, r, c]) => (
+          <g key={x as number}>
+            <path d={`M${x} ${(y as number) - (r as number) + 0.4}c0-1.6.8-2.8 2.2-3.2`} stroke="#5a7a3a" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+            <ellipse cx={(x as number) - (r as number) * 0.45} cy={y as number} rx={(r as number) * 0.6} ry={(r as number) * 0.85} fill={c as string} />
+            <ellipse cx={(x as number) + (r as number) * 0.45} cy={y as number} rx={(r as number) * 0.6} ry={(r as number) * 0.85} fill={c as string} />
+            <ellipse cx={x as number} cy={y as number} rx={(r as number) * 0.62} ry={(r as number) * 0.92} fill="#f9a23c" />
+            <path d={`M${(x as number) - 2.4} ${(y as number) - 1.4}l1.2-1.6 1.2 1.6zM${(x as number) + 0.1} ${(y as number) - 1.4}l1.2-1.6 1.2 1.6zM${(x as number) - 2.6} ${(y as number) + 1.4}q2.6 2.4 5.2 0l-1 .3-.8-.6-.8.6-.8-.6-.8.6z`} fill="#ffe08a" />
+          </g>
+        ))}
       </>);
     default:
       return null;

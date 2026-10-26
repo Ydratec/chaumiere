@@ -31,6 +31,7 @@ export const ACCESSORIES: Record<string, { name: string; price: number; requires
   scarf: { name: "Écharpe", price: 50 },
   hat: { name: "Chapeau", price: 60 },
   crown: { name: "Couronne", price: 0, requires: "cosmetic:crown" },
+  witch: { name: "Chapeau de sorcière", price: 0, requires: "cosmetic:witchhat" },
 };
 export type Accessory = keyof typeof ACCESSORIES;
 

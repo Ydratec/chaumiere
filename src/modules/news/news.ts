@@ -32,6 +32,22 @@ export const NEWS: News[] = [
     push: { title: "La brume s'épaissit…", body: "L'histoire reprend demain à la serre, et la Fête des Brumes arrive pour Halloween." },
     cta: "J'ai hâte !",
   },
+  {
+    id: "bocal-bonbons",
+    from: "2026-10-26T12:00:00+01:00",
+    until: "2026-11-01T00:00:00+01:00",
+    who: "zinnia",
+    eyebrow: "Fête des Brumes · jusqu'au 31 octobre",
+    title: "Le grand bocal de bonbons",
+    text: "Zinnia a retrouvé le grand bocal de la Fête. Remplissez-le tous ensemble avant la nuit du 31 : plus il y a de bonbons, plus il y a de surprises.",
+    points: [
+      "Nouveau : la canne à sucre, dans les bacs potagers",
+      "Nouveau : l'atelier de cuisine (sucre, bonbons à la fraise, bonbons aux fleurs, confiture)",
+      "4 paliers à débloquer dans l'onglet Projets : citrouilles, chapeau de sorcière, pluie de bonbons… et un dernier",
+    ],
+    push: { title: "Le grand bocal de bonbons 🍬", body: "Atelier de cuisine, canne à sucre : remplissez le bocal du hameau avant le 31 pour débloquer des surprises." },
+    cta: "Aller à la serre",
+  },
 ];
 
 /** Annonces en cours à ce moment. */
