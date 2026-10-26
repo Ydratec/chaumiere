@@ -8,6 +8,12 @@ export const THEMES = {
   philo: "Philo",
   absurde: "Absurde",
   gourmand: "Gourmandise",
+  tupreferes: "Tu préfères…",
+  jamais: "Je n'ai jamais…",
+  quidenous: "Qui de nous ?",
+  profond: "Au fond",
+  debats: "Débats",
+  annees2000: "Années 2000",
 } as const;
 export type Theme = keyof typeof THEMES;
 export const isTheme = (t: unknown): t is Theme => typeof t === "string" && Object.hasOwn(THEMES, t);
