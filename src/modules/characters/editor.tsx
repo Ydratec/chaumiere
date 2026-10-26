@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { CharacterSprite } from "@/src/components/character-sprite";
 import { ItemIcon } from "@/src/modules/farm/art";
 import { buySkin, saveCharacter } from "./actions";
-import { ACCESSORIES, COLORS, SPECIES, canWear, skinKey, type Accessory, type Character, type Species } from "./catalog";
+import { ACCESSORIES, COLORS, SPECIES, canWear, isUnique, skinKey, type Accessory, type Character, type Species } from "./catalog";
 
 export function CharacterEditor({ roomId, saved, owned, unlocks, coins }: {
   roomId: string;
@@ -19,7 +19,9 @@ export function CharacterEditor({ roomId, saved, owned, unlocks, coins }: {
   const [msg, setMsg] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const hasSpecies = (s: Species) => SPECIES[s].price === 0 || owned.includes(skinKey("species", s));
+  const hasSpecies = (s: Species) => (SPECIES[s].price === 0 && !isUnique(s)) || owned.includes(skinKey("species", s));
+  // les personnages uniques n'apparaissent que pour celui à qui l'admin les a donnés
+  const speciesList = (Object.keys(SPECIES) as Species[]).filter((s) => !isUnique(s) || hasSpecies(s));
   const hasAccessory = (a: Accessory) => (ACCESSORIES[a].requires ? unlocks.includes(ACCESSORIES[a].requires!) : owned.includes(skinKey("accessory", a)));
   const toBuy = [
     ...(hasSpecies(draft.species) ? [] : [{ kind: "species" as const, id: draft.species, price: SPECIES[draft.species].price }]),
@@ -64,16 +66,22 @@ export function CharacterEditor({ roomId, saved, owned, unlocks, coins }: {
       <div>
         <h3 className="eyebrow mb-2">Espèce</h3>
         <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(SPECIES) as Species[]).map((s) => (
+          {speciesList.map((s) => (
             <button key={s} onClick={() => pick({ ...draft, species: s })} className={tile(draft.species === s)}>
               <CharacterSprite character={{ ...draft, species: s, accessory: null }} size={52} />
-              <span className="text-xs font-medium">{SPECIES[s].name}</span>
+              <span className="text-center text-xs font-medium leading-tight">{SPECIES[s].name}</span>
+              {isUnique(s) && <span className="absolute -right-1 -top-1 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-950">Unique</span>}
               {!hasSpecies(s) && price(SPECIES[s].price)}
             </button>
           ))}
         </div>
       </div>
 
+      {isUnique(draft.species) ? (
+        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          ✨ Personnage unique, donné par l&apos;admin de la salle : personne d&apos;autre ne l&apos;a. Il garde ses propres couleurs.
+        </p>
+      ) : (
       <div>
         <h3 className="eyebrow mb-2">Couleur</h3>
         <div className="flex flex-wrap gap-2.5">
@@ -89,6 +97,7 @@ export function CharacterEditor({ roomId, saved, owned, unlocks, coins }: {
           ))}
         </div>
       </div>
+      )}
 
       <div>
         <h3 className="eyebrow mb-2">Accessoire</h3>
