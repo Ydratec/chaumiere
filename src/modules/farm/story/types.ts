@@ -34,7 +34,7 @@ export type Spot = "door" | "center" | "player" | "left" | "right" | { x: number
 export type Emote = "heart" | "tear" | "surprise" | "laugh" | "music" | "zzz" | "dots" | "anger";
 /** Ambiance : nuit (0 → 1), brume (0 → 1), lanternes allumées, pluie. */
 export type Mood = { night: number; fog: number; lanterns: number; rain: boolean };
-export type Prop = "letter" | "page" | "lantern" | "pumpkin" | "satchel" | "candle" | "cake" | "key";
+export type Prop = "letter" | "page" | "lantern" | "pumpkin" | "satchel" | "candle" | "cake" | "key" | "spoon";
 
 export type Step =
   | { do: "enter"; who: Who; at?: Spot } // apparaît (fondu) à cet endroit, la porte par défaut

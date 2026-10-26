@@ -193,6 +193,35 @@ const ART: Record<ItemId, React.ReactNode> = {
       <circle cx="10" cy="9.6" r="1" fill="#fff" opacity=".7" />
     </>
   ),
+  pumpkin: (
+    <>
+      <path d="M12 6.4c-.2-1.8.4-3 1.8-3.6" stroke="#4d7c0f" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+      <ellipse cx="7.6" cy="14" rx="4.6" ry="6.4" fill="#ea580c" />
+      <ellipse cx="16.4" cy="14" rx="4.6" ry="6.4" fill="#ea580c" />
+      <ellipse cx="12" cy="14" rx="4.6" ry="7" fill="#f97316" />
+      <path d="M12 7.4v13M9 8.4c-1 3.4-1 8 0 11.4M15 8.4c1 3.4 1 8 0 11.4" stroke="#c2410c" strokeWidth=".7" fill="none" opacity=".6" />
+      <path d="M13.6 5.2c1.4-.4 2.6.2 3.2 1.2-1.4.4-2.6 0-3.2-1.2z" fill="#65a30d" />
+    </>
+  ),
+  lantern: (
+    <>
+      <circle cx="12" cy="13.5" r="9" fill="#fde68a" opacity=".35" />
+      <path d="M12 6c-.1-1.6.4-2.6 1.6-3.2" stroke="#4d7c0f" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <ellipse cx="12" cy="14" rx="8.6" ry="7.2" fill="#ea580c" />
+      <path d="M12 6.8v14.4M7.4 7.8c-1.4 3.6-1.4 8.6 0 12.4M16.6 7.8c1.4 3.6 1.4 8.6 0 12.4" stroke="#c2410c" strokeWidth=".7" fill="none" opacity=".5" />
+      <path d="M7.4 11.4l2.4-1.4.4 2.6zM16.6 11.4l-2.4-1.4-.4 2.6z" fill="#fde047" />
+      <path d="M7.6 15.6q4.4 3.6 8.8 0l-1.4 2-1.2-1-1.8 1.4-1.8-1.4-1.2 1z" fill="#fde047" />
+    </>
+  ),
+  pie: (
+    <>
+      <path d="M2.6 13.4h18.8l-1.6 5.4a2 2 0 0 1-1.9 1.4H6.1a2 2 0 0 1-1.9-1.4z" fill="#d99a5b" />
+      <ellipse cx="12" cy="13.4" rx="9.4" ry="3.6" fill="#e8b27a" />
+      <ellipse cx="12" cy="13.2" rx="7.6" ry="2.6" fill="#ea7a1c" />
+      <path d="M8.6 12.6q1.4.8 2.8 0M12.8 13.6q1.4.8 2.8 0" stroke="#fdba74" strokeWidth=".8" fill="none" strokeLinecap="round" />
+      <path d="M4 16h16" stroke="#b9773a" strokeWidth=".8" strokeDasharray="1.4 1.2" />
+    </>
+  ),
   jam: (
     <>
       <rect x="6" y="9" width="12" height="12.5" rx="3" fill="#c81e3c" />
