@@ -3,6 +3,7 @@ import { adminDb } from "@/src/lib/db/server";
 import type { Game } from "@/src/modules/games/actions";
 import { ENGINES } from "@/src/modules/games/engines";
 import { GameView } from "@/src/modules/games/game-view";
+import { Chat } from "@/src/modules/chat/chat";
 import { isGameType } from "@/src/modules/games/labels";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
@@ -21,5 +22,13 @@ export default async function GamePage({ params }: { params: Promise<{ roomId: s
     const { data } = await adminDb().from("game_secrets").select("deck").eq("game_id", gameId).maybeSingle();
     if (data) priv = view(data.deck, ctx.user.id);
   }
-  return <GameView initial={game} userId={ctx.user.id} names={ctx.names} people={ctx.people} priv={priv} />;
+  const { data: messages } = await ctx.sb.from("game_messages").select("id, user_id, content").eq("game_id", gameId).order("id");
+  return (
+    <div className="space-y-8">
+      <GameView initial={game} userId={ctx.user.id} names={ctx.names} people={ctx.people} priv={priv} />
+      {game.status !== "open" && game.status !== "cancelled" && (
+        <Chat gameId={gameId} userId={ctx.user.id} names={ctx.names} people={ctx.people} initial={messages ?? []} initialReactions={[]} />
+      )}
+    </div>
+  );
 }

@@ -6,7 +6,7 @@ import { loadUnlocks } from "@/src/modules/farm/data";
 import { GAME_LOCKS } from "@/src/modules/farm/projects";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { challengeDay, gridOf, loadAttempt } from "./data";
-import { rewardOf, scoreOf, sendWave, tryGuess, type DailyAttempt } from "./orapa-daily";
+import { rewardOf, scoreOf, sendProbe, sendWave, tryGuess, type DailyAttempt } from "./orapa-daily";
 
 /** Membre de la salle, et Orapa débloqué (le défi en est une variante). */
 async function member(roomId: string) {
@@ -25,6 +25,17 @@ export async function dailyWave(roomId: string, from: string): Promise<{ error?:
   const day = challengeDay();
   const next = sendWave(gridOf(roomId, day), await loadAttempt(roomId, uid, day), String(from));
   if (!next) return { error: "Onde impossible (déjà envoyée, ou défi terminé)." };
+  await save(roomId, uid, day, next);
+  revalidatePath(`/r/${roomId}/games/defi`);
+  return {};
+}
+
+/** Demander la couleur d'une case de la grille du jour (compte 2). */
+export async function dailyProbe(roomId: string, cell: number): Promise<{ error?: string }> {
+  const uid = await member(roomId);
+  const day = challengeDay();
+  const next = sendProbe(gridOf(roomId, day), await loadAttempt(roomId, uid, day), cell);
+  if (!next) return { error: "Case déjà demandée, ou défi terminé." };
   await save(roomId, uid, day, next);
   revalidatePath(`/r/${roomId}/games/defi`);
   return {};

@@ -6,7 +6,7 @@ import type { Person } from "@/src/modules/rooms/context";
 import { Cat, MOODS, type Mood } from "@/src/components/cat";
 import { Icon } from "@/src/components/icons";
 import { browserDb } from "@/src/lib/db/client";
-import { chatSent } from "@/src/modules/notifications/actions";
+import { chatSent, gameChatSent } from "@/src/modules/notifications/actions";
 import { seenKey } from "@/src/components/tab-bar";
 
 export type Message = { id: number; user_id: string; content: string };
@@ -19,21 +19,31 @@ const Reacts = ({ k, size = 20 }: { k: string; size?: number }) =>
 const same = (a: Reaction, b: Reaction) =>
   a.message_id === b.message_id && a.user_id === b.user_id && a.emoji === b.emoji;
 
+/**
+ * Discussion en temps réel : celle de la question du jour (`activityId`), ou celle d'une partie (`gameId` :
+ * table game_messages, sans réactions).
+ */
 export function Chat({
-  activityId,
+  activityId: threadId,
+  gameId,
   userId,
   names,
   people,
   initial,
   initialReactions,
 }: {
-  activityId: string;
+  activityId?: string;
+  gameId?: string;
   userId: string;
   names: Record<string, string>;
   people: Record<string, Person>;
   initial: Message[];
   initialReactions: Reaction[];
 }) {
+  const game = !!gameId;
+  const activityId = (gameId ?? threadId)!; // identifiant du fil (question ou partie)
+  const table = game ? "game_messages" : "messages";
+  const column = game ? "game_id" : "activity_id";
   const [messages, setMessages] = useState(initial);
   const [reactions, setReactions] = useState(initialReactions);
   const [typing, setTyping] = useState<string[]>([]);
@@ -55,7 +65,7 @@ export function Chat({
       .channel(`chat-${activityId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `activity_id=eq.${activityId}` },
+        { event: "INSERT", schema: "public", table, filter: `${column}=eq.${activityId}` },
         (p) => {
           const m = p.new as Message;
           setMessages((all) => (all.some((x) => x.id === m.id) ? all : [...all, m]));
@@ -84,15 +94,16 @@ export function Chat({
       Object.values(pending).forEach(clearTimeout);
       sb.removeChannel(ch);
     };
-  }, [sb, activityId]);
+  }, [sb, activityId, table, column]);
 
   // Discussion ouverte = messages lus (pour la pastille de l'onglet Question).
   const lastId = messages.at(-1)?.id ?? 0;
   useEffect(() => {
+    if (game) return;
     try {
       localStorage.setItem(seenKey(activityId), String(lastId));
     } catch {}
-  }, [activityId, lastId]);
+  }, [activityId, lastId, game]);
 
   // Suivre la conversation seulement si on est déjà en bas de la page (ou si c'est notre message) :
   // pas de saut quand on lit la question en haut.
@@ -120,9 +131,9 @@ export function Chat({
     if (!content) return;
     setText("");
     lastTyping.current = 0;
-    const { error } = await sb.from("messages").insert({ activity_id: activityId, content });
+    const { error } = await sb.from(table).insert({ [column]: activityId, content });
     if (error) setText(content);
-    else void chatSent(activityId); // prévient les autres (notification, limitée à une toutes les 10 min)
+    else void (game ? gameChatSent(activityId) : chatSent(activityId)); // prévient les autres (notification, limitée à une toutes les 10 min)
   }
 
   async function toggle(message_id: number, emoji: string) {
@@ -161,14 +172,14 @@ export function Chat({
                   >
                     {m.content}
                   </p>
-                  <button
+                  {!game && <button
                     type="button"
                     aria-label="Réagir"
                     onClick={() => setPicker(picker === m.id ? null : m.id)}
                     className="px-1 text-zinc-300 hover:text-zinc-600"
                   >
                     <Icon name="smile" size={18} />
-                  </button>
+                  </button>}
                 </div>
                 {picker === m.id && (
                   <div className="animate-pop mt-1 inline-flex gap-1 rounded-full bg-white px-2 py-1 shadow-lg ring-1 ring-black/5">
