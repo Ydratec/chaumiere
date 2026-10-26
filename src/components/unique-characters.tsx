@@ -17,11 +17,65 @@ export const FACE_HEAD: Partial<Record<Species, { x: number; y: number; r: numbe
   fox: { x: 12, y: 12.5, r: 6.5 },
   whale: { x: 12, y: 12, r: 7 },
   schrodinger: { x: 12, y: 10.5, r: 6.2 },
-  frog: { x: 12, y: 12, r: 7 },
+  frog: { x: 12, y: 12.4, r: 7.4 },
   shark: { x: 12, y: 12, r: 6.6 },
 };
 
 type Leg = (x: number, phase: "a" | "b", c: string, y?: number, len?: number, w?: number) => React.ReactNode;
+
+/**
+ * La grenouille assise, de face (dessinée dans un repère 600×600 : tête ronde, gros yeux brillants, joues roses,
+ * ventre clair, pattes arrière repliées, doigts terminés par des ventouses). Sert en pied et en portrait.
+ */
+const FROG = { body: "#7fc045", head: "#84c441", dark: "#6aaa3a", light: "#9dd065", spot: "#72b33c", blush: "#f7b5cf" };
+function FrogArt() {
+  const toes = (x: number, y: number, dir: 1 | -1, spread: number[][]) =>
+    spread.map(([dx, dy]) => (
+      <g key={`${dx}${dy}`}>
+        <path d={`M${x} ${y}L${x + dir * dx} ${y + dy}`} stroke={FROG.dark} strokeWidth="9" strokeLinecap="round" />
+        <circle cx={x + dir * dx} cy={y + dy} r="8" fill={FROG.dark} />
+      </g>
+    ));
+  return <>
+    {/* pattes arrière et leurs doigts */}
+    {toes(185, 440, -1, [[48, -6], [44, 16], [24, 36]])}
+    {toes(415, 440, 1, [[48, -6], [44, 16], [24, 36]])}
+    <ellipse cx="205" cy="385" rx="52" ry="62" fill={FROG.dark} />
+    <ellipse cx="395" cy="385" rx="52" ry="62" fill={FROG.dark} />
+    <path d="M178 372q18 22 44 30M422 372q-18 22-44 30" stroke="#5c9a32" strokeWidth="5" fill="none" strokeLinecap="round" />
+    {/* corps et ventre */}
+    <ellipse cx="300" cy="372" rx="96" ry="102" fill={FROG.body} />
+    <ellipse cx="300" cy="392" rx="54" ry="72" fill={FROG.light} />
+    {/* pattes avant et leurs doigts */}
+    {toes(250, 452, -1, [[28, 18], [10, 34], [-10, 36]])}
+    {toes(350, 452, 1, [[28, 18], [10, 34], [-10, 36]])}
+    <path d="M222 318c-8 44-2 98 16 134h24c4-42-2-92-12-134z" fill={FROG.body} />
+    <path d="M378 318c8 44 2 98-16 134h-24c-4-42 2-92 12-134z" fill={FROG.body} />
+    <path d="M238 360q6 30 10 60M362 360q-6 30-10 60" stroke={FROG.spot} strokeWidth="4" fill="none" strokeLinecap="round" />
+    {[[236, 344, 7], [354, 344, 7], [214, 352, 8], [386, 352, 8], [198, 404, 6], [402, 404, 6]].map(([x, y, r]) => <circle key={`${x}${y}`} cx={x} cy={y} r={r} fill={FROG.spot} />)}
+    {/* tête */}
+    <circle cx="205" cy="182" r="62" fill={FROG.head} />
+    <circle cx="395" cy="182" r="62" fill={FROG.head} />
+    <ellipse cx="300" cy="238" rx="152" ry="94" fill={FROG.head} />
+    <path d="M156 262q144 22 288 0-10 46-62 62-40 10-82 10t-82-10c-52-16-62-62-62-62z" fill={FROG.light} />
+    <ellipse cx="292" cy="150" rx="18" ry="10" fill={FROG.spot} />
+    <circle cx="326" cy="162" r="9" fill={FROG.spot} />
+    <circle cx="268" cy="168" r="6" fill={FROG.spot} />
+    {/* yeux */}
+    {[205, 395].map((x) => (
+      <g key={x}>
+        <circle cx={x} cy="184" r="45" fill="#fff" />
+        <circle cx={x + (x < 300 ? 6 : -6)} cy="188" r="34" fill="#111" />
+        <circle cx={x - 6} cy="176" r="11" fill="#fff" />
+        <circle cx={x + 12} cy="200" r="5.5" fill="#fff" />
+      </g>
+    ))}
+    {/* joues et sourire */}
+    <ellipse cx="190" cy="250" rx="24" ry="15" fill={FROG.blush} />
+    <ellipse cx="410" cy="250" rx="24" ry="15" fill={FROG.blush} />
+    <path d="M244 236q56 34 112 0" stroke="#1f2937" strokeWidth="6" fill="none" strokeLinecap="round" />
+  </>;
+}
 
 /** Petit œil brillant (pupille, reflet). */
 const Eye = ({ x, y, r = 1.1, iris = INK }: { x: number; y: number; r?: number; iris?: string }) => (
@@ -183,24 +237,8 @@ export function UniqueSide({ species, leg }: { species: Species; leg: Leg }) {
         <path d="M12.4 26.4h19.4" stroke="#8a5a2c" strokeWidth=".5" />
       </g>;
 
-    case "frog": // grenouille verte qui avance par bonds
-      return <g>
-        <path d="M8 24.6c-1.6 1.6-.6 3 1.6 2.8l4.6-.2" stroke="#15803d" strokeWidth="2.6" strokeLinecap="round" fill="none" />
-        <path d="M9 22.4C9 15.8 14.6 11.4 23 11.4s14 4.4 14 11c0 3.6-3.4 5-14 5S9 26 9 22.4z" fill="#4ade80" {...LINE} />
-        <path d="M14 24.4c3 2 15 2 18 0-1.2 2.4-5.6 3-9 3s-7.8-.6-9-3z" fill="#bbf7d0" />
-        <circle cx="17.6" cy="11.6" r="4" fill="#4ade80" {...LINE} />
-        <circle cx="28.4" cy="11.6" r="4" fill="#4ade80" {...LINE} />
-        <circle cx="17.8" cy="11.2" r="2.6" fill="#fff" />
-        <circle cx="28.6" cy="11.2" r="2.6" fill="#fff" />
-        <Eye x={18.6} y={11.2} r={1.35} iris="#111" />
-        <Eye x={29.4} y={11.2} r={1.35} iris="#111" />
-        <path d="M17.6 19c2.6 2.6 7.8 3 11.4.4" stroke="#14532d" strokeWidth=".8" fill="none" strokeLinecap="round" />
-        <circle cx="15.6" cy="18.4" r="1.4" fill="#f9a8b8" opacity=".85" />
-        <circle cx="31.6" cy="18" r="1.4" fill="#f9a8b8" opacity=".85" />
-        {[[12.6, 17], [34.4, 21.2], [11.6, 21.8], [26, 14.8]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r=".9" fill="#22c55e" />)}
-        <circle cx="22.4" cy="16.6" r=".35" fill="#14532d" /><circle cx="24" cy="16.6" r=".35" fill="#14532d" />
-        <path d="M30 26.6l4.6.2 1.2-1 .4 1.4 1.2-.6" stroke="#15803d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </g>;
+    case "frog": // grenouille assise, de face : elle avance par bonds
+      return <g transform="translate(20 1) scale(.0675) translate(-300 -95)"><FrogArt /></g>;
 
     case "shark": // requin gris-bleu, ventre blanc, aileron, ouïes, grand sourire plein de dents (gentil quand même)
       return <g>
@@ -323,15 +361,8 @@ export function UniqueFace({ species }: { species: Species }) {
       </>;
     case "frog":
       return <>
-        <rect width="24" height="24" fill="#dcfce7" />
-        <path d="M12 9c6 0 10 3.6 10 8.4 0 4-4 6.6-10 6.6S2 21.4 2 17.4C2 12.6 6 9 12 9z" fill="#4ade80" {...LINE} />
-        <circle cx="7.4" cy="9" r="4" fill="#4ade80" {...LINE} /><circle cx="16.6" cy="9" r="4" fill="#4ade80" {...LINE} />
-        <circle cx="7.4" cy="8.8" r="2.7" fill="#fff" /><circle cx="16.6" cy="8.8" r="2.7" fill="#fff" />
-        <Eye x={7.8} y={9} r={1.45} iris="#111" /><Eye x={17} y={9} r={1.45} iris="#111" />
-        <path d="M5.4 16.4c3.4 3.6 9.8 3.6 13.2 0" stroke="#14532d" strokeWidth=".85" fill="none" strokeLinecap="round" />
-        <circle cx="4.6" cy="15.4" r="1.5" fill="#f9a8b8" opacity=".85" /><circle cx="19.4" cy="15.4" r="1.5" fill="#f9a8b8" opacity=".85" />
-        <circle cx="11.2" cy="13.8" r=".4" fill="#14532d" /><circle cx="12.8" cy="13.8" r=".4" fill="#14532d" />
-        {[[3.6, 19.6], [20.2, 19.2], [9, 21.8], [16.4, 22]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r=".8" fill="#22c55e" />)}
+        <rect width="24" height="24" fill="#ecfccb" />
+        <g transform="translate(12 13.6) scale(.074) translate(-300 -215)"><FrogArt /></g>
       </>;
     case "shark":
       return <>
