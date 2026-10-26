@@ -282,7 +282,7 @@ export function start(a: string, b: string, rand = Math.random) {
   return { state, secret: {} as Secrets };
 }
 
-function sameGrid(a: Grid, b: unknown) {
+export function sameGrid(a: Grid, b: unknown) {
   return Array.isArray(b) && b.length === a.length &&
     a.every((c, i) => {
       const d = b[i] as Cell;
