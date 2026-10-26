@@ -18,6 +18,7 @@ export const FACE_HEAD: Partial<Record<Species, { x: number; y: number; r: numbe
   whale: { x: 12, y: 12, r: 7 },
   schrodinger: { x: 12, y: 10.5, r: 6.2 },
   frog: { x: 12, y: 12, r: 7 },
+  shark: { x: 12, y: 12, r: 6.6 },
 };
 
 type Leg = (x: number, phase: "a" | "b", c: string, y?: number, len?: number, w?: number) => React.ReactNode;
@@ -201,6 +202,27 @@ export function UniqueSide({ species, leg }: { species: Species; leg: Leg }) {
         <path d="M30 26.6l4.6.2 1.2-1 .4 1.4 1.2-.6" stroke="#15803d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </g>;
 
+    case "shark": // requin gris-bleu, ventre blanc, aileron, ouïes, grand sourire plein de dents (gentil quand même)
+      return <g>
+        <path className="cat-tail" d="M7.4 15.6 2.2 8.4c-.4-.6.4-1.2 1-.8l5.6 6.2M7.4 16.4l-3.8 5.4c-.3.6.4 1 .9.7l4.6-4.6" fill="#64748b" stroke="#475569" strokeWidth=".45" strokeLinejoin="round" />
+        <path d="M17.2 9.6 19.6 2.4c.3-.8 1.3-.8 1.4.1l1.6 7.4z" fill="#64748b" {...LINE} />
+        <path d="M6.8 16c2.4-4.6 9-7 17.6-6.6 6.6.3 11.4 2.8 13.2 5.6.5.8.2 1.6-.6 2-3.2 1.8-8.8 4.2-15.8 4.4C14 21.6 8.6 19.8 6.8 16z" fill="#7c8ea6" {...LINE} />
+        <path d="M8.4 17.4c3.4 2.4 8.4 3.6 13.4 3.4 5.6-.2 10.6-1.8 14.4-3.8-1.8 2.6-6.8 5-14.2 5.2-6.6.2-11.6-1.6-13.6-4.8z" fill="#f1f5f9" />
+        <path d="M12 12.4c3-1.8 7.4-2.6 11-2.4" stroke="#a5b4c8" strokeWidth=".8" strokeLinecap="round" fill="none" opacity=".8" />
+        <path d="M18.4 19.4c-1 2.6-.4 4.6 1.4 5.6.4-2 .8-3.6.4-5.6z" fill="#64748b" stroke="#475569" strokeWidth=".4" strokeLinejoin="round" />
+        {[25, 26.4, 27.8].map((x) => <path key={x} d={`M${x} 13.4q-.6 1.8 0 3.4`} stroke="#475569" strokeWidth=".45" fill="none" strokeLinecap="round" />)}
+        <circle cx="31.6" cy="13" r="1.25" fill="#fff" />
+        <Eye x={31.9} y={13} r={0.8} iris="#0f172a" />
+        <path d="M29.6 11.4q1.8-.9 3.4 0" stroke="#334155" strokeWidth=".45" fill="none" strokeLinecap="round" />
+        <path d="M28.6 17q4 1.6 8.4-.6-1.6 2.6-4.6 2.6-2.6 0-3.8-2z" fill="#7f1d1d" />
+        <path d="M29.4 17.3l.6 1 .5-.8.6 1 .5-.9.6.9.5-1 .6.8.6-1.1.5.6" stroke="#fff" strokeWidth=".55" fill="none" strokeLinejoin="round" />
+        <circle cx="34.4" cy="15" r=".8" fill="#f9a8d4" opacity=".55" />
+        <g className="spout">
+          <circle cx="38.4" cy="10.2" r=".8" fill="none" stroke="#7dd3fc" strokeWidth=".45" />
+          <circle cx="39.6" cy="7.4" r=".55" fill="none" stroke="#7dd3fc" strokeWidth=".4" />
+        </g>
+      </g>;
+
     default:
       return null;
   }
@@ -310,6 +332,22 @@ export function UniqueFace({ species }: { species: Species }) {
         <circle cx="4.6" cy="15.4" r="1.5" fill="#f9a8b8" opacity=".85" /><circle cx="19.4" cy="15.4" r="1.5" fill="#f9a8b8" opacity=".85" />
         <circle cx="11.2" cy="13.8" r=".4" fill="#14532d" /><circle cx="12.8" cy="13.8" r=".4" fill="#14532d" />
         {[[3.6, 19.6], [20.2, 19.2], [9, 21.8], [16.4, 22]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r=".8" fill="#22c55e" />)}
+      </>;
+    case "shark":
+      return <>
+        <rect width="24" height="24" fill="#e0f2fe" />
+        <path d="M12 .8 9.6 6.4h4.8z" fill="#64748b" {...LINE} />
+        <path d="M4.2 15.6.6 20.4l5.2-1.6zM19.8 15.6l3.6 4.8-5.2-1.6z" fill="#64748b" {...LINE} />
+        <path d="M12 4.8c5.6 0 8.6 4 8.6 8.6 0 5-3.8 9.4-8.6 9.4s-8.6-4.4-8.6-9.4c0-4.6 3-8.6 8.6-8.6z" fill="#7c8ea6" {...LINE} />
+        <path d="M4.4 15.4c1.6 4.4 4.4 7.4 7.6 7.4s6-3 7.6-7.4c-2.2 1.2-4.8 1.8-7.6 1.8s-5.4-.6-7.6-1.8z" fill="#f1f5f9" />
+        <path d="M7.2 8.4c2.6-1.6 6.6-1.8 9.4-.4" stroke="#a5b4c8" strokeWidth=".8" strokeLinecap="round" fill="none" />
+        <circle cx="7.6" cy="12" r="1.4" fill="#fff" /><circle cx="16.4" cy="12" r="1.4" fill="#fff" />
+        <Eye x={7.8} y={12.1} r={0.9} iris="#0f172a" /><Eye x={16.2} y={12.1} r={0.9} iris="#0f172a" />
+        <path d="M6.2 10.2q1.4-.8 2.8 0M15 10.2q1.4-.8 2.8 0" stroke="#334155" strokeWidth=".45" fill="none" strokeLinecap="round" />
+        <path d="M6.8 15.6q5.2 3.4 10.4 0-1.4 3.6-5.2 3.6t-5.2-3.6z" fill="#7f1d1d" />
+        <path d="M7.4 16l.8 1.2.8-.9.8 1.2.8-1 .8 1.1.8-1 .8 1.1.8-1 .8 1.1.7-1.2" stroke="#fff" strokeWidth=".6" fill="none" strokeLinejoin="round" />
+        <path d="M4.6 12.6v2.4M5.6 12.4v2.6M19.4 12.6v2.4M18.4 12.4v2.6" stroke="#475569" strokeWidth=".4" strokeLinecap="round" />
+        <circle cx="5.6" cy="16.6" r=".9" fill="#f9a8d4" opacity=".55" /><circle cx="18.4" cy="16.6" r=".9" fill="#f9a8d4" opacity=".55" />
       </>;
     default:
       return null;

@@ -199,7 +199,14 @@ button:active:not(:disabled) {
 .cat-walking.sp-whale .mover {
   animation: sp-swim 1.1s ease-in-out infinite;
 }
+.cat-walking.sp-shark .mover {
+  animation: sp-swim 0.7s ease-in-out infinite;
+}
+.cat-walking.sp-shark .cat-tail {
+  animation: sp-fin 0.35s ease-in-out infinite;
+}
 .cat-walking.sp-whale .shadow,
+.cat-walking.sp-shark .shadow,
 .cat-walking.sp-frog .shadow,
 .cat-walking.sp-schrodinger .shadow {
   transform-box: fill-box;
@@ -208,6 +215,9 @@ button:active:not(:disabled) {
 }
 .cat-walking.sp-whale .shadow {
   animation-duration: 1.1s;
+}
+.cat-walking.sp-shark .shadow {
+  animation-duration: 0.7s;
 }
 .wing {
   transform-origin: bottom center;
@@ -258,6 +268,15 @@ button:active:not(:disabled) {
   }
   50% {
     transform: translateY(-2px) rotate(3deg);
+  }
+}
+@keyframes sp-fin {
+  0%,
+  100% {
+    transform: rotate(10deg);
+  }
+  50% {
+    transform: rotate(-10deg);
   }
 }
 @keyframes sp-shadow {

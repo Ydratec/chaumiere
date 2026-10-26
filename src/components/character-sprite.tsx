@@ -22,6 +22,7 @@ const HEAD: Record<Species, { x: number; y: number; r: number }> = {
   whale: { x: 27, y: 9.5, r: 5 },
   schrodinger: { x: 22, y: 10.8, r: 6 },
   frog: { x: 23, y: 12, r: 6 },
+  shark: { x: 29, y: 11.5, r: 4.6 },
 };
 
 // Pétales précalculés et arrondis : Math.cos ne donne pas forcément le même dernier chiffre côté serveur et navigateur.
@@ -305,7 +306,7 @@ export function CharacterSprite({ character, walking = false, portrait = false, 
       className={`overflow-visible ${walking ? "cat-walking" : ""} sp-${sp}`}
       aria-hidden
     >
-      <ellipse className="shadow" cx="19" cy="28.4" rx={sp === "fish" || sp === "whale" ? 8 : sp === "penguin" ? 7 : 13} ry="1.5" fill="rgba(0,0,0,.16)" />
+      <ellipse className="shadow" cx="19" cy="28.4" rx={sp === "fish" || sp === "whale" || sp === "shark" ? 8 : sp === "penguin" ? 7 : 13} ry="1.5" fill="rgba(0,0,0,.16)" />
       <g className="mover">
         <Body species={sp} fur={color.fur} dark={color.dark} eye={eye} />
         {character.accessory && (

@@ -5,7 +5,7 @@
  * `unique` : personnage unique, donné par l'admin de la salle à une seule personne (pas à vendre) ; il a ses propres
  * couleurs (la couleur choisie ne s'applique pas).
  */
-export type Species = "cat" | "dog" | "bunny" | "duck" | "turtle" | "fish" | "unicorn" | "penguin" | "dragon" | "fox" | "whale" | "schrodinger" | "frog";
+export type Species = "cat" | "dog" | "bunny" | "duck" | "turtle" | "fish" | "unicorn" | "penguin" | "dragon" | "fox" | "whale" | "schrodinger" | "frog" | "shark";
 export const SPECIES: Record<Species, { name: string; price: number; unique?: true }> = {
   cat: { name: "Chat", price: 0 },
   dog: { name: "Chien", price: 0 },
@@ -20,6 +20,7 @@ export const SPECIES: Record<Species, { name: string; price: number; unique?: tr
   whale: { name: "Baleine", price: 0, unique: true },
   schrodinger: { name: "Chat de Schrödinger", price: 0, unique: true },
   frog: { name: "Grenouille", price: 0, unique: true },
+  shark: { name: "Requin", price: 0, unique: true },
 };
 /** Personnages uniques (donnés par l'admin, un seul exemplaire par salle). */
 export const UNIQUE_SPECIES = (Object.keys(SPECIES) as Species[]).filter((s) => SPECIES[s].unique);
