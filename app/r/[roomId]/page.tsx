@@ -14,6 +14,8 @@ import { GamesLive } from "@/src/modules/games/live";
 import { questionPrice, todayExtras } from "@/src/modules/questions/extras";
 import { QuestionShop } from "@/src/modules/questions/shop";
 import { questionLabel } from "@/src/modules/questions/themes";
+import { BalloonScene, BalloonStatus } from "@/src/modules/questions/balloon-scene";
+import { loadFlight } from "@/src/modules/questions/flight-data";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 export default async function RoomHome({ params }: { params: Promise<{ roomId: string }> }) {
@@ -27,11 +29,12 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     .eq("room_id", roomId).eq("status", "open").neq("creator", ctx.user.id)
     .or(`target.is.null,target.eq.${ctx.user.id}`);
   const inbox = isSuperAdmin(ctx.user) ? await loadInbox() : [];
-  const [ready, extras, price, { data: wallet }] = await Promise.all([
+  const [ready, extras, price, { data: wallet }, flight] = await Promise.all([
     readyCount(roomId, ctx.user.id),
     todayExtras(ctx.sb, activity),
     questionPrice(roomId),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("item", "coins").maybeSingle(),
+    activity?.day ? loadFlight(ctx.sb, roomId, ctx.members.map((m) => m.user_id), activity.day) : null,
   ]);
 
   return (
@@ -40,11 +43,15 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
       {inbox.length > 0 && <FeedbackInbox roomId={roomId} items={inbox} />}
       <Link
         href={`/r/${roomId}/question`}
-        className="relative block overflow-hidden rounded-[1.75rem] bg-indigo-600 p-6 text-white transition hover:bg-indigo-700"
+        className={`relative flex flex-col overflow-hidden rounded-[1.75rem] bg-indigo-600 p-6 text-white transition hover:brightness-105 ${flight ? "min-h-[21rem]" : ""}`}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-100">Question du jour</p>
-        <h2 className="mt-3 pb-2 pr-14 text-2xl font-bold leading-snug tracking-tight">{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
-        <span className="absolute -right-3 -top-2 opacity-90"><Cat coat={4} mood="wow" size={76} /></span>
+        {flight && <BalloonScene roomId={roomId} flight={flight} people={ctx.people} />}
+        {/* voile sombre derrière le texte, pour qu'il reste lisible sur le ciel */}
+        {flight && <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/45 to-transparent" />}
+        <p className="relative text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-100">Question du jour</p>
+        <h2 className={`relative mt-3 pb-2 text-2xl font-bold leading-snug tracking-tight drop-shadow ${flight ? "pr-2" : "pr-14"}`}>{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
+        {!flight && <span className="absolute -right-3 -top-2 opacity-90"><Cat coat={4} mood="wow" size={76} /></span>}
+        {flight && <BalloonStatus flight={flight} names={ctx.names} />}
       </Link>
 
       {extras.length > 0 && (
