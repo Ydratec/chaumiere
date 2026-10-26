@@ -3,6 +3,8 @@ export const THEMES = {
   amour: "Amour",
   enfance: "Enfance",
   confidences: "Confidences",
+  piquant: "Piquant 🌶️",
+  aveux: "Aveux",
   philo: "Philo",
   absurde: "Absurde",
   gourmand: "Gourmandise",
