@@ -1,15 +1,29 @@
 // Personnages : espèces, couleurs, accessoires. Certains s'achètent avec les pièces de la serre,
 // la couronne se débloque par un projet de salle. Tout est réglable ici.
 
-export const SPECIES = {
+/**
+ * `unique` : personnage unique, donné par l'admin de la salle à une seule personne (pas à vendre) ; il a ses propres
+ * couleurs (la couleur choisie ne s'applique pas).
+ */
+export type Species = "cat" | "dog" | "bunny" | "duck" | "turtle" | "fish" | "unicorn" | "penguin" | "dragon" | "fox" | "whale" | "schrodinger" | "frog";
+export const SPECIES: Record<Species, { name: string; price: number; unique?: true }> = {
   cat: { name: "Chat", price: 0 },
   dog: { name: "Chien", price: 0 },
   bunny: { name: "Lapin", price: 80 },
   duck: { name: "Canard", price: 120 },
   turtle: { name: "Tortue", price: 120 },
   fish: { name: "Poisson", price: 200 },
-} as const;
-export type Species = keyof typeof SPECIES;
+  unicorn: { name: "Licorne", price: 0, unique: true },
+  penguin: { name: "Pingouin", price: 0, unique: true },
+  dragon: { name: "Dragon", price: 0, unique: true },
+  fox: { name: "Renard", price: 0, unique: true },
+  whale: { name: "Baleine", price: 0, unique: true },
+  schrodinger: { name: "Chat de Schrödinger", price: 0, unique: true },
+  frog: { name: "Grenouille", price: 0, unique: true },
+};
+/** Personnages uniques (donnés par l'admin, un seul exemplaire par salle). */
+export const UNIQUE_SPECIES = (Object.keys(SPECIES) as Species[]).filter((s) => SPECIES[s].unique);
+export const isUnique = (s: string) => s in SPECIES && !!SPECIES[s as Species].unique;
 
 /** Couleurs (pelage, plumage, écaille…) : mêmes teintes que les robes de chat. */
 export const COLORS = [
@@ -59,7 +73,7 @@ export const skinKey = (kind: "species" | "accessory", id: string) => `skin:${ki
 
 /** Ce personnage est-il utilisable (gratuit, acheté, ou débloqué par la salle) ? */
 export function canWear(c: Character, owned: string[], unlocks: string[]) {
-  const sp = SPECIES[c.species].price === 0 || owned.includes(skinKey("species", c.species));
+  const sp = (SPECIES[c.species].price === 0 && !SPECIES[c.species].unique) || owned.includes(skinKey("species", c.species));
   const acc = !c.accessory || (ACCESSORIES[c.accessory].requires
     ? unlocks.includes(ACCESSORIES[c.accessory].requires!)
     : owned.includes(skinKey("accessory", c.accessory)));

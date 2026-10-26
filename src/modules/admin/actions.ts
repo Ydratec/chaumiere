@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/src/lib/db/server";
-import { ACCESSORIES, SPECIES, skinKey } from "@/src/modules/characters/catalog";
+import { ACCESSORIES, SPECIES, isUnique, skinKey } from "@/src/modules/characters/catalog";
 import { ITEMS, isItem } from "@/src/modules/farm/catalog";
 import { PROJECTS } from "@/src/modules/farm/projects";
 import { getRoomContext } from "@/src/modules/rooms/context";
@@ -52,7 +52,7 @@ export async function resetUnlocks(roomId: string) {
 export async function unlockSkins(roomId: string) {
   const { admin, uid } = await guard(roomId);
   const keys = [
-    ...Object.keys(SPECIES).map((s) => skinKey("species", s)),
+    ...Object.keys(SPECIES).filter((s) => !isUnique(s)).map((s) => skinKey("species", s)),
     ...Object.keys(ACCESSORIES).filter((a) => !ACCESSORIES[a].requires).map((a) => skinKey("accessory", a)),
   ];
   await admin.from("farm_items").upsert(keys.map((item) => ({ room_id: roomId, user_id: uid, item, qty: 1 })), { onConflict: "room_id,user_id,item" });
