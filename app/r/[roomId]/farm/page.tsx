@@ -5,6 +5,8 @@ import { ensureFarm, giftedToday, loadFarm, loadOffers, loadProjects, touchActiv
 import { catchUpNote } from "@/src/modules/farm/story/catchup";
 import { loadStory } from "@/src/modules/farm/story/data";
 import { StoryView } from "@/src/modules/farm/story/story-view";
+import { SceneAutoplay } from "@/src/modules/farm/story/scene-autoplay";
+import { gridH } from "@/src/modules/farm/rules";
 import { GiftButton } from "@/src/modules/farm/gift-button";
 import { FarmTabs } from "@/src/modules/farm/farm-tabs";
 import { FarmView } from "@/src/modules/farm/farm-view";
@@ -40,6 +42,9 @@ export default async function FarmPage({
   const farm = await loadFarm(roomId, ctx.user.id);
   const [projects, offers, story] = await Promise.all([loadProjects(roomId, farm.unlocks), loadOffers(roomId), loadStory(roomId, ctx.user.id, farm), touchActivity(roomId, ctx.user.id, farm.story)]).then(([p, o, s]) => [p, o, s] as const);
   const friends = ctx.members.filter((m) => m.user_id !== ctx.user.id);
+  // Décor des scènes : sa propre serre, avec son personnage là où il se trouve.
+  const stage = { tiles: farm.tiles, h: gridH(farm.unlocks), me: farm.cat, character: ctx.people[ctx.user.id].character, name: ctx.names[ctx.user.id] ?? "" };
+  const opening = story?.quest?.scenes ? { id: story.quest.id, title: story.quest.title, steps: story.quest.scenes.intro } : null;
 
   return (
     <FarmTabs
@@ -50,6 +55,7 @@ export default async function FarmPage({
           label: "Ma serre",
           content: (
             <div className="space-y-6">
+              <SceneAutoplay roomId={roomId} quest={opening} stage={stage} />
               {friends.length > 0 && (
                 <section>
                   <h3 className="eyebrow mb-2">Serres des amis</h3>
@@ -71,7 +77,7 @@ export default async function FarmPage({
           ? [{
               label: "Histoire",
               badge: story.orders.filter((o) => !o.done).length,
-              content: <StoryView key={farm.now} roomId={roomId} story={story} items={farm.items} catchNote={catchUpNote(farm.story.catch)} />,
+              content: <StoryView key={farm.now} roomId={roomId} story={story} items={farm.items} catchNote={catchUpNote(farm.story.catch)} stage={stage} />,
             }]
           : []),
         { label: "Projets", badge: projects.length, content: <ProjectsView roomId={roomId} projects={projects} unlocks={farm.unlocks} items={farm.items} names={ctx.names} /> },

@@ -5,7 +5,7 @@ import { ITEMS, isItem } from "@/src/modules/farm/catalog";
 import { producedOf, type Tile } from "@/src/modules/farm/rules";
 import { chapterOf } from "@/src/modules/farm/story";
 import { activeEvents } from "@/src/modules/farm/story/events";
-import { chapterDay } from "@/src/modules/farm/story/state";
+import { chapterDay, questOpensAt } from "@/src/modules/farm/story/state";
 import { notify, throttle } from "@/src/modules/notifications/push";
 import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 
@@ -75,7 +75,12 @@ async function storyNews() {
     const day = chapterDay(r.chapter_started_at, now.getTime());
     const act = ch.acts.filter((a) => a.day === day && ch.quests.some((q) => q.act === a.n)).at(0);
     const events = activeEvents(day).filter((e) => e.day === day);
-    if (!act && !events.length) continue;
+    // Quêtes datées sorties depuis moins de 16 h (envoyées en journée, de 10 h à 22 h).
+    const quests = ch.quests.filter((q) => {
+      const at = questOpensAt(q, r.chapter_started_at);
+      return at !== null && now.getTime() >= at && now.getTime() < at + 16 * 3_600_000;
+    });
+    if (!act && !events.length && !quests.length) continue;
     const { data: members } = await admin.from("room_members").select("user_id").eq("room_id", r.id);
     const everyone = (members ?? []).map((m) => m.user_id as string);
     if (act) {
@@ -83,6 +88,11 @@ async function storyNews() {
       await notify(to, "farm", act.n === 1
         ? { title: ch.title, body: "L'histoire commence : un courrier de Mirabelle vous attend à la serre…", url: `/r/${r.id}/farm`, tag: `act-${r.id}` }
         : { title: `Épisode ${act.n} · ${act.title}`, body: "Un courrier de Mirabelle est arrivé à la serre…", url: `/r/${r.id}/farm`, tag: `act-${r.id}` });
+      sent += to.length;
+    }
+    for (const q of quests) {
+      const to = await throttle(everyone, `quest:${r.chapter}:${q.id}:${r.id}`);
+      await notify(to, "farm", { title: `Nouvel épisode · ${q.title}`, body: "Une nouvelle scène t'attend dans ta serre…", url: `/r/${r.id}/farm`, tag: `quest-${q.id}` });
       sent += to.length;
     }
     for (const e of events) {

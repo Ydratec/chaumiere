@@ -3,11 +3,11 @@ import { test } from "node:test";
 import { BUILDINGS, ITEMS, type ItemId } from "../../src/modules/farm/catalog.ts";
 import { maxOf, placeError, sellPrice, duration, recipeOf, type Tile } from "../../src/modules/farm/rules.ts";
 import { catchUp, NEUTRAL } from "../../src/modules/farm/story/catchup.ts";
-import { ch1, DAILY } from "../../src/modules/farm/story/ch1.ts";
+import { ch1, DAILY, NPCS } from "../../src/modules/farm/story/ch1.ts";
 import { activeEvents, eventKeys, EVENTS } from "../../src/modules/farm/story/events.ts";
 import { dailyOrders, producible } from "../../src/modules/farm/story/orders.ts";
 import { SECRETS } from "../../src/modules/farm/story/secrets.ts";
-import { chapterDay, currentQuest, goalMet, goalProgress, nextAct, openAct, personalUnlocks, scaled } from "../../src/modules/farm/story/state.ts";
+import { chapterDate, chapterDay, currentQuest, goalMet, goalProgress, nextAct, openAct, parisInstant, personalUnlocks, scaled, upcomingQuest } from "../../src/modules/farm/story/state.ts";
 
 const tile = (kind: string): Tile => ({ x: 0, y: 0, kind, item: null, started_at: null, ready_at: null });
 
@@ -143,4 +143,40 @@ test("commandes : trois par jour, stables, limitées à ce qu'on peut produire",
       const vente = Object.entries(o.wants).reduce((n, [k, v]) => n + ITEMS[k as ItemId].price * (v ?? 0), 0);
       assert.ok(o.reward >= vente, `${JSON.stringify(o)} paie moins que la vente (${vente})`);
     }
+});
+
+test("quêtes datées : sortie à l'heure de Paris (été comme hiver), une à la fois", () => {
+  assert.equal(new Date(parisInstant("2026-10-24", 10)).toISOString(), "2026-10-24T08:00:00.000Z", "heure d'été");
+  assert.equal(new Date(parisInstant("2026-10-27", 10)).toISOString(), "2026-10-27T09:00:00.000Z", "heure d'hiver");
+  const start = "2026-10-08T22:00:00+00:00"; // minuit à Paris, le 9 octobre
+  assert.equal(chapterDate(start, 1), "2026-10-09");
+  assert.equal(chapterDate(start, 19), "2026-10-27");
+  const before3 = ch1.quests.filter((q) => q.act < 3).map((q) => q.id);
+  const at = (iso: string) => ({ startedAt: start, now: Date.parse(iso) });
+  const dayOf = (iso: string) => chapterDay(start, Date.parse(iso));
+  assert.equal(currentQuest(ch1, before3, dayOf("2026-10-27T08:59:00Z"), at("2026-10-27T08:59:00Z")), null, "pas avant 10 h");
+  assert.equal(upcomingQuest(ch1, before3, dayOf("2026-10-27T08:59:00Z"), at("2026-10-27T08:59:00Z"))?.quest.id, "facteur");
+  assert.equal(currentQuest(ch1, before3, dayOf("2026-10-27T09:00:00Z"), at("2026-10-27T09:00:00Z"))?.id, "facteur");
+  assert.equal(currentQuest(ch1, [...before3, "facteur"], dayOf("2026-10-27T20:00:00Z"), at("2026-10-27T20:00:00Z")), null, "la suivante attend demain");
+  assert.equal(currentQuest(ch1, [...before3, "facteur"], dayOf("2026-10-28T09:30:00Z"), at("2026-10-28T09:30:00Z"))?.id, "cave");
+});
+
+test("scènes : personnages connus, répliques non vides, choix possibles", () => {
+  for (const q of ch1.quests.filter((x) => x.scenes)) {
+    for (const s of [...q.scenes!.intro, ...q.scenes!.outro]) {
+      if ("who" in s && s.who !== "player") assert.ok(s.who in NPCS, `${q.id} : ${s.who}`);
+      if (s.do === "say" || s.do === "narrate") assert.ok(s.text.trim().length > 0, q.id);
+      if (s.do === "choice") assert.ok(s.options.length >= 2, `${q.id} : choix`);
+    }
+    // on ne fait parler que quelqu'un qui est entré en scène
+    for (const part of [q.scenes!.intro, q.scenes!.outro]) {
+      const here = new Set<string>();
+      for (const s of part) {
+        if (s.do === "enter") here.add(s.who);
+        if (s.do === "leave") here.delete(s.who);
+        if (s.do === "say" || s.do === "walk") assert.ok(here.has(s.who), `${q.id} : ${s.who} parle sans être entré`);
+      }
+    }
+    assert.ok(q.intro.length > 0 && q.outro.length > 0, `${q.id} : texte tiré des scènes`);
+  }
 });

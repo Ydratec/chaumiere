@@ -72,6 +72,27 @@ const ART: Record<Who, React.ReactNode> = {
       ))}
     </>
   ),
+  basile: (
+    <>
+      <path d="M14 58c2-10 9-15 18-15s16 5 18 15z" fill="#3f5f8a" />
+      <path d="M22 44 40 60" stroke="#8a5a32" strokeWidth="4" strokeLinecap="round" />
+      <ellipse cx="32" cy="33" rx="15" ry="16" fill="#efe0d2" />
+      <path d="M17 30c0-6 7-11 15-11s15 5 15 11z" fill="#c9a07a" />
+      <path d="M14 22c2-9 10-14 18-14s16 5 18 14c-6-2-12-3-18-3s-12 1-18 3z" fill="#2f4a6b" />
+      <path d="M13 22c6-2 13-3 19-3s13 1 19 3l1 4c-6-2-13-3-20-3s-14 1-20 3z" fill="#1f344f" />
+      <rect x="20" y="13.5" width="24" height="3.5" rx="1.5" fill="#d94b4b" />
+      <circle cx="32" cy="15.2" r="2" fill="#e0b44c" />
+      <circle cx="26" cy="34" r="2.2" fill="#2a1d18" />
+      <circle cx="38" cy="34" r="2.2" fill="#2a1d18" />
+      <circle cx="26.7" cy="33.2" r=".7" fill="#fff" />
+      <circle cx="38.7" cy="33.2" r=".7" fill="#fff" />
+      <path d="M22 29.5q4-2 7 0M35 29.5q3-2 7 0" fill="none" stroke="#8a6a4a" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="21" cy="39" r="2.6" fill="#f2a1a1" opacity=".55" />
+      <circle cx="43" cy="39" r="2.6" fill="#f2a1a1" opacity=".55" />
+      <path d="M28.5 41.5q3.5 2.5 7 0" fill="none" stroke="#8a4a3a" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M8 46c6-3 10 1 16-1M42 50c6-2 9 1 14-1" stroke="#dfe8f2" strokeWidth="3" strokeLinecap="round" opacity=".8" />
+    </>
+  ),
 };
 
 export function NpcPortrait({ who, size = 64 }: { who: Who; size?: number }) {

@@ -1,4 +1,5 @@
 // Chapitre 1 : « Le Hameau des Brumes ». Actes 1 et 2 (la suite arrive avec les actes 3 et 4).
+import { ACT3 } from "./ch1-act3.ts";
 import type { Chapter, Who } from "./types.ts";
 
 export const NPCS: Record<Who, { name: string; role: string }> = {
@@ -6,6 +7,7 @@ export const NPCS: Record<Who, { name: string; role: string }> = {
   pistache: { name: "Pistache", role: "Renard et grand voleur d'œufs" },
   colonel: { name: "Colonel Moustache", role: "Maire du hameau" },
   zinnia: { name: "Zinnia", role: "Fleuriste" },
+  basile: { name: "Basile", role: "Le facteur du vieux pont" },
 };
 
 /** Un mot du jour : une petite réplique différente chaque jour, pour que le hameau vive. */
@@ -27,8 +29,8 @@ export const ch1: Chapter = {
   acts: [
     { n: 1, day: 1, title: "Le testament", teaser: "Mirabelle a laissé la serre à quelqu'un. Pourquoi vous ?" },
     { n: 2, day: 8, title: "Le village endormi", teaser: "Quelqu'un attend sur le vieux pont…" },
-    { n: 3, day: 15, title: "La grande brume", teaser: "" },
-    { n: 4, day: 22, title: "La Fête des Brumes", teaser: "" },
+    { n: 3, day: 15, title: "La grande brume", teaser: "Un facteur perdu, une lettre jamais remise, et la brume qui ne veut pas partir." },
+    { n: 4, day: 22, title: "La Fête des Brumes", teaser: "Une nuit par an, des lanternes à toutes les fenêtres…" },
   ],
   quests: [
     // ---------- Acte 1 : Le testament ----------
@@ -194,5 +196,6 @@ export const ch1: Chapter = {
       reward: { coins: 200, unlocks: ["cap:planter:18"] },
       page: { title: "Le pont", text: "Quelqu'un est arrivé sur le vieux pont. Ça fait trente ans que personne n'y a mis les pieds. J'ai peur, mon petit chou. J'ai très peur, et je ne sais plus pourquoi je suis la seule à avoir peur." },
     },
+    ...ACT3,
   ],
 };

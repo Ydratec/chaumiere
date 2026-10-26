@@ -27,7 +27,7 @@ export async function completeQuest(roomId: string, questId: string): Promise<{ 
   const admin = adminDb();
   const farm = await loadFarm(roomId, uid);
   const ch = chapterOf(farm.story.chapter);
-  const q = ch && currentQuest(ch, farm.story.done, farm.story.day);
+  const q = ch && currentQuest(ch, farm.story.done, farm.story.day, { startedAt: farm.story.startedAt, now: Date.now() });
   if (!ch || !q || q.id !== questId) return { error: "Cette quête n'est pas en cours." };
   const { data: stats } = await admin.from("farm_stats").select("key, count").eq("room_id", roomId).eq("user_id", uid);
   const counters = Object.fromEntries((stats ?? []).map((s) => [s.key, s.count as number]));
