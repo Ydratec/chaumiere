@@ -6,6 +6,7 @@ import { producedOf, type Tile } from "@/src/modules/farm/rules";
 import { chapterOf } from "@/src/modules/farm/story";
 import { activeEvents } from "@/src/modules/farm/story/events";
 import { chapterDay, questOpensAt } from "@/src/modules/farm/story/state";
+import { activeNews } from "@/src/modules/news/news";
 import { notify, throttle } from "@/src/modules/notifications/push";
 import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 
@@ -13,8 +14,8 @@ import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 export async function POST(req: Request) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`)
     return new Response("Non autorisé", { status: 401 });
-  const [farm, question, story] = await Promise.all([harvests(), dailyQuestion(), storyNews()]);
-  return Response.json({ farm, question, story });
+  const [farm, question, story, news] = await Promise.all([harvests(), dailyQuestion(), storyNews(), newsPush()]);
+  return Response.json({ farm, question, story, news });
 }
 
 /** Récoltes et productions devenues prêtes depuis le dernier passage (une notification par serre). */
@@ -99,6 +100,28 @@ async function storyNews() {
       const to = await throttle(everyone, `event:${r.chapter}:${e.id}:${r.id}`);
       await notify(to, "farm", { title: e.title, body: e.text, url: `/r/${r.id}/farm`, tag: `event-${e.id}` });
       sent += to.length;
+    }
+  }
+  return sent;
+}
+
+/** Annonces en cours (news.ts) : une seule notification par personne et par salle, en journée (10 h – 22 h). */
+async function newsPush() {
+  const now = new Date();
+  const hour = paris(now).hour;
+  const news = activeNews(now.getTime());
+  if (!news.length || hour < 10 || hour >= 22) return 0;
+  const { data: members } = await adminDb().from("room_members").select("room_id, user_id");
+  let sent = 0;
+  for (const n of news) {
+    const seen = new Set<string>(); // une personne dans plusieurs salles : une seule notification
+    for (const m of members ?? []) {
+      if (seen.has(m.user_id)) continue;
+      seen.add(m.user_id);
+      const to = await throttle([m.user_id], `news:${n.id}`);
+      if (!to.length) continue;
+      await notify(to, "farm", { title: n.push.title, body: n.push.body, url: `/r/${m.room_id}/farm`, tag: `news-${n.id}` });
+      sent++;
     }
   }
   return sent;

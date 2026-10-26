@@ -8,6 +8,7 @@ import { StoryTeaser } from "@/src/modules/farm/story/teaser";
 import { ScratchTeaser } from "@/src/modules/scratch/teaser";
 import { getMyRooms, getRoomContext } from "@/src/modules/rooms/context";
 import { RoomSwitcher } from "@/src/modules/rooms/room-switcher";
+import { NewsPopup } from "@/src/modules/news/popup";
 
 export default async function RoomLayout({
   children,
@@ -34,6 +35,7 @@ export default async function RoomLayout({
       <main className="mx-auto max-w-md space-y-8 px-4 py-4">{children}</main>
       {chapterOf(ctx.chapter) && <StoryTeaser roomId={roomId} chapter={ctx.chapter} phase={ctx.storyDay < 1 ? "soon" : "live"} />}
       <ScratchTeaser roomId={roomId} />
+      <NewsPopup roomId={roomId} />
       {trims?.[0] && <TrimNotice roomId={roomId} page={trims[0].page} />}
       <TabBar roomId={roomId} isAdmin={ctx.isAdmin} />
       <SwipeNav roomId={roomId} isAdmin={ctx.isAdmin} />
