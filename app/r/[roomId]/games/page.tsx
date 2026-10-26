@@ -20,9 +20,13 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
   const ctx = await getRoomContext(roomId);
   if (!ctx) redirect("/");
   const me = ctx.user.id;
-  const { data } = await ctx.sb
-    .from("games").select("*").eq("room_id", roomId).order("created_at", { ascending: false }).limit(30).returns<Game[]>();
-  const games = data ?? [];
+  // Défis et parties en cours : tous (pas de limite, il y en a peu) ; parties finies : les 5 dernières où l'on a joué.
+  const [{ data: active }, { data: mine }] = await Promise.all([
+    ctx.sb.from("games").select("*").eq("room_id", roomId).in("status", ["open", "playing"]).order("created_at", { ascending: false }).returns<Game[]>(),
+    ctx.sb.from("games").select("*").eq("room_id", roomId).eq("status", "finished").or(`creator.eq.${me},opponent.eq.${me}`)
+      .order("created_at", { ascending: false }).limit(5).returns<Game[]>(),
+  ]);
+  const games = active ?? [];
   const [unlocks, pending, { data: wallet }, { data: daily }] = await Promise.all([
     loadUnlocks(roomId),
     loadPending(roomId, me),
@@ -39,7 +43,7 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
   const received = games.filter((g) => g.status === "open" && g.creator !== me && (!g.target || g.target === me));
   const sent = games.filter((g) => g.status === "open" && g.creator === me);
   const playing = games.filter((g) => g.status === "playing" && (g.creator === me || g.opponent === me));
-  const finished = games.filter((g) => g.status === "finished").slice(0, 5);
+  const finished = mine ?? [];
 
   const row = "flex items-center justify-between gap-3 py-3 text-sm";
   const arrow = <span className="text-zinc-400"><Icon name="arrow" size={16} /></span>;
@@ -145,9 +149,18 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
         </section>
       )}
 
+      <div className="grid grid-cols-2 gap-2">
+        <Link href={`/r/${roomId}/games/classement`} className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-3 text-sm font-semibold shadow-sm">
+          <span aria-hidden>🏆</span> Classements
+        </Link>
+        <Link href={`/r/${roomId}/games/historique`} className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-3 text-sm font-semibold shadow-sm">
+          <span aria-hidden>📜</span> Historique
+        </Link>
+      </div>
+
       {finished.length > 0 && (
         <section>
-          <h2 className="eyebrow mb-3">Dernières parties</h2>
+          <h2 className="eyebrow mb-3">Mes dernières parties</h2>
           <div className="space-y-3">
             {finished.map((g) => (
               <Link key={g.id} href={href(g)} className="block transition active:scale-[0.99]">
@@ -155,6 +168,7 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
               </Link>
             ))}
           </div>
+          <Link href={`/r/${roomId}/games/historique`} className="mt-3 block text-center text-sm font-semibold text-indigo-600">Toutes les parties de la salle ›</Link>
         </section>
       )}
     </>
