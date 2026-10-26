@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { canWear, isUnique, readCharacter, skinKey, UNIQUE_SPECIES } from "../../src/modules/characters/catalog.ts";
 
 test("personnages uniques : sept, pas gratuits, seulement pour celui qui l'a reçu", () => {
-  assert.deepEqual(UNIQUE_SPECIES, ["unicorn", "penguin", "dragon", "fox", "whale", "schrodinger", "frog"]);
+  assert.deepEqual(UNIQUE_SPECIES, ["unicorn", "penguin", "dragon", "fox", "whale", "schrodinger", "frog", "shark"]);
   assert.ok(isUnique("dragon") && !isUnique("cat") && !isUnique("inconnu"));
   const dragon = { species: "dragon" as const, color: 0, accessory: null };
   assert.equal(canWear(dragon, [], []), false, "pas sans l'avoir reçu");
