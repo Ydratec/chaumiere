@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { adminDb } from "@/src/lib/db/server";
 import { paris } from "@/src/modules/questions/day";
 import type { Grid } from "../games/orapa";
-import { dailyGrid, scoreOf, type DailyAttempt, type DailyWave } from "./orapa-daily";
+import { dailyGrid, scoreOf, type DailyAttempt, type DailyEntry } from "./orapa-daily";
 
 /** Jour du défi (Paris) : il change à minuit. */
 export const challengeDay = (at = new Date()) => paris(at).date;
@@ -16,12 +16,12 @@ function seedOf(roomId: string, day: string) {
 }
 export const gridOf = (roomId: string, day: string): Grid => dailyGrid(seedOf(roomId, day));
 
-type Row = { user_id: string; log: DailyWave[]; misses: number; solved_at: string | null; score: number | null; reward: number | null };
+type Row = { user_id: string; log: DailyEntry[]; misses: number; solved_at: string | null; score: number | null; reward: number | null };
 
 export async function loadAttempt(roomId: string, uid: string, day = challengeDay()): Promise<DailyAttempt> {
   const { data } = await adminDb().from("daily_challenges").select("log, misses, solved_at")
     .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", "orapa").maybeSingle();
-  return { log: (data?.log as DailyWave[]) ?? [], misses: data?.misses ?? 0, solved: !!data?.solved_at };
+  return { log: (data?.log as DailyEntry[]) ?? [], misses: data?.misses ?? 0, solved: !!data?.solved_at };
 }
 
 export type Ranking = { user: string; solved: boolean; score: number; waves: number; misses: number; at: string | null }[];

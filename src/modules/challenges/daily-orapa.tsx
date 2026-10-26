@@ -6,9 +6,9 @@ import { Avatar } from "@/src/components/avatar";
 import type { Person } from "@/src/modules/rooms/context";
 import { EditableBoard, Plateau, Rules, WaveLog, result, same, useDraft } from "../games/orapa-board";
 import { trace, W, H, type Color, type LogEntry } from "../games/orapa";
-import { dailyGuess, dailyWave } from "./actions";
+import { dailyGuess, dailyProbe, dailyWave } from "./actions";
 import type { DailyView, Ranking } from "./data";
-import { MISS_COST, rewardOf } from "./orapa-daily";
+import { isWave, MISS_COST, PROBE_COST, rewardOf } from "./orapa-daily";
 
 const noop = () => () => {};
 
@@ -28,9 +28,14 @@ function Game({ roomId, view, me, people }: { roomId: string; view: DailyView; m
   const a = view.attempt;
   const name = (id: string) => (id === me ? "toi" : (people[id]?.name ?? "?"));
 
-  const entries = a.log.map((w, k) => ({ e: { by: me, from: w.from, to: w.to, colors: w.colors as Color[] } as LogEntry, k }));
-  const waves = entries.map(({ e }) => e as Extract<LogEntry, { from: string }>);
-  const active = (sel !== null ? waves[sel] : waves.at(-1)) ?? null;
+  const entries = a.log.map((w, k) => ({
+    e: (isWave(w) ? { by: me, from: w.from, to: w.to, colors: w.colors as Color[] } : { by: me, probe: w.probe, color: w.color as Color | null }) as LogEntry,
+    k,
+  }));
+  const waves = entries.flatMap(({ e }) => ("from" in e ? [e] : []));
+  const probes = entries.flatMap(({ e }) => ("probe" in e ? [e] : []));
+  const picked = sel !== null ? entries[sel]?.e : null;
+  const active = (picked && "from" in picked ? picked : waves.at(-1)) ?? null;
   const check = !a.solved && guess.any ? (w: (typeof waves)[number]) => same(trace(guess.grid, w.from), w) : undefined;
   const r = active && result(active);
 
@@ -39,6 +44,12 @@ function Game({ roomId, view, me, people }: { roomId: string; view: DailyView; m
       const res = await dailyWave(roomId, from);
       setMsg(res.error ? { ok: false, text: res.error } : null);
       setSel(null);
+      router.refresh();
+    });
+  const ask = (cell: number) =>
+    start(async () => {
+      const res = await dailyProbe(roomId, cell);
+      setMsg(res.error ? { ok: false, text: res.error } : null);
       router.refresh();
     });
   const tryIt = () =>
@@ -55,7 +66,7 @@ function Game({ roomId, view, me, people }: { roomId: string; view: DailyView; m
         <p className="eyebrow">Défi du jour · Orapa Mine</p>
         <h2 className="text-2xl font-bold tracking-tight">{a.solved ? `Trouvé en ${a.score} coup${a.score > 1 ? "s" : ""} !` : "Trouve la grille du jour"}</h2>
         <p className="text-sm text-zinc-500">
-          La même grille pour toute la salle. Le moins de coups possible : chaque onde compte 1, chaque essai raté compte {MISS_COST}.
+          La même grille pour toute la salle. Le moins de coups possible : chaque onde compte 1, chaque case demandée {PROBE_COST}, chaque essai raté {MISS_COST}.
           {a.solved ? ` Tu as gagné ${a.reward ?? rewardOf(a.score)} pièces.` : ` Score actuel : ${a.score} · gain si tu trouves maintenant : ${rewardOf(a.score)} pièces.`}
         </p>
       </header>
@@ -79,10 +90,10 @@ function Game({ roomId, view, me, people }: { roomId: string; view: DailyView; m
       </p>
 
       {a.solved && view.solution ? (
-        <Plateau grid={view.solution} waves={waves} active={active} />
+        <Plateau grid={view.solution} waves={waves} active={active} probes={probes} />
       ) : (
         <>
-          <EditableBoard ed={guess} plateau={{ onEdge: pending ? undefined : send, waves, active, faded: check }} />
+          <EditableBoard ed={guess} plateau={{ onEdge: pending ? undefined : send, waves, active, faded: check, probes }} onProbe={pending ? undefined : ask} probeHint={`Ça compte ${PROBE_COST} coups.`} />
           <button disabled={guess.left > 0 || pending} onClick={tryIt} className="btn w-full">
             {guess.left ? `Pose encore ${guess.left} gemme${guess.left > 1 ? "s" : ""} pour tenter` : "Tenter ma grille"}
           </button>
@@ -90,7 +101,7 @@ function Game({ roomId, view, me, people }: { roomId: string; view: DailyView; m
       )}
 
       <section>
-        <h3 className="eyebrow mb-1">Tes ondes{a.misses ? ` · ${a.misses} essai${a.misses > 1 ? "s" : ""} raté${a.misses > 1 ? "s" : ""}` : ""}</h3>
+        <h3 className="eyebrow mb-1">Tes ondes et cases demandées{a.misses ? ` · ${a.misses} essai${a.misses > 1 ? "s" : ""} raté${a.misses > 1 ? "s" : ""}` : ""}</h3>
         <WaveLog entries={entries} name={name} active={active} onSel={setSel} check={check} />
       </section>
 

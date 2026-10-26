@@ -250,3 +250,19 @@ test("éditeur : gemme centrée sous le doigt, recalée aux bords, rotation sur 
   assert.equal(placementError(placed, 6, { x: 7, y: 0, rot: 0 }), "Hors du plateau.");
   assert.equal(placementError(placed, 0, { x: 1, y: 0, rot: 0 }), null); // une gemme ne se gêne pas elle-même
 });
+
+test("orapa : demander la couleur d'une case utilise son tour", async () => {
+  const { play, generate, start } = await import("../../src/modules/games/orapa.ts");
+  const g1 = generate(), g2 = generate();
+  const { state } = start("a", "b", () => 0.1);
+  const s = { ...state, phase: "play" as const, ready: ["a", "b"] };
+  const secrets = { a: g1, b: g2 };
+  const res = play(s, secrets, { kind: "probe", cell: 5 }, s.turn)!;
+  const other = s.turn === "a" ? "b" : "a";
+  assert.equal(res.state.turn, other);
+  const e = res.state.log.at(-1)! as { probe: number; color: string | null };
+  assert.equal(e.probe, 5);
+  assert.equal(e.color, secrets[other][5]?.c ?? null);
+  assert.equal(play(res.state, secrets, { kind: "probe", cell: 5 }, other) === null, false, "l'autre peut demander la même case dans l'autre grille");
+  assert.equal(play(s, secrets, { kind: "probe", cell: 80 }, s.turn), null, "hors de la grille");
+});

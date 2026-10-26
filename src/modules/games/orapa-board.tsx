@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { BoardProps } from "./labels";
 import {
-  centerAt, EDGES, flipInPlace, gridProblems, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W, type Problem,
+  cellName, centerAt, EDGES, flipInPlace, gridProblems, H, mix, PIECES, pieceCells, placementError, rotateInPlace, trace, W, type Problem,
   type Cell, type Color, type Grid, type LogEntry, type OrapaState, type Placement, type Shape,
 } from "./orapa";
 
@@ -43,6 +43,9 @@ function PieceIcon({ k, rot = 0, size = 14, flip = false }: { k: number; rot?: n
 }
 
 type Wave = Extract<LogEntry, { from: string }>;
+export type Probe = { probe: number; color: Color | null };
+/** Nom d'une couleur de gemme (case demandée). */
+export const COLOR_NAME: Record<Color, string> = { red: "rouge", yellow: "jaune", blue: "bleue", white: "blanche", clear: "transparente", black: "noire" };
 export const result = (w: { to: string | null; colors: Color[] }) =>
   w.to === null ? { hex: ABSORBED, name: "absorbée" } : mix(w.colors);
 /** Même résultat d'onde : même sortie et même couleur ; une onde absorbée se compare seulement sur le fait d'être absorbée. */
@@ -87,11 +90,10 @@ export function useDraft(key: string) {
   }, [key, d]);
   const { grid, owner } = layout(d.placed);
 
-  /** Pose (ou déplace) la gemme k ; refusé si elle chevauche ou sort. Les croix sous la gemme disparaissent. */
+  /** Pose (ou déplace) la gemme k ; refusé si elle chevauche ou sort. Les croix restent (cachées sous la gemme, elles réapparaissent si on la déplace). */
   function place(k: number, p: Placement) {
     if (placementError(d.placed, k, p)) return false;
-    const covered = new Set(pieceCells(k, p.rot, p.x, p.y, p.flip).map(([x, y]) => y * W + x));
-    setD({ placed: d.placed.map((q, i) => (i === k ? p : q)), crosses: d.crosses.filter((c) => !covered.has(c)) });
+    setD({ ...d, placed: d.placed.map((q, i) => (i === k ? p : q)) });
     return true;
   }
   return {
@@ -111,7 +113,7 @@ type Editor = ReturnType<typeof useDraft>;
 
 type Ghost = { k: number; p: Placement; ok: boolean };
 
-export function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, waves = [], active, faded }: {
+export function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, waves = [], active, faded, probes = [] }: {
   grid: Grid;
   bad?: number[]; // cases en cause quand la grille est refusée
   crosses?: number[];
@@ -122,7 +124,9 @@ export function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdg
   waves?: Wave[]; // résultats observés : colorent leurs repères
   active?: Wave | null;
   faded?: (w: Wave) => boolean; // ondes déjà expliquées par l'hypothèse : repères estompés
+  probes?: Probe[]; // cases demandées : leur couleur s'affiche dans un coin
 }) {
+  const asked = new Map(probes.map((p) => [p.probe, p.color]));
   const ports = new Map<string, { hex: string; dim: boolean }>();
   for (const w of waves) {
     const r = { hex: result(w).hex, dim: !!faded?.(w) };
@@ -174,6 +178,15 @@ export function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdg
                     <path d="M.3.3l.4.4M.7.3l-.4.4" stroke="#94a3b8" strokeWidth=".08" strokeLinecap="round" />
                   </svg>
                 )}
+                {asked.has(i) && (
+                  <span
+                    className="pointer-events-none absolute right-[6%] top-[6%] flex size-[38%] items-center justify-center rounded-full text-[7px] font-bold ring-1 ring-white/80"
+                    style={{ background: asked.get(i) ? HEX[asked.get(i)!] : "#0f172a", color: "#94a3b8" }}
+                    aria-label={`Case ${cellName(i)} : ${asked.get(i) ? COLOR_NAME[asked.get(i)!] : "vide"}`}
+                  >
+                    {asked.get(i) ? "" : "∅"}
+                  </span>
+                )}
                 {g && ghost && (
                   <svg viewBox="0 0 1 1" className="pointer-events-none absolute inset-0 size-full opacity-80">
                     <polygon points={POLY[g]} fill={HEX[PIECES[ghost.k].color]} stroke={ghost.ok ? "#4ade80" : "#f87171"} strokeWidth={0.1} />
@@ -197,9 +210,15 @@ export function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdg
  * toucher une gemme pour la tourner, la glisser pour la déplacer (hors du plateau = retour en réserve),
  * outil Croix pour marquer les cases vides.
  */
-export function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.ComponentProps<typeof Plateau>, "grid"> }) {
+export function EditableBoard({ ed, plateau, onProbe, probeHint }: {
+  ed: Editor;
+  plateau?: Omit<React.ComponentProps<typeof Plateau>, "grid">;
+  onProbe?: (cell: number) => void; // outil « Demander » : toucher une case pour connaître sa couleur (absent : pas maintenant)
+  probeHint?: string; // ce que coûte une case demandée ; présent = l'outil « Demander » est proposé
+}) {
   const board = useRef<HTMLDivElement>(null);
-  const [tool, setTool] = useState<"gems" | "cross">("gems");
+  const [tool, setTool] = useState<"gems" | "cross" | "probe">("gems");
+  const asked = new Set((plateau?.probes ?? []).map((p) => p.probe));
   const [cur, setCur] = useState<number | null>(null); // gemme choisie dans la réserve (pour la poser d'un toucher)
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const [trayFlip, setTrayFlip] = useState(false); // le parallélogramme rouge de la réserve est-il retourné ?
@@ -243,6 +262,10 @@ export function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<Reac
   function onCellDown(x: number, y: number, e: React.PointerEvent) {
     const i = y * W + x;
     const k = ed.owner[i];
+    if (tool === "probe") {
+      if (!onProbe || asked.has(i)) return;
+      return confirm(`Demander la couleur de la case ${cellName(i)} ?${probeHint ? ` ${probeHint}` : ""}`) && onProbe(i);
+    }
     if (tool === "cross") return k < 0 && ed.toggleCross(i);
     if (k >= 0) return drag(k, ed.placed[k]!.rot, !!ed.placed[k]!.flip, e, () => ed.rotate(k)); // toucher = tourner, glisser = déplacer
     if (cur !== null && !ed.placed[cur] && ed.place(cur, centerAt(cur, 0, x, y, cur === red && trayFlip))) setCur(null);
@@ -251,14 +274,21 @@ export function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<Reac
   const tray = PIECES.map((p, k) => ({ p, k })).filter(({ k }) => !ed.placed[k]);
   return (
     <div className="space-y-3">
-      <Plateau grid={ed.grid} crosses={ed.crosses} ghost={ghost} boardRef={board} onCellDown={onCellDown} {...plateau} />
-      <div className="grid grid-cols-2 gap-1 rounded-full bg-zinc-100 p-1 text-sm font-medium">
-        {(["gems", "cross"] as const).map((t) => (
+      {/* Les ondes ne partent qu'avec l'outil Gemmes : en posant des croix ou en demandant une case, un toucher au bord n'envoie rien. */}
+      <Plateau grid={ed.grid} crosses={ed.crosses} ghost={ghost} boardRef={board} onCellDown={onCellDown} {...plateau} onEdge={tool === "gems" ? plateau?.onEdge : undefined} />
+      <div className={`grid ${probeHint !== undefined ? "grid-cols-3" : "grid-cols-2"} gap-1 rounded-full bg-zinc-100 p-1 text-sm font-medium`}>
+        {(probeHint !== undefined ? (["gems", "cross", "probe"] as const) : (["gems", "cross"] as const)).map((t) => (
           <button key={t} onClick={() => setTool(t)} className={`rounded-full py-1.5 transition ${tool === t ? "bg-white shadow-sm" : "text-zinc-500"}`}>
-            {t === "gems" ? "Gemmes" : "Croix"}
+            {t === "gems" ? "Gemmes" : t === "cross" ? "Croix" : "Demander"}
           </button>
         ))}
       </div>
+      {tool === "probe" && (
+        <p className="text-center text-xs text-zinc-500">
+          {onProbe ? <>Touche une case pour connaître la couleur de la gemme qui s&apos;y trouve{probeHint ? ` (${probeHint.toLowerCase().replace(/\.$/, "")})` : ""}.</> : "Attends ton tour pour demander une case."}
+        </p>
+      )}
+      {tool === "cross" && <p className="text-center text-xs text-zinc-500">Mode croix : les repères du bord n&apos;envoient pas d&apos;onde.</p>}
       {tool === "gems" && (
         <button
           type="button"
@@ -299,6 +329,17 @@ export function WaveLog({ entries, name, active, onSel, check }: {
   return (
     <ol className="rows">
       {entries.map(({ e, k }, n) => {
+        if ("probe" in e)
+          return (
+            <li key={k} className="flex items-center gap-3 px-1 py-2 text-sm">
+              <span className="w-5 text-right tabular-nums text-zinc-400">{n + 1}</span>
+              <span className="font-semibold tabular-nums">Case {cellName(e.probe)}</span>
+              <span className="inline-flex items-center gap-1.5 text-zinc-600">
+                <span className="size-3 rounded-full ring-1 ring-black/10" style={{ background: e.color ? HEX[e.color] : "#0f172a" }} />
+                {e.color ? COLOR_NAME[e.color] : "vide"}
+              </span>
+            </li>
+          );
         if (!("from" in e))
           return (
             <li key={k} className="py-2 text-sm text-zinc-500">
@@ -334,7 +375,8 @@ export const Rules = () => (
       pas (même règle pour toutes les gemmes). Ensuite, à ton tour, touche un repère du bord pour envoyer une onde dans la grille
       adverse : elle avance tout droit, fait demi-tour sur un côté droit, tourne d&apos;un quart sur une diagonale, prend la couleur
       des gemmes touchées (les couleurs se mélangent) et ressort. La gemme transparente dévie sans colorer, le bloc noir absorbe
-      l&apos;onde (elle ne ressort pas, sans couleur). Quand tu penses avoir trouvé, tente ta grille à ton tour : un seul essai,
+      l&apos;onde (elle ne ressort pas, sans couleur). À ton tour, tu peux aussi demander la couleur d&apos;une case (outil
+      Demander) à la place d&apos;une onde. Quand tu penses avoir trouvé, tente ta grille à ton tour : un seul essai,
       et s&apos;il est faux, tu perds. Si celui qui joue en premier trouve, l&apos;autre a une dernière chance de faire égalité.
       Le parallélogramme rouge peut aussi se poser retourné (miroir).
     </p>
@@ -425,10 +467,12 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
   const check = guessing && guess.any ? (w: Wave) => same(trace(guess.grid, w.from), w) : undefined;
   const tabs = isPlayer ? [`Grille de ${name(p1)}`, "Ma grille"] : [`Grille de ${name(p1)}`, `Grille de ${name(p0)}`];
   const r = active && result(active);
+  const probes = entries.flatMap(({ e }) => ("probe" in e ? [e] : []));
   const ports = {
     onEdge: myTurn && tab === 0 && !s.found ? (from: string) => play({ kind: "wave", from }) : undefined,
-    waves, active, faded: check,
+    waves, active, faded: check, probes,
   };
+  const canProbe = myTurn && tab === 0 && !s.found ? (cell: number) => play({ kind: "probe", cell }) : undefined;
 
   return (
     <div className="space-y-4">
@@ -466,7 +510,7 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
 
       {guessing ? (
         <>
-          <EditableBoard ed={guess} plateau={ports} />
+          <EditableBoard ed={guess} plateau={ports} onProbe={canProbe} probeHint="Ça utilise ton tour." />
           <button
             disabled={guess.left > 0 || !myTurn || used}
             onClick={() => confirm("Tenter cette grille ? Tu n'as droit qu'à UN seul essai : si elle est fausse, tu perds la partie.") && play({ kind: "guess", grid: guess.grid })}

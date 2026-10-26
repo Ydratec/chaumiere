@@ -37,6 +37,22 @@ export async function sendTest() {
   await notify([await me()], "test", { title: "Chaumière", body: "Les notifications fonctionnent sur cet appareil.", url: "/", tag: "test" });
 }
 
+/** Message dans une partie : prévient l'autre joueur (au plus une fois toutes les 10 min par partie). */
+export async function gameChatSent(gameId: string) {
+  const admin = adminDb();
+  const { data: g } = await admin.from("games").select("room_id, creator, opponent, type").eq("id", gameId).maybeSingle();
+  const c = g && (await getRoomContext(g.room_id));
+  if (!c) return;
+  const { data: last } = await admin.from("game_messages").select("content").eq("game_id", gameId).eq("user_id", c.user.id)
+    .order("id", { ascending: false }).limit(1).maybeSingle();
+  if (!last) return;
+  const others = [g.creator, g.opponent].filter((u): u is string => !!u && u !== c.user.id);
+  after(async () => {
+    const to = await throttle(others, `gamechat:${gameId}`, 10);
+    await notify(to, "games", { title: `${c.names[c.user.id]} · partie`, body: last.content.slice(0, 140), url: `/r/${g.room_id}/games/${gameId}`, tag: `gamechat-${gameId}` });
+  });
+}
+
 /** Après l'envoi d'un message : prévient les autres membres (au plus une fois toutes les 10 min par discussion). */
 export async function chatSent(activityId: string) {
   const admin = adminDb();

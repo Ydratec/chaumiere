@@ -11,7 +11,7 @@ export function scoreOf(g: Game, uid: string): { value: number; unit: string } |
   if (g.type === "memory") return { value: (s.scores as Record<string, number>)?.[uid] ?? 0, unit: "paires" };
   if (g.type === "battleship") return { value: (s.sunk as Record<string, unknown[]>)?.[uid]?.length ?? 0, unit: "coulés" };
   if (g.type === "dames") return { value: (s.taken as Record<string, number>)?.[uid] ?? 0, unit: "prises" };
-  if (g.type === "orapa") return { value: ((s.log as { by: string; from?: string }[]) ?? []).filter((e) => e.by === uid && e.from).length, unit: "ondes" };
+  if (g.type === "orapa") return { value: ((s.log as { by: string; from?: string }[]) ?? []).filter((e) => e.by === uid && (e.from || (e as { probe?: number }).probe !== undefined)).length, unit: "coups" };
   return null;
 }
 

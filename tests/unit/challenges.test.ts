@@ -30,3 +30,16 @@ test("défi du jour : ondes (pas deux fois la même), essais, score et gain", ()
   assert.equal(rewardOf(10), 120);
   assert.equal(rewardOf(40), 30);
 });
+
+test("défi du jour : demander une case (2 coups), pas deux fois la même", async () => {
+  const { sendProbe, PROBE_COST } = await import("../../src/modules/challenges/orapa-daily.ts");
+  const g = dailyGrid(3);
+  const filled = g.findIndex(Boolean), empty = g.findIndex((c) => !c);
+  let a = sendProbe(g, fresh(), filled)!;
+  assert.deepEqual(a.log[0], { probe: filled, color: g[filled]!.c });
+  a = sendProbe(g, a, empty)!;
+  assert.deepEqual(a.log[1], { probe: empty, color: null });
+  assert.equal(sendProbe(g, a, empty), null, "déjà demandée");
+  assert.equal(sendProbe(g, a, 999), null, "hors de la grille");
+  assert.equal(scoreOf(a), 2 * PROBE_COST);
+});

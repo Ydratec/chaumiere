@@ -263,7 +263,16 @@ export function buildGrid(placements: unknown): Grid | null {
   return grid;
 }
 
-export type LogEntry = { by: string; from: string; to: string | null; colors: Color[] } | { by: string; guess: true; right?: true };
+export type LogEntry =
+  | { by: string; from: string; to: string | null; colors: Color[] }
+  | { by: string; probe: number; color: Color | null } // case demandée (indice y*W+x) : couleur de la gemme, ou null si vide
+  | { by: string; guess: true; right?: true };
+
+/** Couleur de la gemme sur cette case (null : case vide). */
+export const probeCell = (grid: Grid, i: number): Color | null => grid[i]?.c ?? null;
+export const isProbeIndex = (i: unknown): i is number => Number.isInteger(i) && (i as number) >= 0 && (i as number) < W * H;
+/** Nom d'une case, façon bataille navale : colonne en lettre, ligne en chiffre (A1 en haut à gauche). */
+export const cellName = (i: number) => `${"ABCDEFGH"[i % W]}${Math.floor(i / W) + 1}`;
 export type OrapaState = Base & {
   phase: "setup" | "play"; // setup : chacun compose sa grille en secret
   players: string[];
@@ -294,6 +303,7 @@ export function sameGrid(a: Grid, b: unknown) {
  * Coups :
  * - { kind: "setup", placements } : poser sa grille secrète (une fois, pendant la préparation) ;
  * - { kind: "wave", from } : à son tour, envoyer une onde dans la grille adverse (le tour passe) ;
+ * - { kind: "probe", cell } : à son tour, demander la couleur d'une case de la grille adverse (le tour passe) ;
  * - { kind: "guess", grid } : à son tour, tenter sa grille : un seul essai par joueur, et il compte comme le tour.
  *   Juste : on gagne, sauf si on jouait en premier (l'autre a un tour de moins) : l'autre a alors une dernière chance
  *   (un essai), juste = égalité. Faux : la partie s'arrête, l'autre gagne.
@@ -319,6 +329,12 @@ export function play(state: OrapaState, secrets: Secrets, move: unknown, player:
     const from = String(m.from);
     if (!EDGES.some((e) => e.id === from)) return null;
     return { state: { ...state, log: [...state.log, { by: player, from, ...wave(target, from) }], turn: other } };
+  }
+  if (m?.kind === "probe") {
+    const cell = (m as { cell?: unknown }).cell;
+    if (state.turn !== player || state.found || !isProbeIndex(cell)) return null;
+    if (state.log.some((e) => e.by === player && "probe" in e && e.probe === cell)) return null; // déjà demandée
+    return { state: { ...state, log: [...state.log, { by: player, probe: cell, color: probeCell(target, cell) }], turn: other } };
   }
   if (m?.kind === "guess") {
     if (state.turn !== player || guessed.includes(player)) return null;
