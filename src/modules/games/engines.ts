@@ -1,5 +1,6 @@
 // Branche chaque type de jeu sur ses règles. Utilisé côté serveur (les secrets ne sortent pas d'ici).
 import * as battleship from "./battleship";
+import * as dames from "./dames";
 import type { Base, GameType } from "./labels";
 import * as memory from "./memory";
 import * as orapa from "./orapa";
@@ -27,6 +28,10 @@ export const ENGINES: Record<GameType, Engine> = {
     start: (a, b) => battleship.start(a, b),
     play: (s, fleets, m, p) => wrap(battleship.play(s as battleship.BattleshipState, fleets as battleship.Fleets, m, p)),
     view: (fleets, p) => (fleets as battleship.Fleets)[p] ?? null,
+  },
+  dames: {
+    start: (a, b) => dames.start(a, b),
+    play: (s, _secret, m, p) => wrap(dames.play(s as dames.DamesState, m, p)),
   },
   orapa: {
     start: (a, b) => orapa.start(a, b),
