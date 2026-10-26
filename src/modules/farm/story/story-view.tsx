@@ -9,14 +9,26 @@ import { NPCS } from "./ch1";
 import { Dialog } from "./dialog";
 import type { StoryData } from "./data";
 import { NpcPortrait } from "./npc-art";
-import type { Line } from "./types";
+import { ScenePlayer, type Stage } from "./scene-player";
+import type { Line, Step } from "./types";
 
 const coin = (n: number, size = 14) => <span className="inline-flex items-center gap-1 font-semibold">{n} <ItemIcon id="coins" size={size} /></span>;
 
 /** Onglet « Histoire » : la quête en cours, les commandes du jour, les événements, le journal de Mirabelle. */
-export function StoryView({ roomId, story, items, catchNote }: { roomId: string; story: StoryData; items: Inventory; catchNote: string | null }) {
+/** Date de sortie d'une quête, en clair : « mardi 27 octobre », « ce soir à 20 h »… */
+export function releaseLabel(at: number, now = Date.now()) {
+  const day = (t: number) => new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" }).format(t);
+  const hour = Number(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", hourCycle: "h23" }).format(at));
+  const h = hour ? ` à ${hour} h` : "";
+  if (day(at) === day(now)) return `aujourd'hui${h}`;
+  if (day(at) === day(now + 86_400_000)) return `demain${h}`;
+  return `${day(at)}${h}`;
+}
+
+export function StoryView({ roomId, story, items, catchNote, stage }: { roomId: string; story: StoryData; items: Inventory; catchNote: string | null; stage: Stage }) {
   const router = useRouter();
   const [scene, setScene] = useState<{ lines: Line[]; after?: () => void } | null>(null);
+  const [play, setPlay] = useState<{ steps: Step[]; title?: string; after?: () => void } | null>(null);
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
   const { quest, chapter } = story;
@@ -28,7 +40,8 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
       const r = await completeQuest(roomId, quest.id);
       if (r.error) return setMsg(r.error);
       setMsg("");
-      setScene({ lines: quest.outro, after: refresh });
+      if (quest.scenes) setPlay({ steps: quest.scenes.outro, after: refresh });
+      else setScene({ lines: quest.outro, after: refresh });
     });
   const deliver = (id: number) =>
     start(async () => {
@@ -43,6 +56,7 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
   return (
     <div className="space-y-7">
       {scene && <Dialog roomId={roomId} lines={scene.lines} onDone={() => { scene.after?.(); setScene(null); }} />}
+      {play && <ScenePlayer steps={play.steps} title={play.title} stage={stage} onDone={() => { play.after?.(); setPlay(null); }} />}
 
       <header className="space-y-1">
         <p className="eyebrow">Chapitre {chapter.n} · {chapter.title}</p>
@@ -74,8 +88,8 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
               <h3 className="text-lg font-bold leading-tight">{quest.title}</h3>
             </div>
           </div>
-          <button onClick={() => setScene({ lines: quest.intro })} className="btn-soft w-full">
-            Écouter {NPCS[quest.intro[0].who].name}
+          <button onClick={() => (quest.scenes ? setPlay({ steps: quest.scenes.intro, title: quest.title }) : setScene({ lines: quest.intro }))} className="btn-soft w-full">
+            {quest.scenes ? "Revoir la scène" : `Écouter ${NPCS[quest.intro[0].who].name}`}
           </button>
           {p && (
             <div className="space-y-2">
@@ -107,7 +121,7 @@ export function StoryView({ roomId, story, items, catchNote }: { roomId: string;
         <section className="rounded-[1.75rem] bg-white p-5 text-center shadow-sm">
           <p className="eyebrow">Prochain épisode</p>
           <h3 className="mt-1 text-lg font-bold">{story.next.title}</h3>
-          <p className="mt-1 text-sm text-zinc-500">dans {story.next.inDays} jour{story.next.inDays > 1 ? "s" : ""}</p>
+          <p className="mt-1 text-sm text-zinc-500">{story.next.at ? releaseLabel(story.next.at) : `dans ${story.next.inDays} jour${story.next.inDays > 1 ? "s" : ""}`}</p>
           {story.next.teaser && <p className="mt-3 text-sm italic text-zinc-600">« {story.next.teaser} »</p>}
         </section>
       ) : (

@@ -8,14 +8,14 @@ import { chapterOf } from "./index";
 import { dailyOrders, producible } from "./orders";
 import { SECRETS } from "./secrets";
 import { DAILY } from "./ch1";
-import { currentQuest, goalProgress, nextAct, openAct, questsDone, type GoalProgress } from "./state";
+import { currentQuest, goalProgress, nextAct, openAct, questsDone, upcomingQuest, type GoalProgress } from "./state";
 import type { Line, Quest, Who } from "./types";
 
 export type StoryOrder = { id: number; npc: Who; wants: Inventory; reward: number; done: boolean };
 export type StoryData = {
   chapter: { n: number; title: string; actTitle: string; day: number; total: number; done: number };
   quest: (Quest & { progress: GoalProgress }) | null; // quête en cours
-  next: { title: string; inDays: number; teaser: string } | null; // prochain acte pas encore sorti
+  next: { title: string; inDays: number; teaser: string; at?: number } | null; // prochain acte (ou prochaine quête datée) pas encore sorti
   finished: boolean; // toutes les quêtes écrites sont faites
   orders: StoryOrder[];
   events: { id: string; title: string; text: string; scene: Line[] | null }[]; // scène : seulement si pas encore vue
@@ -44,7 +44,9 @@ export async function loadStory(roomId: string, uid: string, farm: Farm): Promis
 
   const { day, done, catch: cu } = farm.story;
   const counters = Object.fromEntries((stats ?? []).map((s) => [s.key, s.count as number]));
-  const q = currentQuest(ch, done, day);
+  const clock = { startedAt: farm.story.startedAt, now: Date.now() };
+  const q = currentQuest(ch, done, day, clock);
+  const soon = upcomingQuest(ch, done, day, clock);
   const seen = new Set((journal ?? []).map((j) => j.page as string));
   const nx = nextAct(ch, day);
   const act = ch.acts.find((a) => a.n === openAct(ch, day));
@@ -52,7 +54,8 @@ export async function loadStory(roomId: string, uid: string, farm: Farm): Promis
   return {
     chapter: { n: ch.n, title: ch.title, actTitle: act?.title ?? "", day, total: ch.quests.length, done: questsDone(done).length },
     quest: q ? { ...q, progress: goalProgress(q.goal, farm.items, farm.tiles, counters, cu.cost) } : null,
-    next: nx ? { title: nx.title, inDays: nx.day - day, teaser: (nx.n === 1 ? nx : ch.acts.find((a) => a.n === nx.n - 1))?.teaser ?? "" } : null,
+    next: soon ? { title: soon.quest.title, inDays: Math.max(1, Math.ceil((soon.at - clock.now) / 86_400_000)), teaser: soon.quest.teaser ?? "", at: soon.at }
+      : nx ? { title: nx.title, inDays: nx.day - day, teaser: (nx.n === 1 ? nx : ch.acts.find((a) => a.n === nx.n - 1))?.teaser ?? "" } : null,
     finished: ch.quests.every((x) => done.includes(x.id)),
     orders: orders.map((o) => ({ id: o.id as number, npc: o.npc as Who, wants: o.wants as Inventory, reward: o.reward as number, done: o.done as boolean })),
     events: activeEvents(day).map((e) => ({ id: e.id, title: e.title, text: e.text, scene: e.scene && !seen.has(`event:${e.id}`) ? e.scene.lines : null })),

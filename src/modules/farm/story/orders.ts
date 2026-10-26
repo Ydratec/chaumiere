@@ -14,6 +14,7 @@ export const ASKS: Record<Who, string[]> = {
   pistache: ["Je n'ai pas volé ça. Je l'ai… emprunté d'avance.", "Un ami a faim. Un ami très poilu.", "Marché conclu, pas de questions."],
   zinnia: ["C'est pour une surprise. Ne dis rien !", "Pour la décoration de la place.", "Si tu as un peu de temps… pas de pression."],
   colonel: ["Hou. Pour le conseil. Ne vous méprenez pas.", "Le hameau a besoin de vous. Discrètement.", "Livraison avant la nuit, si possible."],
+  basile: ["C'est pour le relais. Enfin, s'il existe encore.", "Pardon de demander. Je rendrai tout, c'est promis.", "Un facteur, ça livre. Même des carottes."],
   mirabelle: ["Pour la cuisine du dimanche, mon petit chou.", "J'ai une idée. Ne me demande pas laquelle.", "Pour une vieille amie qui ne dit pas son nom."],
 };
 

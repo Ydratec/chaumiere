@@ -12,7 +12,7 @@ export type Gift = { id: number; giver: string; item: string; contents: Inventor
 /** gifts : cadeaux à ouvrir ; collection : fleurs reçues (cadeaux ouverts), gardées. */
 export type Farm = { tiles: Tile[]; items: Inventory; unlocks: string[]; cat: Cell; gifts: Gift[]; collection: Gift[]; album: Record<string, number>; now: number; story: StoryCore }; // now : heure du serveur
 /** Ce qu'il faut savoir de l'histoire pour jouer : chapitre, quêtes finies, rattrapage. */
-export type StoryCore = { chapter: number; day: number; done: string[]; catch: CatchUp; activeAt: string | null };
+export type StoryCore = { chapter: number; day: number; startedAt: string; done: string[]; catch: CatchUp; activeAt: string | null };
 export type ProjectState = Project & { progress: Inventory; givers: Record<string, number> };
 export type Offer = { id: number; seller: string; give: Inventory; want: Inventory };
 
@@ -53,6 +53,7 @@ async function loadStoryCore(roomId: string, uid: string, now: number): Promise<
   return {
     chapter,
     day: chapterDay(room?.chapter_started_at ?? now, now),
+    startedAt: room?.chapter_started_at ?? new Date(now).toISOString(),
     done,
     catch: catchUp(questsDone(done).length, peers),
     activeAt: (activity ?? []).find((a) => a.user_id === uid)?.at ?? null,

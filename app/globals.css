@@ -179,6 +179,86 @@ button:active:not(:disabled) {
   }
 }
 
+/* Scènes de l'histoire jouées dans la serre (scene-player.tsx) */
+@keyframes scene-fog {
+  0%,
+  100% {
+    transform: translateX(-6%) scale(1);
+  }
+  50% {
+    transform: translateX(6%) scale(1.08);
+  }
+}
+.scene-fog {
+  animation: scene-fog 14s ease-in-out infinite;
+}
+.scene-fog-2 {
+  animation: scene-fog 19s ease-in-out infinite reverse;
+}
+@keyframes scene-rain {
+  to {
+    background-position: -40px 220px;
+  }
+}
+.scene-rain {
+  background-image: repeating-linear-gradient(105deg, transparent 0 9px, rgba(220, 235, 255, 0.45) 9px 10px, transparent 10px 23px);
+  background-size: 120px 220px;
+  animation: scene-rain 0.6s linear infinite;
+}
+@keyframes scene-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.82;
+  }
+  70% {
+    opacity: 0.95;
+  }
+}
+.scene-flicker {
+  animation: scene-flicker 1.9s ease-in-out infinite;
+}
+@keyframes scene-float {
+  50% {
+    transform: translateY(-6%);
+  }
+}
+.scene-float {
+  animation: scene-float 2.6s ease-in-out infinite;
+}
+@keyframes scene-hop {
+  50% {
+    transform: translateY(-5%);
+  }
+}
+.scene-hop {
+  animation: scene-hop 0.26s ease-in-out infinite;
+}
+@keyframes scene-emote {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 30%) scale(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -10%) scale(1.15);
+  }
+  35%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.9);
+  }
+}
+.scene-emote {
+  animation: scene-emote 1.4s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::view-transition-group(*),
