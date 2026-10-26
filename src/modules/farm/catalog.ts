@@ -12,7 +12,8 @@ export const START_CAT = { x: 6, y: 8 };
 
 export type ItemId =
   | "coins" | "wheat" | "carrot" | "corn" | "strawberry" | "egg" | "bread" | "cake"
-  | "flower" | "poppy" | "tulip" | "sunflower" | "lavender" | "rose" | "orchid" | "moonflower"; // les fleurs : voir flowers.ts
+  | "flower" | "poppy" | "tulip" | "sunflower" | "lavender" | "rose" | "orchid" | "moonflower" // les fleurs : voir flowers.ts
+  | "sugarcane" | "sugar" | "candy" | "jam"; // atelier de cuisine
 
 /** `price` : prix de vente au village (réduit depuis la refonte : les commandes et les chantiers paient mieux que la vente en vrac). */
 export const ITEMS: Record<ItemId, { name: string; price: number }> = {
@@ -32,13 +33,18 @@ export const ITEMS: Record<ItemId, { name: string; price: number }> = {
   egg: { name: "Œuf", price: 5 },
   bread: { name: "Pain", price: 7 },
   cake: { name: "Gâteau", price: 27 },
+  sugarcane: { name: "Canne à sucre", price: 2 },
+  sugar: { name: "Sucre", price: 6 },
+  candy: { name: "Bonbon", price: 6 },
+  jam: { name: "Confiture", price: 60 },
 };
 export const isItem = (id: string): id is ItemId => id in ITEMS;
 
 export type Inventory = Partial<Record<ItemId, number>>;
-export type Recipe = { id: string; out: ItemId; qty: number; minutes: number; inputs: Inventory };
+/** `label` : nom affiché quand plusieurs recettes donnent le même objet (« Bonbons à la fraise »). */
+export type Recipe = { id: string; out: ItemId; qty: number; minutes: number; inputs: Inventory; label?: string };
 
-export type BuildingId = "planter" | "pot" | "coop" | "oven" | "flowers" | "tree" | "fountain";
+export type BuildingId = "planter" | "pot" | "coop" | "oven" | "workshop" | "flowers" | "tree" | "fountain" | "pumpkins";
 /**
  * Objets posables. `size` : [largeur, hauteur] en cases. `requires` : déblocage de salle nécessaire.
  * `verb` vide = décoration (pas de production).
@@ -51,6 +57,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
       { id: "carrot", out: "carrot", qty: 2, minutes: 10, inputs: { coins: 3 } },
       { id: "corn", out: "corn", qty: 2, minutes: 30, inputs: { coins: 6 } },
       { id: "strawberry", out: "strawberry", qty: 2, minutes: 120, inputs: { coins: 15 } },
+      { id: "sugarcane", out: "sugarcane", qty: 3, minutes: 15, inputs: { coins: 2 } },
     ],
   },
   pot: {
@@ -69,9 +76,19 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
     ],
     requires: "b:oven",
   },
+  workshop: {
+    name: "Atelier de cuisine", size: [2, 2], cost: 100, max: 1, verb: "Cuisiner",
+    recipes: [
+      { id: "sugar", out: "sugar", qty: 1, minutes: 8, inputs: { sugarcane: 2 } },
+      { id: "candy-strawberry", out: "candy", qty: 6, minutes: 20, inputs: { sugar: 1, strawberry: 1 }, label: "Bonbons à la fraise" },
+      { id: "candy-flower", out: "candy", qty: 4, minutes: 20, inputs: { sugar: 1, flower: 2 }, label: "Bonbons à la fleur" },
+      { id: "jam", out: "jam", qty: 1, minutes: 45, inputs: { strawberry: 3, sugar: 2 }, label: "Confiture de fraises" },
+    ],
+  },
   flowers: { name: "Jardinière", size: [1, 1], cost: 15, verb: "", recipes: [], requires: "cosmetic:decor" },
   tree: { name: "Agrume en pot", size: [2, 2], cost: 25, verb: "", recipes: [], requires: "cosmetic:decor" },
   fountain: { name: "Vasque", size: [2, 2], cost: 80, max: 1, verb: "", recipes: [], requires: "cosmetic:decor" },
+  pumpkins: { name: "Citrouilles sculptées", size: [1, 1], cost: 10, verb: "", recipes: [], requires: "cosmetic:pumpkins" },
 };
 /** Plafond de départ des objets sans `max` : l'histoire le relève (clés « cap:bac:5 » dans les déblocages personnels). */
 export const BASE_CAP: Partial<Record<BuildingId, number>> = { planter: 5, pot: 5 };

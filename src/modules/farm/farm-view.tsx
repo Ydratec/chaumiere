@@ -561,7 +561,7 @@ function BuildList({ farm, pending, pick }: { farm: Farm; pending: boolean; pick
               <span className="flex-1">
                 <span className="block font-medium">{b.name} <span className="text-xs font-normal text-zinc-500">{b.size[0]}×{b.size[1]}</span></span>
                 <span className="text-xs text-zinc-500">
-                  {blocking ?? (b.recipes.length ? b.recipes.map((r) => ITEMS[r.out].name).join(", ") : "Décoration")}
+                  {blocking ?? (b.recipes.length ? [...new Set(b.recipes.map((r) => r.label ?? ITEMS[r.out].name))].join(", ") : "Décoration")}
                 </span>
               </span>
               <button disabled={pending || !!blocking} onClick={() => pick(id)} className="btn px-4 py-2 text-sm">
@@ -624,7 +624,7 @@ function TileSheet({ tile, farm, now, pending, act }: {
           <div key={rec.id} className="flex items-center gap-3 py-2.5">
             <ItemIcon id={rec.out} size={32} />
             <span className="flex-1">
-              <span className="block font-medium">{ITEMS[rec.out].name} × {rec.qty} <span className="text-xs font-normal text-zinc-500">· {fmt(duration(rec, farm.unlocks))}</span></span>
+              <span className="block font-medium">{rec.label ?? ITEMS[rec.out].name} × {rec.qty} <span className="text-xs font-normal text-zinc-500">· {fmt(duration(rec, farm.unlocks))}</span></span>
               <Cost need={rec.inputs} have={farm.items} />
             </span>
             <button disabled={pending || !has(farm.items, rec.inputs)} onClick={() => act({ kind: "start", x: tile.x, y: tile.y, recipe: rec.id })} className="btn px-4 py-2 text-sm">

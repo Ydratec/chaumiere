@@ -45,7 +45,7 @@ export function NewsPopup({ roomId }: { roomId: string }) {
         {n.points && (
           <ul className="relative mt-4 space-y-2 rounded-2xl bg-zinc-100 px-4 py-3 text-left text-sm text-zinc-700">
             {n.points.map((p) => (
-              <li key={p} className="flex gap-2"><span aria-hidden>🎃</span><span>{p}</span></li>
+              <li key={p} className="flex gap-2"><span aria-hidden>{n.id.startsWith("bocal") ? "🍬" : "🎃"}</span><span>{p}</span></li>
             ))}
           </ul>
         )}
