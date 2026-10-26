@@ -255,7 +255,7 @@ button:active:not(:disabled) {
     transform: translateY(0) scale(1, 1);
   }
   45% {
-    transform: translateY(-5px) scale(0.96, 1.05) rotate(-4deg);
+    transform: translateY(-3px) scale(0.96, 1.05) rotate(-4deg);
   }
   75% {
     transform: translateY(0) scale(1, 1);

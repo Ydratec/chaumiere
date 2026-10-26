@@ -21,7 +21,7 @@ const HEAD: Record<Species, { x: number; y: number; r: number }> = {
   fox: { x: 29.5, y: 11, r: 5.8 },
   whale: { x: 27, y: 9.5, r: 5 },
   schrodinger: { x: 22, y: 10.8, r: 6 },
-  frog: { x: 23, y: 12, r: 6 },
+  frog: { x: 20, y: 8.6, r: 5.4 },
   shark: { x: 29, y: 11.5, r: 4.6 },
 };
 
@@ -306,7 +306,7 @@ export function CharacterSprite({ character, walking = false, portrait = false, 
       className={`overflow-visible ${walking ? "cat-walking" : ""} sp-${sp}`}
       aria-hidden
     >
-      <ellipse className="shadow" cx="19" cy="28.4" rx={sp === "fish" || sp === "whale" || sp === "shark" ? 8 : sp === "penguin" ? 7 : 13} ry="1.5" fill="rgba(0,0,0,.16)" />
+      <ellipse className="shadow" cx="19" cy="28.4" rx={sp === "fish" || sp === "whale" || sp === "shark" ? 8 : sp === "penguin" ? 7 : sp === "frog" ? 10 : 13} ry="1.5" fill="rgba(0,0,0,.16)" />
       <g className="mover">
         <Body species={sp} fur={color.fur} dark={color.dark} eye={eye} />
         {character.accessory && (
