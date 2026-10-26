@@ -7,6 +7,7 @@ import { ch1, DAILY, NPCS } from "../../src/modules/farm/story/ch1.ts";
 import { activeEvents, eventKeys, EVENTS } from "../../src/modules/farm/story/events.ts";
 import { dailyOrders, producible } from "../../src/modules/farm/story/orders.ts";
 import { SECRETS } from "../../src/modules/farm/story/secrets.ts";
+import { activeProjects } from "../../src/modules/farm/projects.ts";
 import { chapterDate, chapterDay, currentQuest, goalMet, goalProgress, nextAct, openAct, parisInstant, personalUnlocks, scaled, upcomingQuest } from "../../src/modules/farm/story/state.ts";
 
 const tile = (kind: string): Tile => ({ x: 0, y: 0, kind, item: null, started_at: null, ready_at: null });
@@ -159,6 +160,30 @@ test("quêtes datées : sortie à l'heure de Paris (été comme hiver), une à l
   assert.equal(currentQuest(ch1, before3, dayOf("2026-10-27T09:00:00Z"), at("2026-10-27T09:00:00Z"))?.id, "facteur");
   assert.equal(currentQuest(ch1, [...before3, "facteur"], dayOf("2026-10-27T20:00:00Z"), at("2026-10-27T20:00:00Z")), null, "la suivante attend demain");
   assert.equal(currentQuest(ch1, [...before3, "facteur"], dayOf("2026-10-28T09:30:00Z"), at("2026-10-28T09:30:00Z"))?.id, "cave");
+});
+
+test("acte 4 : la Fête des Brumes, du 30 octobre au 2 novembre à 10 h, et la fin du chapitre", () => {
+  const start = "2026-10-08T22:00:00+00:00";
+  const at = (iso: string) => ({ startedAt: start, now: Date.parse(iso) });
+  const dayOf = (iso: string) => chapterDay(start, Date.parse(iso));
+  const act4 = ch1.quests.filter((q) => q.act === 4);
+  assert.deepEqual(act4.map((q) => q.id), ["citrouilles", "fete", "armand", "apres"]);
+  assert.deepEqual(act4.map((q) => chapterDate(start, q.day!)), ["2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02"]);
+  const before4 = ch1.quests.filter((q) => q.act < 4).map((q) => q.id);
+  assert.equal(currentQuest(ch1, before4, dayOf("2026-10-30T08:59:00Z"), at("2026-10-30T08:59:00Z")), null);
+  assert.equal(currentQuest(ch1, before4, dayOf("2026-10-30T09:00:00Z"), at("2026-10-30T09:00:00Z"))?.id, "citrouilles");
+  const all = ch1.quests.map((q) => q.id);
+  assert.equal(currentQuest(ch1, all, dayOf("2026-11-03T12:00:00Z"), at("2026-11-03T12:00:00Z")), null, "chapitre fini");
+  // les lanternes et les tartes se fabriquent
+  const made = new Set(Object.values(BUILDINGS).flatMap((b) => b.recipes.map((r) => r.out)));
+  for (const q of act4) if (q.goal.kind === "deliver") for (const k of Object.keys(q.goal.items)) assert.ok(made.has(k as ItemId) || k === "flower", `${q.id} : ${k}`);
+});
+
+test("projet « Toutes les fenêtres » : visible du 29 octobre 10 h à minuit le 31", () => {
+  const ids = (iso: string) => activeProjects([], Date.parse(iso)).map((p) => p.key);
+  assert.ok(!ids("2026-10-29T08:59:00Z").includes("event:lanterns"));
+  assert.ok(ids("2026-10-29T09:00:00Z").includes("event:lanterns"));
+  assert.ok(!ids("2026-10-31T23:00:00Z").includes("event:lanterns"));
 });
 
 test("scènes : personnages connus, répliques non vides, choix possibles", () => {

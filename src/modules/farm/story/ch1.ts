@@ -1,5 +1,6 @@
-// Chapitre 1 : « Le Hameau des Brumes ». Actes 1 et 2 (la suite arrive avec les actes 3 et 4).
+// Chapitre 1 : « Le Hameau des Brumes ». Actes 1 et 2 ici, l'acte 3 dans ch1-act3.ts, l'acte 4 (la Fête des Brumes) dans ch1-act4.ts.
 import { ACT3 } from "./ch1-act3.ts";
+import { ACT4 } from "./ch1-act4.ts";
 import type { Chapter, Who } from "./types.ts";
 
 export const NPCS: Record<Who, { name: string; role: string }> = {
@@ -197,5 +198,6 @@ export const ch1: Chapter = {
       page: { title: "Le pont", text: "Quelqu'un est arrivé sur le vieux pont. Ça fait trente ans que personne n'y a mis les pieds. J'ai peur, mon petit chou. J'ai très peur, et je ne sais plus pourquoi je suis la seule à avoir peur." },
     },
     ...ACT3,
+    ...ACT4,
   ],
 };

@@ -9,11 +9,14 @@ export type Project = {
   needs: Inventory;
   after?: string; // n'apparaît qu'une fois ce projet-là terminé
   until?: string; // ISO : passé cette date, le projet disparaît s'il n'est pas fini (événement)
+  from?: string; // ISO : le projet n'apparaît qu'à partir de cette date
   bonus?: Inventory; // versé à chaque membre de la salle quand le projet est terminé
 };
 
 /** Fête des Brumes : le grand bocal de bonbons, à remplir à toute la salle avant la nuit du 31 octobre. */
 const BOCAL_UNTIL = "2026-11-01T00:00:00+01:00";
+/** Toutes les fenêtres : les lanternes de la Fête, dès que Mirabelle en donne la recette (fin de l'acte 3). */
+const LANTERNS_FROM = "2026-10-29T10:00:00+01:00";
 
 export const PROJECTS: Project[] = [
   { key: "game:battleship", kind: "game", title: "Bataille navale", desc: "Débloque le jeu pour toute la salle.", needs: { wheat: 30, carrot: 10 } },
@@ -30,6 +33,7 @@ export const PROJECTS: Project[] = [
   { key: "cosmetic:pumpkins", kind: "event", title: "Le grand bocal · palier 1", desc: "Débloque les citrouilles sculptées, à poser dans sa serre.", needs: { candy: 150 }, until: BOCAL_UNTIL },
   { key: "cosmetic:witchhat", kind: "event", title: "Le grand bocal · palier 2", desc: "Un chapeau de sorcière pour le personnage de chacun.", needs: { candy: 400 }, after: "cosmetic:pumpkins", until: BOCAL_UNTIL },
   { key: "event:candyrain", kind: "event", title: "Le grand bocal · palier 3", desc: "Pluie de bonbons : chacun reçoit 300 pièces et une fleur de lune.", needs: { candy: 800 }, after: "cosmetic:witchhat", until: BOCAL_UNTIL, bonus: { coins: 300, moonflower: 1 } },
+  { key: "event:lanterns", kind: "event", title: "Toutes les fenêtres", desc: "120 lanternes pour la Fête des Brumes, à allumer à toute la salle avant minuit le 31 : chacun reçoit 200 pièces et une fleur de lune.", needs: { lantern: 120 }, from: LANTERNS_FROM, until: BOCAL_UNTIL, bonus: { coins: 200, moonflower: 1 } },
   { key: "upgrade:workshop2", kind: "event", title: "Le grand bocal · palier 4", desc: "Un deuxième atelier de cuisine dans chaque serre.", needs: { candy: 1500 }, after: "event:candyrain", until: BOCAL_UNTIL },
 ];
 
@@ -37,7 +41,7 @@ export const GAME_LOCKS: Record<string, string> = { battleship: "game:battleship
 
 /** Projets en cours : pas encore débloqués, dont le prérequis l'est, et pas expirés. */
 export const activeProjects = (unlocks: string[], now = Date.now()) =>
-  PROJECTS.filter((p) => !unlocks.includes(p.key) && (!p.after || unlocks.includes(p.after)) && (!p.until || now < Date.parse(p.until)));
+  PROJECTS.filter((p) => !unlocks.includes(p.key) && (!p.after || unlocks.includes(p.after)) && (!p.from || now >= Date.parse(p.from)) && (!p.until || now < Date.parse(p.until)));
 
 /** Combien il reste à donner pour cet objet. */
 export const remaining = (p: Project, progress: Inventory, item: ItemId) => Math.max(0, (p.needs[item] ?? 0) - (progress[item] ?? 0));

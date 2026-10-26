@@ -13,7 +13,8 @@ export const START_CAT = { x: 6, y: 8 };
 export type ItemId =
   | "coins" | "wheat" | "carrot" | "corn" | "strawberry" | "egg" | "bread" | "cake"
   | "flower" | "poppy" | "tulip" | "sunflower" | "lavender" | "rose" | "orchid" | "moonflower" // les fleurs : voir flowers.ts
-  | "sugarcane" | "sugar" | "candy" | "jam"; // atelier de cuisine
+  | "sugarcane" | "sugar" | "candy" | "jam" // atelier de cuisine
+  | "pumpkin" | "lantern" | "pie"; // Fête des Brumes
 
 /** `price` : prix de vente au village (réduit depuis la refonte : les commandes et les chantiers paient mieux que la vente en vrac). */
 export const ITEMS: Record<ItemId, { name: string; price: number }> = {
@@ -37,6 +38,9 @@ export const ITEMS: Record<ItemId, { name: string; price: number }> = {
   sugar: { name: "Sucre", price: 6 },
   candy: { name: "Bonbon", price: 6 },
   jam: { name: "Confiture", price: 60 },
+  pumpkin: { name: "Citrouille", price: 2 },
+  lantern: { name: "Lanterne", price: 4 },
+  pie: { name: "Tarte à la citrouille", price: 18 },
 };
 export const isItem = (id: string): id is ItemId => id in ITEMS;
 
@@ -59,6 +63,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
       { id: "corn", out: "corn", qty: 2, minutes: 30, inputs: { coins: 6 } },
       { id: "strawberry", out: "strawberry", qty: 2, minutes: 120, inputs: { coins: 15 } },
       { id: "sugarcane", out: "sugarcane", qty: 3, minutes: 15, inputs: { coins: 2 } },
+      { id: "pumpkin", out: "pumpkin", qty: 3, minutes: 25, inputs: { coins: 3 } },
     ],
   },
   pot: {
@@ -74,6 +79,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
     recipes: [
       { id: "bread", out: "bread", qty: 1, minutes: 15, inputs: { wheat: 3 } },
       { id: "cake", out: "cake", qty: 1, minutes: 60, inputs: { wheat: 1, egg: 1, strawberry: 1 } },
+      { id: "pie", out: "pie", qty: 1, minutes: 40, inputs: { pumpkin: 2, egg: 1, wheat: 1 }, label: "Tarte à la citrouille" },
     ],
     requires: "b:oven",
   },
@@ -84,6 +90,7 @@ export const BUILDINGS: Record<BuildingId, { name: string; size: [number, number
       { id: "candy-strawberry", out: "candy", qty: 6, minutes: 20, inputs: { sugar: 1, strawberry: 1 }, label: "Bonbons à la fraise" },
       { id: "candy-flower", out: "candy", qty: 4, minutes: 20, inputs: { sugar: 1, flower: 2 }, label: "Bonbons à la fleur" },
       { id: "jam", out: "jam", qty: 1, minutes: 45, inputs: { strawberry: 3, sugar: 2 }, label: "Confiture de fraises" },
+      { id: "lantern", out: "lantern", qty: 2, minutes: 10, inputs: { pumpkin: 1, coins: 4 }, label: "Lanternes (citrouille et bougie)" },
     ],
   },
   flowers: { name: "Jardinière", size: [1, 1], cost: 15, verb: "", recipes: [], requires: "cosmetic:decor" },

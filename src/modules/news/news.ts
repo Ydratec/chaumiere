@@ -48,6 +48,23 @@ export const NEWS: News[] = [
     push: { title: "Le grand bocal de bonbons 🍬", body: "Atelier de cuisine, canne à sucre : remplissez le bocal du hameau avant le 31 pour débloquer des surprises." },
     cta: "Aller à la serre",
   },
+  {
+    id: "toutes-les-fenetres",
+    from: "2026-10-29T10:00:00+01:00",
+    until: "2026-11-01T00:00:00+01:00",
+    who: "colonel",
+    eyebrow: "Fête des Brumes · jusqu'au 31 octobre minuit",
+    title: "Une lanterne à toutes les fenêtres",
+    text: "Hou. Le maire déclare la Fête des Brumes ouverte. Pour que personne ne se perde cette nuit, il faut 120 lanternes allumées dans le hameau. Toute la salle s'y met.",
+    points: [
+      "Nouveau : les citrouilles, dans les bacs potagers",
+      "Nouveau : les lanternes à l'atelier de cuisine, la tarte à la citrouille au four",
+      "Projet « Toutes les fenêtres » : 120 lanternes ensemble, et chacun reçoit 200 pièces et une fleur de lune",
+      "Épisode 4 de l'histoire : une quête par jour à 10 h, du 30 octobre au 2 novembre",
+    ],
+    push: { title: "Une lanterne à toutes les fenêtres 🎃", body: "Citrouilles, lanternes : 120 lanternes à allumer tous ensemble avant minuit le 31." },
+    cta: "Allumer une lanterne",
+  },
 ];
 
 /** Annonces en cours à ce moment. */

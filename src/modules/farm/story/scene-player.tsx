@@ -403,6 +403,18 @@ export function PropArt({ prop }: { prop: Prop }) {
         <svg viewBox="0 0 64 32" className="h-auto w-full" aria-hidden>
           <circle cx="14" cy="16" r="10" fill="none" stroke="#c99a2a" strokeWidth="5" />
           <path d="M24 16h34M50 16v8M42 16v6" stroke="#c99a2a" strokeWidth="5" strokeLinecap="round" />
+          <path d="M8 6c-4-4-8-2-7 2 1 3 5 2 7-2zM8 6c1-5 5-6 7-3 1 3-3 4-7 3z" fill="#d9363e" />
+        </svg>
+      );
+    case "spoon": // un bol de confiture et une cuillère, enfin tenue
+      return (
+        <svg viewBox="0 0 64 48" className="h-auto w-full" aria-hidden>
+          <path d="M40 4 26 28" stroke="#b8bcc4" strokeWidth="3.4" strokeLinecap="round" />
+          <ellipse cx="24" cy="31" rx="5" ry="3.4" transform="rotate(-30 24 31)" fill="#cfd3da" />
+          <path d="M6 28h52c0 10-10 18-26 18S6 38 6 28z" fill="#f4efe6" stroke="#d6cdbd" strokeWidth="1.5" />
+          <ellipse cx="32" cy="28" rx="26" ry="5" fill="#c81e3c" />
+          <circle cx="22" cy="27" r="1.6" fill="#ef4444" /><circle cx="38" cy="29" r="1.6" fill="#ef4444" />
+          <path d="M14 38q18 6 36 0" stroke="#3b82f6" strokeWidth="1.4" fill="none" opacity=".5" />
         </svg>
       );
   }
