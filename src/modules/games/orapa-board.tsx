@@ -43,10 +43,10 @@ function PieceIcon({ k, rot = 0, size = 14, flip = false }: { k: number; rot?: n
 }
 
 type Wave = Extract<LogEntry, { from: string }>;
-const result = (w: { to: string | null; colors: Color[] }) =>
+export const result = (w: { to: string | null; colors: Color[] }) =>
   w.to === null ? { hex: ABSORBED, name: "absorbée" } : mix(w.colors);
 /** Même résultat d'onde : même sortie et même couleur ; une onde absorbée se compare seulement sur le fait d'être absorbée. */
-const same = (a: { to: string | null; colors: Color[] }, b: { to: string | null; colors: Color[] }) =>
+export const same = (a: { to: string | null; colors: Color[] }, b: { to: string | null; colors: Color[] }) =>
   a.to === b.to && (a.to === null || a.colors.join() === b.colors.join());
 
 // ---------- Éditeur : gemmes posées et croix, gardées sur l'appareil ----------
@@ -78,7 +78,7 @@ function layout(placed: (Placement | null)[]) {
 }
 
 /** Brouillon d'une grille (sa grille secrète ou son hypothèse), sauvegardé à chaque changement. */
-function useDraft(key: string) {
+export function useDraft(key: string) {
   const [d, setD] = useState<Draft>(() => loadDraft(key)); // monté seulement côté navigateur (voir OrapaBoard)
   useEffect(() => {
     try {
@@ -111,7 +111,7 @@ type Editor = ReturnType<typeof useDraft>;
 
 type Ghost = { k: number; p: Placement; ok: boolean };
 
-function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, waves = [], active, faded }: {
+export function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, waves = [], active, faded }: {
   grid: Grid;
   bad?: number[]; // cases en cause quand la grille est refusée
   crosses?: number[];
@@ -197,7 +197,7 @@ function Plateau({ grid, crosses, ghost, bad, boardRef, onCellDown, onEdge, wave
  * toucher une gemme pour la tourner, la glisser pour la déplacer (hors du plateau = retour en réserve),
  * outil Croix pour marquer les cases vides.
  */
-function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.ComponentProps<typeof Plateau>, "grid"> }) {
+export function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.ComponentProps<typeof Plateau>, "grid"> }) {
   const board = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<"gems" | "cross">("gems");
   const [cur, setCur] = useState<number | null>(null); // gemme choisie dans la réserve (pour la poser d'un toucher)
@@ -288,7 +288,7 @@ function EditableBoard({ ed, plateau }: { ed: Editor; plateau?: Omit<React.Compo
   );
 }
 
-function WaveLog({ entries, name, active, onSel, check }: {
+export function WaveLog({ entries, name, active, onSel, check }: {
   entries: { e: LogEntry; k: number }[];
   name: (id: string) => string;
   active: Wave | null;
@@ -326,7 +326,7 @@ function WaveLog({ entries, name, active, onSel, check }: {
   );
 }
 
-const Rules = () => (
+export const Rules = () => (
   <details className="text-sm">
     <summary className="cursor-pointer font-medium text-zinc-600">Règles</summary>
     <p className="mt-2 leading-6 text-zinc-600">

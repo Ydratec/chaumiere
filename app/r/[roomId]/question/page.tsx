@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { registry, type Activity } from "@/src/modules/activities/registry";
 import { Chat } from "@/src/modules/chat/chat";
 import { todayExtras } from "@/src/modules/questions/extras";
+import { QuestionHistory } from "@/src/modules/questions/history";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 export default async function QuestionPage({ params, searchParams }: { params: Promise<{ roomId: string }>; searchParams: Promise<{ a?: string }> }) {
@@ -62,6 +63,7 @@ export default async function QuestionPage({ params, searchParams }: { params: P
         initialReactions={reactions ?? []}
       />
       )}
+      {activity.id === main.id && <QuestionHistory sb={sb} roomId={roomId} today={main.day!} names={names} people={people} />}
     </>
   );
 }

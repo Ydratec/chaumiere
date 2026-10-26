@@ -12,6 +12,7 @@ import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { loadPending } from "@/src/modules/scratch/data";
 import { ScratchShop } from "@/src/modules/scratch/shop";
+import { challengeDay } from "@/src/modules/challenges/data";
 
 
 export default async function GamesPage({ params }: { params: Promise<{ roomId: string }> }) {
@@ -22,11 +23,14 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
   const { data } = await ctx.sb
     .from("games").select("*").eq("room_id", roomId).order("created_at", { ascending: false }).limit(30).returns<Game[]>();
   const games = data ?? [];
-  const [unlocks, pending, { data: wallet }] = await Promise.all([
+  const [unlocks, pending, { data: wallet }, { data: daily }] = await Promise.all([
     loadUnlocks(roomId),
     loadPending(roomId, me),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", me).eq("item", "coins").maybeSingle(),
+    adminDb().from("daily_challenges").select("user_id, score, solved_at").eq("room_id", roomId).eq("day", challengeDay()).eq("kind", "orapa"),
   ]);
+  const myDaily = (daily ?? []).find((d) => d.user_id === me);
+  const solvers = (daily ?? []).filter((d) => d.solved_at).length;
   const locked = (type: string) => !!GAME_LOCKS[type] && !unlocks.includes(GAME_LOCKS[type]);
   const name = (id: string) => (id === me ? "toi" : (ctx.names[id] ?? "?"));
   const href = (g: Game) => `/r/${roomId}/games/${g.id}`;
@@ -43,6 +47,20 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
   return (
     <>
       <GamesLive roomId={roomId} />
+      {!locked("orapa") && (
+        <Link href={`/r/${roomId}/games/defi`} className="flex items-center gap-4 rounded-[1.75rem] bg-slate-800 p-4 text-white shadow-sm">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-700 text-2xl" aria-hidden>💎</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold uppercase tracking-wider text-white/60">Défi du jour</span>
+            <span className="block font-bold">Orapa Mine : la grille commune</span>
+            <span className="block text-sm text-white/70">
+              {myDaily?.solved_at ? `Trouvé en ${myDaily.score} coups · ` : myDaily ? "En cours · " : "Jusqu'à 200 pièces · "}
+              {solvers ? `${solvers} l'ont trouvée` : "personne ne l'a encore trouvée"}
+            </span>
+          </span>
+          {arrow}
+        </Link>
+      )}
       <form action={createGame} className="space-y-4">
         <input type="hidden" name="room_id" value={roomId} />
         <h2 className="text-2xl font-bold tracking-tight">Lancer un défi</h2>
