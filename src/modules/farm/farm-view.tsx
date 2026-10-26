@@ -11,7 +11,7 @@ import { GreenhouseFloor, GreenhouseLight, GreenhouseWall } from "./greenhouse";
 import { BUILDINGS, GRID_W, ITEMS, isItem, type BuildingId, type Inventory, type ItemId } from "./catalog";
 import type { Farm, Gift } from "./data";
 import {
-  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, producedOf, progress, recipeOf, sellPrice, sizeOf, tileAt,
+  applyMove, around, duration, findPath, footprint, gridH, has, isReady, owned, placeError, producedOf, progress, queueMax, recipeOf, sellPrice, sizeOf, tileAt,
   type Cell, type Tile,
 } from "./rules";
 
@@ -596,8 +596,28 @@ function TileSheet({ tile, farm, now, pending, act }: {
     </div>
   );
 
+  const recipeList = (verb: string) => (
+    <div className="rows">
+      {b?.recipes.map((rec) => (
+        <div key={rec.id} className="flex items-center gap-3 py-2.5">
+          <ItemIcon id={rec.out} size={32} />
+          <span className="flex-1">
+            <span className="block font-medium">{rec.label ?? ITEMS[rec.out].name} × {rec.qty} <span className="text-xs font-normal text-zinc-500">· {fmt(duration(rec, farm.unlocks))}</span></span>
+            <Cost need={rec.inputs} have={farm.items} />
+          </span>
+          <button disabled={pending || !has(farm.items, rec.inputs)} onClick={() => act({ kind: "start", x: tile.x, y: tile.y, recipe: rec.id }, queueMax(tile.kind) === 0)} className="btn px-4 py-2 text-sm">
+            {verb}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
   if (r && isItem(r.out)) {
     const left = Date.parse(tile.ready_at!) - now;
+    const queue = tile.queue ?? [];
+    const max = queueMax(tile.kind);
+    const ready = 1 + queue.filter((j) => Date.parse(j.ready_at) <= now).length; // si la recette en cours est prête
     return (
       <>
         {head}
@@ -610,8 +630,27 @@ function TileSheet({ tile, farm, now, pending, act }: {
               <div className="h-full rounded-full bg-indigo-600 transition-[width]" style={{ width: `${progress(tile, now) * 100}%` }} />
             </div>
           </div>
-          {left <= 0 && <button disabled={pending} onClick={() => act({ kind: "collect", x: tile.x, y: tile.y })} className="btn">Récolter</button>}
+          {left <= 0 && <button disabled={pending} onClick={() => act({ kind: "collect", x: tile.x, y: tile.y })} className="btn">Récolter{ready > 1 ? ` (${ready})` : ""}</button>}
         </div>
+        {max > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="eyebrow">En attente · {queue.length} / {max}</p>
+            {queue.length > 0 && (
+              <ol className="flex flex-wrap gap-2">
+                {queue.map((j, i) => {
+                  const q = recipeOf(tile.kind, j.item);
+                  const t = Date.parse(j.ready_at) - now;
+                  return q ? (
+                    <li key={i} className="flex items-center gap-1.5 rounded-full bg-zinc-100 py-1 pl-1.5 pr-3 text-xs">
+                      <ItemIcon id={q.out} size={20} /> {q.qty} · {t > 0 ? fmt(t) : "prêt"}
+                    </li>
+                  ) : null;
+                })}
+              </ol>
+            )}
+            {queue.length < max ? recipeList("Ajouter") : <p className="text-sm text-zinc-500">La file est pleine : récolte pour en ajouter d&apos;autres.</p>}
+          </div>
+        )}
       </>
     );
   }
@@ -619,20 +658,8 @@ function TileSheet({ tile, farm, now, pending, act }: {
   return (
     <>
       {head}
-      <div className="rows">
-        {b?.recipes.map((rec) => (
-          <div key={rec.id} className="flex items-center gap-3 py-2.5">
-            <ItemIcon id={rec.out} size={32} />
-            <span className="flex-1">
-              <span className="block font-medium">{rec.label ?? ITEMS[rec.out].name} × {rec.qty} <span className="text-xs font-normal text-zinc-500">· {fmt(duration(rec, farm.unlocks))}</span></span>
-              <Cost need={rec.inputs} have={farm.items} />
-            </span>
-            <button disabled={pending || !has(farm.items, rec.inputs)} onClick={() => act({ kind: "start", x: tile.x, y: tile.y, recipe: rec.id })} className="btn px-4 py-2 text-sm">
-              {b.verb}
-            </button>
-          </div>
-        ))}
-      </div>
+      {recipeList(b?.verb ?? "Lancer")}
+      {queueMax(tile.kind) > 0 && <p className="mt-2 text-xs text-zinc-500">Tu pourras mettre jusqu&apos;à {queueMax(tile.kind)} recettes en attente derrière celle-ci.</p>}
     </>
   );
 }
