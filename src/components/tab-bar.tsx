@@ -18,7 +18,7 @@ function seenMessage(activityId: string) {
 
 /**
  * Pastilles des onglets (question à faire ou nouveau message, défis/tours de jeu, récoltes prêtes).
- * Rafraîchies à chaque changement d'onglet, toutes les 30 s et au retour dans l'app.
+ * Rafraîchies à chaque changement d'onglet, toutes les 60 s quand l'app est au premier plan, et au retour dans l'app.
  */
 function useBadges(roomId: string, path: string) {
   const [dots, setDots] = useState<{ question: boolean; games: number; farm: number }>({ question: false, games: 0, farm: 0 });
@@ -31,7 +31,7 @@ function useBadges(roomId: string, path: string) {
         setDots({ question: (!!b.activityId && !b.answered) || unread, games: b.games, farm: b.farm });
       }).catch(() => {});
     load();
-    const id = setInterval(load, 30_000);
+    const id = setInterval(() => document.visibilityState === "visible" && load(), 60_000);
     const onShow = () => document.visibilityState === "visible" && load();
     document.addEventListener("visibilitychange", onShow);
     return () => {

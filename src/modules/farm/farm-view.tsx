@@ -68,10 +68,31 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
   const world = useRef<HTMLDivElement>(null);
   const H = gridH(farm.unlocks);
 
+  // Où le chat s'est arrêté : enregistré une fois qu'il reste tranquille (20 s) ou quand on quitte la serre,
+  // pas à chaque pas (chaque enregistrement coûte un appel au serveur).
+  const catSave = useRef<{ at: Cell | null; timer: ReturnType<typeof setTimeout> | null }>({ at: null, timer: null });
+  const flushCat = useEffectEvent(() => {
+    const c = catSave.current;
+    if (c.timer) clearTimeout(c.timer);
+    c.timer = null;
+    if (c.at) void moveCat(roomId, c.at.x, c.at.y);
+    c.at = null;
+  });
+  function saveCat(at: Cell) {
+    const c = catSave.current;
+    c.at = at;
+    if (c.timer) clearTimeout(c.timer);
+    c.timer = setTimeout(flushCat, 20_000);
+  }
+
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
+    const onHide = () => document.visibilityState === "hidden" && flushCat();
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onHide);
+      flushCat();
       if (walk.current) clearTimeout(walk.current);
     };
   }, []);
@@ -108,7 +129,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
       if (i >= path.length) {
         walk.current = null;
         setWalking(false);
-        if (path.length && save) void moveCat(roomId, here.x, here.y);
+        if (path.length && save) saveCat(here);
         return then?.();
       }
       const next = path[i];

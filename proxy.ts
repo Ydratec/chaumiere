@@ -25,5 +25,6 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|api/cron).*)"],
+  // Ni les fichiers (images, icônes, manifeste…) ni le cron : chaque passage ici est un appel de fonction facturé.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|txt|xml)$).*)"],
 };

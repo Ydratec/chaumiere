@@ -1,33 +1,34 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { browserDb } from "@/src/lib/db/client";
+import { useSoftRefresh } from "@/src/lib/hooks/use-soft-refresh";
 
 /** Sous-onglets de la ferme ; se rafraîchit quand la salle donne, échange ou débloque quelque chose. */
 export function FarmTabs({ roomId, tabs }: { roomId: string; tabs: { label: string; badge?: number; content: React.ReactNode }[] }) {
   const [tab, setTab] = useState(0);
-  const router = useRouter();
+  const soft = useSoftRefresh();
+  const refresh = useEffectEvent(() => soft());
   const [sb] = useState(browserDb);
 
   useEffect(() => {
     const filter = `room_id=eq.${roomId}`;
     const ch = sb
       .channel(`farm-${roomId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "farm_offers", filter }, () => router.refresh())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "farm_contributions", filter }, () => router.refresh())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "room_unlocks", filter }, () => router.refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "farm_offers", filter }, () => refresh())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "farm_contributions", filter }, () => refresh())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "room_unlocks", filter }, () => refresh())
       .subscribe();
     return () => {
       sb.removeChannel(ch);
     };
-  }, [sb, roomId, router]);
+  }, [sb, roomId]);
 
   return (
     <div className="space-y-6">
       <div style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} className="grid gap-1 rounded-full bg-zinc-200/60 p-1 text-sm font-medium">
         {tabs.map((t, i) => (
-          <button key={t.label} onClick={() => { setTab(i); router.refresh(); }} className={`rounded-full py-2 text-[13px] transition ${tab === i ? "bg-white shadow-sm" : "text-zinc-500"}`}>
+          <button key={t.label} onClick={() => setTab(i)} className={`rounded-full py-2 text-[13px] transition ${tab === i ? "bg-white shadow-sm" : "text-zinc-500"}`}>
             {t.label}
             {!!t.badge && <span className="ml-1 rounded-full bg-indigo-600 px-1.5 text-[11px] text-white">{t.badge}</span>}
           </button>
