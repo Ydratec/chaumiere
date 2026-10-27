@@ -66,6 +66,22 @@ export async function touchActivity(roomId: string, uid: string, story: StoryCor
   await adminDb().from("farm_activity").upsert({ room_id: roomId, user_id: uid, at: new Date().toISOString() });
 }
 
+/** Ce qu'un coup dans la serre peut changer : objets, inventaire, album des fleurs (le reste ne bouge pas). */
+export async function reloadFarmParts(roomId: string, uid: string): Promise<Pick<Farm, "tiles" | "items" | "album" | "now">> {
+  const admin = adminDb();
+  const [{ data: tiles }, { data: items }, { data: bloom }] = await Promise.all([
+    admin.from("farm_tiles").select("x, y, kind, item, started_at, ready_at, queue").eq("room_id", roomId).eq("user_id", uid),
+    admin.from("farm_items").select("item, qty").eq("room_id", roomId).eq("user_id", uid),
+    admin.from("farm_stats").select("key, count").eq("room_id", roomId).eq("user_id", uid).like("key", "bloom:%"),
+  ]);
+  return {
+    tiles: (tiles ?? []) as Tile[],
+    items: toInventory(items ?? []),
+    album: Object.fromEntries((bloom ?? []).map((b) => [b.key.slice(6), b.count as number])),
+    now: Date.now(),
+  };
+}
+
 export async function loadFarm(roomId: string, uid: string): Promise<Farm> {
   const admin = adminDb();
   const now = Date.now();

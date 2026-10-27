@@ -7,11 +7,11 @@ import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { isFlower, giftError, MESSAGE_MAX, pickFlower, rarityOf } from "./flowers";
 import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
-import { loadFarm, loadProjects, touchActivity, type Farm, type Gift } from "./data";
+import { loadFarm, loadProjects, loadUnlocks, reloadFarmParts, touchActivity, type Farm, type Gift } from "./data";
 import { grantSecret } from "./story/grant";
 import { paris } from "@/src/modules/questions/day";
 import { isComplete, remaining } from "./projects";
-import { collectAll, duration, enqueue, gridH, sellPrice, negate, offerError, placeError, producedOf, recipeOf, startError, tileAt, type FarmMove } from "./rules";
+import { collectAll, duration, enqueue, gridH, sellPrice, negate, offerError, placeError, producedOf, recipeOf, startError, tileAt, type FarmMove, type Tile } from "./rules";
 
 export type { FarmMove };
 
@@ -28,7 +28,8 @@ export async function farmAction(roomId: string, move: FarmMove): Promise<{ farm
   const where = <T extends { eq: (k: string, v: unknown) => T }>(q: T) =>
     q.eq("room_id", roomId).eq("user_id", uid).eq("x", tile!.x).eq("y", tile!.y);
   const add = (delta: Inventory) => admin.rpc("farm_add_items", { r: roomId, u: uid, delta });
-  const done = async (error?: string, notice?: string | null) => ({ farm: await loadFarm(roomId, uid), error, notice: notice ?? undefined });
+  // Après un coup, seuls les objets, l'inventaire et l'album ont pu changer : on ne relit qu'eux (pas toute la serre).
+  const done = async (error?: string, notice?: string | null) => ({ farm: { ...farm, ...(await reloadFarmParts(roomId, uid)) }, error, notice: notice ?? undefined });
   void touchActivity(roomId, uid, farm.story);
 
   switch (move.kind) {
@@ -183,8 +184,13 @@ export async function cancelOffer(roomId: string, offer: number) {
 /** Enregistre où le chat s'est arrêté (visible des visiteurs). */
 export async function moveCat(roomId: string, x: number, y: number) {
   const uid = await member(roomId);
-  const farm = await loadFarm(roomId, uid);
-  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= GRID_W || y >= gridH(farm.unlocks) || tileAt(farm.tiles, x, y)) return;
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= GRID_W) return;
+  // Pas besoin de toute la serre : les objets et les déblocages de la salle suffisent (hauteur de la grille).
+  const [{ data: tiles }, unlocks] = await Promise.all([
+    adminDb().from("farm_tiles").select("x, y, kind, item, started_at, ready_at").eq("room_id", roomId).eq("user_id", uid),
+    loadUnlocks(roomId),
+  ]);
+  if (y >= gridH(unlocks) || tileAt((tiles ?? []) as Tile[], x, y)) return;
   await adminDb().from("farm_cats").upsert({ room_id: roomId, user_id: uid, x, y });
 }
 
