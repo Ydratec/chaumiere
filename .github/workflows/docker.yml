@@ -1,0 +1,23 @@
+# Vérifie que l'image Docker du VPS se construit (sans la publier) quand on touche à sa recette.
+name: Image Docker
+on:
+  pull_request:
+    paths: ["Dockerfile", ".dockerignore", "next.config.ts", "package.json", "pnpm-lock.yaml", ".github/workflows/docker.yml"]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construire l'image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co \
+            --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_test \
+            --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY=test \
+            -t chaumiere:test .
+      - name: Démarrer et appeler /api/health
+        run: |
+          docker run -d --name app -p 3000:3000 chaumiere:test
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && exit 0; sleep 1; done
+          docker logs app; exit 1
