@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+tests
+docs
+supabase
+*.md
+.env*
+!.env.example
+tsconfig.tsbuildinfo
