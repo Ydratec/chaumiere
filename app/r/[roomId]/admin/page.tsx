@@ -14,7 +14,7 @@ export default async function AdminPage({ params }: { params: Promise<{ roomId: 
         <Link href={`/r/${roomId}/profile`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900">← Profil</Link>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Mode admin</h1>
       </div>
-      <AdminPanel roomId={roomId} />
+      <AdminPanel roomId={roomId} members={ctx.members.map((m) => ({ user_id: m.user_id, username: m.username }))} />
     </>
   );
 }

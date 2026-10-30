@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { ITEMS, type ItemId } from "@/src/modules/farm/catalog";
-import { advanceStory, finishTimers, trimFarms, giveItems, newQuestion, resetFarm, resetStory, resetUnlocks, unlockAll, unlockSkins } from "./actions";
+import { advanceStory, finishTimers, trimFarms, giveItems, newQuestion, resetFarm, resetPin, resetStory, resetUnlocks, unlockAll, unlockSkins } from "./actions";
 
-export function AdminPanel({ roomId }: { roomId: string }) {
+export function AdminPanel({ roomId, members }: { roomId: string; members: { user_id: string; username: string }[] }) {
+  const [who, setWho] = useState(members[0]?.user_id ?? "");
   const [msg, setMsg] = useState("");
   const [item, setItem] = useState<ItemId>("wheat");
   const [qty, setQty] = useState(20);
@@ -18,6 +19,17 @@ export function AdminPanel({ roomId }: { roomId: string }) {
   return (
     <div className="space-y-8">
       {msg && <p role="status" className="rounded-2xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700">{msg}</p>}
+
+      <section className="space-y-2">
+        <h2 className="eyebrow">Code PIN oublié</h2>
+        <div className="flex gap-2">
+          <select value={who} onChange={(e) => setWho(e.target.value)} className="field min-w-0 flex-1 bg-white shadow-sm" aria-label="Membre">
+            {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.username}</option>)}
+          </select>
+          <button disabled={pending || !who} className="btn px-4" onClick={() => run(() => resetPin(roomId, who), `Donner un nouveau PIN à ${members.find((m) => m.user_id === who)?.username ?? "ce membre"} ? L'ancien ne marchera plus.`)}>Nouveau PIN</button>
+        </div>
+        <p className="text-xs text-zinc-500">Le compte et toutes ses données sont conservés. Transmets le nouveau PIN à la personne (elle pourra le garder).</p>
+      </section>
 
       <section className="space-y-2">
         <h2 className="eyebrow">Question du jour</h2>
