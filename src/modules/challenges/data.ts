@@ -80,6 +80,7 @@ export async function loadDaily(roomId: string, uid: string): Promise<DailyView>
     solution: attempt.solved ? gridOf(roomId, day) : null,
     today,
     yesterday: yesterday.filter((r) => r.solved),
+    yesterdayKind,
   };
 }
 
