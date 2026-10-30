@@ -16,7 +16,7 @@ export default async function StandingsPage({ params, searchParams }: { params: 
   if (!ctx) redirect("/");
   const [{ data: games }, { data: daily }] = await Promise.all([
     ctx.sb.from("games").select("type, creator, opponent, state->winner").eq("room_id", roomId).eq("status", "finished"),
-    adminDb().from("daily_challenges").select("user_id, day, score, solved_at").eq("room_id", roomId).eq("kind", "orapa"),
+    adminDb().from("daily_challenges").select("user_id, day, score, solved_at").eq("room_id", roomId), // tous les défis : un seul jeu par jour
   ]);
   const played = ((games ?? []) as unknown as Played[]);
   const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }];
@@ -49,14 +49,14 @@ export default async function StandingsPage({ params, searchParams }: { params: 
         if (!rows.length) return <p className="text-sm text-zinc-500">Personne n&apos;a encore réussi de défi du jour.</p>;
         return (
           <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
-            <p className="mb-2 text-xs text-zinc-500">Jours remportés (meilleur score du jour) · défis réussis · score moyen</p>
+            <p className="mb-2 text-xs text-zinc-500">Jours remportés (meilleur score du jour) · défis réussis</p>
             <ol className="rows">
               {rows.map((r, i) => (
                 <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
                   <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
                   {who(r.user)}
                   <span className="text-right tabular-nums">
-                    <b>{r.days}</b> <span className="text-zinc-500">j.</span> · {r.solved} · {r.avg}
+                    <b>{r.days}</b> <span className="text-zinc-500">j.</span> · {r.solved}
                   </span>
                 </li>
               ))}

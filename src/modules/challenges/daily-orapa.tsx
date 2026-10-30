@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore, useTransition } from "react";
-import { Avatar } from "@/src/components/avatar";
 import type { Person } from "@/src/modules/rooms/context";
 import { EditableBoard, Plateau, Rules, WaveLog, result, same, useDraft } from "../games/orapa-board";
 import { trace, W, H, type Color, type LogEntry } from "../games/orapa";
 import { dailyGuess, dailyProbe, dailyWave } from "./actions";
-import type { DailyView, Ranking } from "./data";
+import type { DailyView } from "./data";
+import { Board } from "./daily-board";
+import { CHALLENGES } from "./rotation";
 import { isWave, MISS_COST, PROBE_COST, rewardOf } from "./orapa-daily";
 
 const noop = () => () => {};
@@ -105,36 +106,10 @@ function Game({ roomId, view, me, people }: { roomId: string; view: DailyView; m
         <WaveLog entries={entries} name={name} active={active} onSel={setSel} check={check} />
       </section>
 
-      <Board title="Classement du jour" rows={view.today} me={me} people={people} live />
-      {view.yesterday.length > 0 && <Board title="Hier" rows={view.yesterday} me={me} people={people} />}
+      <Board title="Classement du jour" rows={view.today} me={me} people={people} kind="orapa" live />
+      {view.yesterday.length > 0 && <Board title={`Hier · ${CHALLENGES[view.yesterdayKind].name}`} rows={view.yesterday} me={me} people={people} kind={view.yesterdayKind} />}
       <Rules />
       <p className="text-center text-xs text-zinc-400">Grille {W} × {H} · nouvelle grille chaque jour à minuit</p>
     </div>
-  );
-}
-
-function Board({ title, rows, me, people, live = false }: { title: string; rows: Ranking; me: string; people: Record<string, Person>; live?: boolean }) {
-  if (!rows.length) return live ? <p className="text-center text-sm text-zinc-500">Personne n&apos;a encore commencé aujourd&apos;hui. À toi !</p> : null;
-  let rank = 0;
-  return (
-    <section>
-      <h3 className="eyebrow mb-1">{title}</h3>
-      <ol className="rows">
-        {rows.map((r) => {
-          if (r.solved) rank++;
-          const p = people[r.user];
-          return (
-            <li key={r.user} className={`flex items-center gap-3 py-2.5 text-sm ${r.user === me ? "font-semibold" : ""}`}>
-              <span className="w-5 text-right tabular-nums text-zinc-400">{r.solved ? rank : "·"}</span>
-              <Avatar url={p?.url} character={p?.character} name={p?.name ?? "?"} size={28} />
-              <span className="flex-1 truncate">{p?.name ?? "?"}</span>
-              <span className={`tabular-nums ${r.solved ? "" : "text-zinc-400"}`}>
-                {r.solved ? `${r.score} coup${r.score > 1 ? "s" : ""}` : "cherche encore…"}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
   );
 }

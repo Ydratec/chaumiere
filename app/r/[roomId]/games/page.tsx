@@ -12,7 +12,8 @@ import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { loadPending } from "@/src/modules/scratch/data";
 import { ScratchShop } from "@/src/modules/scratch/shop";
-import { challengeDay } from "@/src/modules/challenges/data";
+import { challengeDay, kindFor } from "@/src/modules/challenges/data";
+import { CHALLENGES } from "@/src/modules/challenges/rotation";
 
 
 export default async function GamesPage({ params }: { params: Promise<{ roomId: string }> }) {
@@ -27,11 +28,12 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
       .order("created_at", { ascending: false }).limit(5).returns<Game[]>(),
   ]);
   const games = active ?? [];
+  const { kind } = await kindFor(roomId);
   const [unlocks, pending, { data: wallet }, { data: daily }] = await Promise.all([
     loadUnlocks(roomId),
     loadPending(roomId, me),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", me).eq("item", "coins").maybeSingle(),
-    adminDb().from("daily_challenges").select("user_id, score, solved_at").eq("room_id", roomId).eq("day", challengeDay()).eq("kind", "orapa"),
+    adminDb().from("daily_challenges").select("user_id, score, solved_at").eq("room_id", roomId).eq("day", challengeDay()).eq("kind", kind),
   ]);
   const myDaily = (daily ?? []).find((d) => d.user_id === me);
   const solvers = (daily ?? []).filter((d) => d.solved_at).length;
@@ -51,15 +53,15 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
   return (
     <>
       <GamesLive roomId={roomId} />
-      {!locked("orapa") && (
+      {(
         <Link href={`/r/${roomId}/games/defi`} className="flex items-center gap-4 rounded-[1.75rem] bg-slate-800 p-4 text-white shadow-sm">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-700 text-2xl" aria-hidden>💎</span>
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-700 text-2xl" aria-hidden>{CHALLENGES[kind].icon}</span>
           <span className="min-w-0 flex-1">
             <span className="block text-xs font-semibold uppercase tracking-wider text-white/60">Défi du jour</span>
-            <span className="block font-bold">Orapa Mine : la grille commune</span>
+            <span className="block font-bold">{CHALLENGES[kind].name}</span>
             <span className="block text-sm text-white/70">
-              {myDaily?.solved_at ? `Trouvé en ${myDaily.score} coups · ` : myDaily ? "En cours · " : "Jusqu'à 200 pièces · "}
-              {solvers ? `${solvers} l'ont trouvée` : "personne ne l'a encore trouvée"}
+              {myDaily?.solved_at ? `Trouvé en ${CHALLENGES[kind].unit(myDaily.score ?? 0)} · ` : myDaily ? "En cours · " : "Jusqu'à 200 pièces · "}
+              {solvers ? `${solvers} ${solvers > 1 ? "ont" : "a"} trouvé` : "personne n'a encore trouvé"}
             </span>
           </span>
           {arrow}
