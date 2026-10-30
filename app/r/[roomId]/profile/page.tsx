@@ -13,6 +13,7 @@ import { Avatar } from "@/src/components/avatar";
 import { logout } from "@/app/actions";
 import { leaveRoom } from "@/src/modules/rooms/actions";
 import { AvatarForm } from "@/src/modules/rooms/avatar-form";
+import { PinForm } from "@/src/modules/account/pin-form";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 export default async function ProfilePage({ params }: { params: Promise<{ roomId: string }> }) {
@@ -51,6 +52,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ roomId
       <section>
         <h2 className="eyebrow mb-3">Notifications</h2>
         <NotificationSettings initial={np ?? { question: true, games: true, chat: true, farm: true }} />
+      </section>
+
+      <section>
+        <h2 className="eyebrow mb-3">Mon code PIN</h2>
+        <PinForm />
       </section>
 
       <section>

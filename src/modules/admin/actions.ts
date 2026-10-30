@@ -1,5 +1,6 @@
 "use server";
 
+import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/src/lib/db/server";
 import { ACCESSORIES, SPECIES, isUnique, skinKey } from "@/src/modules/characters/catalog";
@@ -106,4 +107,22 @@ export async function trimFarms(roomId: string, apply: boolean) {
   const coins = report.reduce((n, r) => n + r.refund, 0);
   const detail = report.map((r) => Object.entries(r.removed).map(([k, v]) => `${v} ${k}`).join(", ")).join(" · ");
   return done(roomId, count ? `${apply ? "Retiré" : "À retirer"} : ${count} objet(s) dans ${report.length} serre(s), ${coins} pièces ${apply ? "remboursées" : "à rembourser"} (récoltes prêtes données, ingrédients rendus). ${detail}` : "Toutes les serres respectent déjà les règles.");
+}
+
+/**
+ * Code PIN oublié : donne un nouveau PIN (4 chiffres au hasard) à un membre de la salle et débloque son identifiant.
+ * Le compte, la serre et tout le reste sont conservés ; le super-admin transmet le nouveau PIN à la personne.
+ */
+export async function resetPin(roomId: string, userId: string) {
+  const { admin } = await guard(roomId);
+  const { data: m } = await admin.from("room_members").select("username").eq("room_id", roomId).eq("user_id", userId).maybeSingle();
+  if (!m) return "Ce membre n'est pas dans la salle.";
+  const { data: u, error: e1 } = await admin.auth.admin.getUserById(userId);
+  const login = u?.user?.email?.split("@")[0];
+  if (e1 || !login) return "Compte introuvable.";
+  const pin = String(randomInt(0, 10_000)).padStart(4, "0");
+  const { error } = await admin.auth.admin.updateUserById(userId, { password: pin + process.env.AUTH_PEPPER });
+  if (error) return error.message;
+  await admin.from("login_attempts").delete().eq("username", login);
+  return `Nouveau PIN de ${m.username} : ${pin} (identifiant : ${login}). Transmets-le-lui ; il pourra se connecter tout de suite.`;
 }
