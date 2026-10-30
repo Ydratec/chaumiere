@@ -50,11 +50,12 @@ import { SOLUTIONS, VALIDES } from "../../src/modules/challenges/mots.ts";
 import { kindOf, occurrence } from "../../src/modules/challenges/rotation.ts";
 import { seeded } from "../../src/modules/challenges/orapa-daily.ts";
 
-test("rotation : Orapa le 30 octobre, puis Code secret, puis Mot du jour ; sans Orapa, les deux autres", () => {
-  assert.deepEqual(["2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02"].map((d) => kindOf(d)), ["orapa", "code", "mot", "orapa"]);
-  assert.deepEqual(["2026-10-30", "2026-10-31", "2026-11-01"].map((d) => kindOf(d, false)), ["code", "mot", "code"]);
-  assert.equal(occurrence("2026-11-01"), 0);
-  assert.equal(occurrence("2026-11-04"), 1);
+test("rotation : Orapa le 30 octobre, puis les cinq jeux de réflexion ; sans Orapa, les cinq autres", () => {
+  const days = ["2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05"];
+  assert.deepEqual(days.map((d) => kindOf(d)), ["orapa", "picross", "rush", "queens", "compte", "hashi", "orapa"]);
+  assert.equal(kindOf("2026-10-30", false), "picross");
+  assert.equal(occurrence("2026-11-04"), 0);
+  assert.equal(occurrence("2026-11-05"), 1);
 });
 
 test("code secret : bien placés, mal placés (doublons comptés une fois), essais limités, gain", () => {

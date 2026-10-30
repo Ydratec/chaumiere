@@ -5,7 +5,12 @@ import { adminDb } from "@/src/lib/db/server";
 import { loadUnlocks } from "@/src/modules/farm/data";
 import { GAME_LOCKS } from "@/src/modules/farm/projects";
 import { getRoomContext } from "@/src/modules/rooms/context";
-import { challengeDay, codeOf, gridOf, kindFor, loadAttempt, loadSimple, motOf } from "./data";
+import { TIMED, challengeDay, codeOf, gridOf, isPuzzle, kindFor, loadAttempt, loadPuzzleAttempt, loadSimple, motOf, puzzleFor, type PuzzleKind } from "./data";
+import { bestOf } from "./puzzles/compte";
+import { checkHashi } from "./puzzles/hashi";
+import { checkPicross } from "./puzzles/picross";
+import { validQueens } from "./puzzles/queens";
+import { replay } from "./puzzles/rush";
 import { codeReward, playCode, type CodeAttempt, type CodeEntry } from "./code-daily";
 import { motReward, playMot, type MotAttempt, type MotEntry } from "./mot-daily";
 import { VALIDES } from "./mots";
@@ -112,4 +117,65 @@ export async function motGuess(roomId: string, word: unknown): Promise<{ error?:
   await record(roomId, t.uid, t.day, "mot", next.log, next.solved, reward);
   revalidatePath(`/r/${roomId}`, "layout");
   return { solved: next.solved, reward: next.solved ? reward : undefined };
+}
+
+// ---------- Jeux de réflexion ----------
+
+/** Gain d'un jeu chronométré : 200, moins 20 par vérification ratée et 10 par tranche de 5 minutes, jamais moins de 50. */
+const timedReward = (seconds: number, misses: number) => Math.max(50, Math.min(200, 200 - 20 * misses - 10 * Math.floor(seconds / 300)));
+const rushReward = (moves: number, min: number) => Math.max(50, 200 - 10 * (moves - min));
+const compteReward = (distance: number) => (distance === 0 ? 200 : distance <= 5 ? 120 : distance <= 10 ? 80 : 40);
+
+/**
+ * Proposer une solution au défi du jour.
+ * Picross, Reines, Hashi : juste = trouvé (score = temps + 1 min par essai raté) ; faux = un essai raté.
+ * Embouteillage, Le compte est bon : chaque proposition valable compte, on garde la meilleure (et on paie la différence).
+ */
+export async function submitPuzzle(roomId: string, kind: PuzzleKind, answer: unknown): Promise<{ error?: string; right?: boolean; reward?: number; score?: number }> {
+  const c = await getRoomContext(roomId);
+  if (!c) throw new Error("Non autorisé");
+  const uid = c.user.id, day = challengeDay();
+  const k = await kindFor(roomId, day);
+  if (k.kind !== kind || !isPuzzle(kind)) return { error: "Le défi du jour a changé : recharge la page." };
+  const data = puzzleFor(roomId, day, kind);
+  const a = await loadPuzzleAttempt(roomId, uid, kind, day, true);
+  const admin = adminDb();
+  const now = new Date();
+  const pay = async (amount: number) => { if (amount > 0) await admin.rpc("farm_add_items", { r: roomId, u: uid, delta: { coins: amount } }); };
+
+  if (TIMED.includes(kind)) {
+    if (a.solved) return { error: "Déjà trouvé aujourd'hui." };
+    const right = data.kind === "picross" ? checkPicross(data.puzzle, answer) : data.kind === "queens" ? validQueens(data.puzzle, answer) : data.kind === "hashi" ? checkHashi(data.puzzle, answer) : false;
+    if (!right) {
+      await admin.from("daily_challenges").update({ misses: a.misses + 1, updated_at: now.toISOString() }).eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind);
+      revalidatePath(`/r/${roomId}/games/defi`);
+      return { right: false };
+    }
+    const seconds = Math.max(1, Math.round((now.getTime() - Date.parse(a.startedAt)) / 1000));
+    const score = seconds + 60 * a.misses, reward = timedReward(seconds, a.misses);
+    const { data: done } = await admin.from("daily_challenges").update({ solved_at: now.toISOString(), score, reward, updated_at: now.toISOString() })
+      .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind).is("solved_at", null).select("reward");
+    if (done?.length) await pay(reward);
+    revalidatePath(`/r/${roomId}`, "layout");
+    return { right: true, reward, score };
+  }
+
+  // Embouteillage et Le compte est bon : la meilleure proposition compte.
+  let score: number, reward: number;
+  if (data.kind === "rush") {
+    const moves = replay(data.puzzle, answer);
+    if (moves === null) return { error: "Ces déplacements ne sortent pas la charrette." };
+    score = moves; reward = rushReward(moves, data.min);
+  } else if (data.kind === "compte") {
+    const b = bestOf(data.puzzle, answer);
+    if (!b) return { error: "Calcul impossible." };
+    score = b.distance * 10 + b.steps; reward = compteReward(b.distance);
+  } else return { error: "Défi inconnu." };
+  if (a.solved && a.score !== null && a.score <= score) return { right: true, score: a.score, reward: 0 };
+  const extra = Math.max(0, reward - (a.reward ?? 0));
+  await admin.from("daily_challenges").update({ solved_at: now.toISOString(), score, reward: Math.max(reward, a.reward ?? 0), updated_at: now.toISOString() })
+    .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind);
+  await pay(extra);
+  revalidatePath(`/r/${roomId}`, "layout");
+  return { right: true, reward: extra, score };
 }

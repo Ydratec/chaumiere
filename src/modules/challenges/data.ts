@@ -10,6 +10,11 @@ import { MOT_MAX, answerAt, motDone, type MotAttempt, type MotEntry } from "./mo
 import { SOLUTIONS } from "./mots";
 import { dailyGrid, scoreOf, seeded, type DailyAttempt, type DailyEntry } from "./orapa-daily";
 import { kindOf, occurrence, type ChallengeKind } from "./rotation";
+import { dailyCompte, type Compte } from "./puzzles/compte";
+import { dailyHashi, type Hashi } from "./puzzles/hashi";
+import { dailyPicross, type Picross } from "./puzzles/picross";
+import { dailyQueens, type Queens } from "./puzzles/queens";
+import { dailyRush, type Rush } from "./puzzles/rush";
 
 /** Jour du défi (Paris) : il change à minuit. */
 export const challengeDay = (at = new Date()) => paris(at).date;
@@ -119,4 +124,65 @@ export async function loadSimpleView(roomId: string, uid: string, kind: "code" |
     yesterday: yesterday.filter((r) => r.solved),
     yesterdayKind,
   };
+}
+
+// ---------- Jeux de réflexion (Picross, Embouteillage, Reines, Le compte est bon, Hashi) ----------
+
+export type PuzzleKind = "picross" | "rush" | "queens" | "compte" | "hashi";
+export const isPuzzle = (k: ChallengeKind): k is PuzzleKind => ["picross", "rush", "queens", "compte", "hashi"].includes(k);
+export const TIMED: PuzzleKind[] = ["picross", "queens", "hashi"]; // score = temps (+1 min par vérification ratée)
+
+export type PuzzleData =
+  | { kind: "picross"; puzzle: Picross }
+  | { kind: "rush"; puzzle: Rush; min: number }
+  | { kind: "queens"; puzzle: Queens }
+  | { kind: "compte"; puzzle: Compte }
+  | { kind: "hashi"; puzzle: Hashi };
+
+// Générer certaines grilles prend une à deux secondes : on garde celles du jour en mémoire.
+const cache = new Map<string, PuzzleData>();
+/** La grille du jour pour la salle (ce qui est envoyé au joueur : jamais la solution). */
+export function puzzleFor(roomId: string, day: string, kind: PuzzleKind): PuzzleData {
+  const key = `${kind}:${roomId}:${day}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const rand = seeded(seedOf(roomId, day, kind));
+  const data: PuzzleData =
+    kind === "picross" ? { kind, puzzle: dailyPicross(rand).puzzle }
+    : kind === "rush" ? (() => { const r = dailyRush(rand); return { kind, puzzle: r.puzzle, min: r.min }; })()
+    : kind === "queens" ? { kind, puzzle: dailyQueens(rand).puzzle }
+    : kind === "compte" ? { kind, puzzle: dailyCompte(rand) }
+    : { kind, puzzle: dailyHashi(rand).puzzle };
+  if (cache.size > 200) cache.clear();
+  cache.set(key, data);
+  return data;
+}
+
+type PuzzleRow = { log: { start?: string }[]; misses: number; solved_at: string | null; score: number | null; reward: number | null };
+export type PuzzleAttempt = { startedAt: string; misses: number; solved: boolean; score: number | null; reward: number | null };
+
+/** L'essai du joueur ; le chronomètre part à la première ouverture du défi. */
+export async function loadPuzzleAttempt(roomId: string, uid: string, kind: PuzzleKind, day = challengeDay(), start = false): Promise<PuzzleAttempt> {
+  const admin = adminDb();
+  const { data } = await admin.from("daily_challenges").select("log, misses, solved_at, score, reward")
+    .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind).maybeSingle<PuzzleRow>();
+  let row = data;
+  if (!row && start) {
+    const startedAt = new Date().toISOString();
+    await admin.from("daily_challenges").upsert({ room_id: roomId, user_id: uid, day, kind, log: [{ start: startedAt }], misses: 0 }, { ignoreDuplicates: true });
+    row = { log: [{ start: startedAt }], misses: 0, solved_at: null, score: null, reward: null };
+  }
+  return {
+    startedAt: row?.log?.[0]?.start ?? new Date().toISOString(),
+    misses: row?.misses ?? 0, solved: !!row?.solved_at, score: row?.score ?? null, reward: row?.reward ?? null,
+  };
+}
+
+export type PuzzleView = { day: string; data: PuzzleData; attempt: PuzzleAttempt; today: Ranking; yesterday: Ranking; yesterdayKind: ChallengeKind };
+
+export async function loadPuzzleView(roomId: string, uid: string, kind: PuzzleKind, orapa: boolean): Promise<PuzzleView> {
+  const day = challengeDay(), yday = yesterdayOf(day), yesterdayKind = kindOf(yday, orapa);
+  const attempt = await loadPuzzleAttempt(roomId, uid, kind, day, true);
+  const [today, yesterday] = await Promise.all([ranking(roomId, day, kind), ranking(roomId, yday, yesterdayKind)]);
+  return { day, data: puzzleFor(roomId, day, kind), attempt, today, yesterday: yesterday.filter((r) => r.solved), yesterdayKind };
 }
