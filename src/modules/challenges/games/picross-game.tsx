@@ -46,17 +46,18 @@ function Game({ roomId, view, me, people }: Props) {
     >
       {(submit, pending) => (
         <div className="space-y-3">
-          <div className="overflow-x-auto">
+          {/* La grille prend toute la largeur disponible : les cases rétrécissent, rien ne dépasse, même sur un petit écran. */}
+          <div className="w-full">
             <div
-              className="mx-auto grid w-max select-none touch-none"
-              style={{ gridTemplateColumns: `auto repeat(${PX}, var(--c))`, ["--c" as string]: "min(5.6vw, 22px)" }}
+              className="mx-auto grid w-full max-w-[26rem] select-none touch-none"
+              style={{ gridTemplateColumns: `max-content repeat(${PX}, minmax(0, 1fr))` }}
               onPointerMove={(e) => { if (paint.current) { const i = cellAt(e); if (i !== null) enter(i); } }}
               onPointerUp={() => (paint.current = null)}
               onPointerLeave={() => (paint.current = null)}
             >
               <span />
               {p.cols.map((c, x) => (
-                <span key={x} className={`flex flex-col items-center justify-end pb-0.5 text-[10px] font-semibold leading-[1.15] tabular-nums ${colOk(x) ? "text-zinc-300" : "text-zinc-700"} ${x % 5 === 0 ? "border-l border-zinc-400" : ""}`} style={{ minHeight: `${maxCol * 1.15 + 0.3}em` }}>
+                <span key={x} className={`flex flex-col items-center justify-end pb-0.5 text-[clamp(7px,2.4vw,10px)] font-semibold leading-[1.15] tabular-nums ${colOk(x) ? "text-zinc-300" : "text-zinc-700"} ${x % 5 === 0 ? "border-l border-zinc-400" : ""}`} style={{ minHeight: `${maxCol * 1.15 + 0.3}em` }}>
                   {c.map((n, k) => <span key={k}>{n}</span>)}
                 </span>
               ))}
@@ -84,7 +85,7 @@ function Game({ roomId, view, me, people }: Props) {
 function Row({ y, clue, ok, width, grid, down }: { y: number; clue: number[]; ok: boolean; width: number; grid: Cell[]; down: (i: number) => void }) {
   return (
     <>
-      <span className={`flex items-center justify-end gap-1 pr-1 text-[10px] font-semibold tabular-nums ${ok ? "text-zinc-300" : "text-zinc-700"} ${y % 5 === 0 ? "border-t border-zinc-400" : ""}`} style={{ minWidth: `${width * 1.3}em` }}>
+      <span className={`flex items-center justify-end gap-[0.3em] pr-1 text-[clamp(7px,2.4vw,10px)] font-semibold tabular-nums ${ok ? "text-zinc-300" : "text-zinc-700"} ${y % 5 === 0 ? "border-t border-zinc-400" : ""}`} style={{ minWidth: `${width * 1.1}em` }}>
         {clue.map((n, k) => <span key={k}>{n}</span>)}
       </span>
       {Array.from({ length: PX }, (_, x) => {
@@ -94,8 +95,7 @@ function Row({ y, clue, ok, width, grid, down }: { y: number; clue: number[]; ok
             key={x}
             data-cell={i}
             onPointerDown={(e) => { try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {} down(i); }}
-            className={`flex aspect-square items-center justify-center border-b border-r border-zinc-200 text-[11px] text-zinc-400 ${c === 1 ? "bg-zinc-800" : "bg-white"} ${x % 5 === 0 ? "border-l border-l-zinc-400" : ""} ${y % 5 === 0 ? "border-t border-t-zinc-400" : ""} ${x === PX - 1 ? "border-r-zinc-400" : ""} ${y === PX - 1 ? "border-b-zinc-400" : ""}`}
-            style={{ width: "var(--c)" }}
+            className={`flex aspect-square min-w-0 items-center justify-center border-b border-r border-zinc-200 text-[clamp(7px,2.6vw,11px)] text-zinc-400 ${c === 1 ? "bg-zinc-800" : "bg-white"} ${x % 5 === 0 ? "border-l border-l-zinc-400" : ""} ${y % 5 === 0 ? "border-t border-t-zinc-400" : ""} ${x === PX - 1 ? "border-r-zinc-400" : ""} ${y === PX - 1 ? "border-b-zinc-400" : ""}`}
           >
             {c === 2 ? "✕" : ""}
           </span>
