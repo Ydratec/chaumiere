@@ -426,3 +426,32 @@ button:active:not(:disabled) {
   20%, 60% { transform: translateX(-5px); }
   40%, 80% { transform: translateX(5px); }
 }
+
+/* TCG : ouverture des boosters */
+.tcg-pack {
+  /* bords sertis haut et bas, comme un vrai sachet */
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 10px 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / 10px 51% repeat-x;
+}
+@keyframes tcg-strip-off {
+  to { transform: translate(70%, -220%) rotate(30deg); opacity: 0; }
+}
+.tcg-strip-off { animation: tcg-strip-off 500ms ease-in forwards; }
+@keyframes tcg-pack-drop {
+  30% { transform: translateY(-4%); }
+  to { transform: translateY(90%); opacity: 0; }
+}
+.tcg-pack-drop { animation: tcg-pack-drop 800ms 250ms ease-in forwards; }
+@keyframes tcg-rise {
+  from { translate: 0 60%; opacity: 0; }
+}
+.tcg-rise { animation: tcg-rise 450ms ease-out backwards; }
+@keyframes tcg-shine {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+.tcg-shine {
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%) 0 0 / 250% 100%;
+  mix-blend-mode: overlay;
+  animation: tcg-shine 2.2s linear infinite;
+}
