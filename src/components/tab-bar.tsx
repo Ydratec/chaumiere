@@ -43,23 +43,23 @@ function useBadges(roomId: string, path: string) {
   return dots;
 }
 
-export function roomTabs(roomId: string, isAdmin: boolean) {
+export function roomTabs(roomId: string) {
   const base = `/r/${roomId}`;
   return [
     { href: base, label: "Accueil", icon: "home" as IconName },
     { href: `${base}/question`, label: "Question", icon: "chat" as IconName },
     { href: `${base}/games`, label: "Jeux", icon: "cards" as IconName },
     { href: `${base}/farm`, label: "Serre", icon: "farm" as IconName },
-    { href: `${base}/manage`, label: isAdmin ? "Salle" : "Membres", icon: "users" as IconName },
+    { href: `${base}/tcg`, label: "Cartes", icon: "deck" as IconName },
     { href: `${base}/profile`, label: "Profil", icon: "user" as IconName },
   ];
 }
 
 /** Barre de navigation du bas pour une salle. */
-export function TabBar({ roomId, isAdmin }: { roomId: string; isAdmin: boolean }) {
+export function TabBar({ roomId }: { roomId: string }) {
   const path = usePathname();
   const base = `/r/${roomId}`;
-  const tabs = roomTabs(roomId, isAdmin);
+  const tabs = roomTabs(roomId);
   const active = (href: string) => path === href || (href !== base && path.startsWith(href));
   const dots = useBadges(roomId, path);
   const badge: Record<string, number | boolean> = { [`${base}/question`]: dots.question, [`${base}/games`]: dots.games, [`${base}/farm`]: dots.farm };

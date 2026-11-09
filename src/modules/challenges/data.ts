@@ -18,7 +18,7 @@ import { dailyRush, type Rush } from "./puzzles/rush";
 
 /** Jour du défi (Paris) : il change à minuit. */
 export const challengeDay = (at = new Date()) => paris(at).date;
-const yesterdayOf = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+export const yesterdayOf = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 
 /** Graine de la grille : secrète (le poivre du serveur), propre à la salle et au jour. */
 function seedOf(roomId: string, day: string, kind = "orapa") {

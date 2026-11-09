@@ -101,16 +101,6 @@ export default async function GamesPage({ params }: { params: Promise<{ roomId: 
         <button className="btn w-full">Lancer le défi</button>
       </form>
 
-      <Link href={`/r/${roomId}/tcg`} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm transition active:scale-[0.98]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/tcg/ed1/chaumiere.webp" alt="" className="h-16 w-auto rounded-md" />
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold">Cartes souvenirs</span>
-          <span className="block text-xs text-zinc-500">Ouvre des boosters et complète ta collection</span>
-        </span>
-        <span aria-hidden className="text-zinc-400">→</span>
-      </Link>
-
       <ScratchShop roomId={roomId} coins={wallet?.qty ?? 0} pending={pending} />
 
       {received.length > 0 && (

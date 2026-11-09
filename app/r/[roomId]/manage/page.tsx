@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/src/components/avatar";
 import { AvatarForm } from "@/src/modules/rooms/avatar-form";
@@ -28,6 +29,7 @@ export default async function ManagePage({ params }: { params: Promise<{ roomId:
 
   return (
     <>
+      <Link href={`/r/${roomId}/profile`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900">← Profil</Link>
       {ctx.isAdmin && (
         <section className="space-y-5">
           <div className="flex flex-col items-center gap-3 pt-4">

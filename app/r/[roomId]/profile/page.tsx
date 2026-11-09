@@ -42,6 +42,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ roomId
         <AvatarForm roomId={roomId} target="user" />
       </section>
 
+      <section className="rows">
+        <Link href={`/r/${roomId}/manage`} className="flex items-center justify-between py-3 font-medium">
+          {ctx.isAdmin ? "Gérer la salle" : "Membres de la salle"} <span aria-hidden className="text-zinc-400">→</span>
+        </Link>
+      </section>
+
       <section>
         <h2 className="eyebrow mb-3">Mon personnage</h2>
         <CharacterEditor roomId={roomId} saved={me.character} owned={owned} unlocks={unlocks} coins={coins} />

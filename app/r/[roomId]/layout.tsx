@@ -37,8 +37,8 @@ export default async function RoomLayout({
       <ScratchTeaser roomId={roomId} />
       <NewsPopup roomId={roomId} />
       {trims?.[0] && <TrimNotice roomId={roomId} page={trims[0].page} />}
-      <TabBar roomId={roomId} isAdmin={ctx.isAdmin} />
-      <SwipeNav roomId={roomId} isAdmin={ctx.isAdmin} />
+      <TabBar roomId={roomId} />
+      <SwipeNav roomId={roomId} />
     </div>
   );
 }
