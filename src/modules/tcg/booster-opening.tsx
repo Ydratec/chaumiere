@@ -28,7 +28,8 @@ function ring(a: number) {
   return {
     transform: `translateX(${Math.sin(t) * 120}%) translateZ(${(Math.cos(t) - 1) * 320}px) rotateY(${-Math.sin(t) * 25}deg)`,
     zIndex: Math.round(depth * 100),
-    filter: `brightness(${0.3 + 0.7 * depth})`,
+    filter: `brightness(${0.65 + 0.35 * depth})`,
+    opacity: 0.35 + 0.65 * depth, // les boosters de derrière pâlissent (le fond est celui de la page)
   };
 }
 
@@ -173,7 +174,7 @@ export function BoosterOpening({ pulled: raw, inline, onPick, caption, onAgain, 
       role={inline && phase === "choose" ? undefined : "dialog"}
       aria-label="Ouverture d'un booster"
       data-no-swipe
-      className={`flex flex-col items-center justify-center overflow-hidden text-white ${inline && phase === "choose" ? "relative -mx-4 bg-zinc-950 py-10 sm:mx-0 sm:rounded-3xl" : "fixed inset-0 z-50 bg-zinc-950/95"}`}
+      className={`flex flex-col items-center justify-center overflow-hidden ${inline && phase === "choose" ? "relative -mx-4 py-6 text-zinc-800" : "fixed inset-0 z-50 bg-zinc-950/95 text-white"}`}
     >
       {phase === "choose" && (
         <div className="flex w-full flex-col items-center gap-8">
@@ -202,13 +203,13 @@ export function BoosterOpening({ pulled: raw, inline, onPick, caption, onAgain, 
             ))}
           </div>
           <div className="flex items-center gap-16">
-            <button onClick={() => turn(-1)} aria-label="Booster précédent" className="rounded-full bg-white/10 px-4 py-2 text-xl">‹</button>
-            <button onClick={() => turn(1)} aria-label="Booster suivant" className="rounded-full bg-white/10 px-4 py-2 text-xl">›</button>
+            <button onClick={() => turn(-1)} aria-label="Booster précédent" className={`rounded-full px-4 py-2 text-xl ${inline ? "bg-white shadow-sm" : "bg-white/10"}`}>‹</button>
+            <button onClick={() => turn(1)} aria-label="Booster suivant" className={`rounded-full px-4 py-2 text-xl ${inline ? "bg-white shadow-sm" : "bg-white/10"}`}>›</button>
           </div>
           {(busy || caption || error) && (
-            <div className="px-4 text-center text-sm text-zinc-300">
+            <div className={`px-4 text-center text-sm ${inline ? "text-zinc-600" : "text-zinc-300"}`}>
               {busy ? "…" : pulled.length ? "Ton booster t'attend : choisis ton paquet." : caption}
-              {error && <p role="alert" className="mt-1 text-red-400">{error}</p>}
+              {error && <p role="alert" className={`mt-1 ${inline ? "text-red-600" : "text-red-400"}`}>{error}</p>}
             </div>
           )}
         </div>
