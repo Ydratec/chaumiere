@@ -22,7 +22,7 @@ test("picross : indices, déduction d'une ligne, grille du jour sans deviner", (
   }
 });
 
-test("embouteillage : glissements, minimum de coups, vérification d'une solution", () => {
+test("embouteillage : glissements, minimum de coups, vérification d'une solution", { timeout: 60_000 }, () => {
   const cars: Car[] = [{ x: 0, y: 2, len: 2, h: true }, { x: 3, y: 1, len: 3, h: false }];
   assert.deepEqual(reach(cars, 1), [0, 2, 3], "la brouette monte ou descend");
   assert.equal(minMoves(cars), 2);
@@ -31,7 +31,7 @@ test("embouteillage : glissements, minimum de coups, vérification d'une solutio
   assert.ok(solved(moved(cars, { car: 0, to: 4 })));
   const d = dailyRush(seeded(4));
   assert.ok(d.min >= 6);
-}, { timeout: 60_000 });
+});
 
 test("reines : une seule solution, vérification des règles", () => {
   for (const s of [1, 2]) {
