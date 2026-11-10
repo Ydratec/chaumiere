@@ -111,6 +111,26 @@ export const drawBooster = (rand = Math.random) =>
     const c = drawCard(rand);
     return keyOf(c.id, drawVariant(c.rarity, rand));
   });
+// ---------- Collection ----------
+
+/** Cartes possédées : clé (voir keyOf) → nombre d'exemplaires. */
+export type Owned = Record<string, number>;
+const RANK: Rarity[] = ["L", "GR", "PR", "PC", "C"];
+/** Collection d'un navigateur (V1 locale) à reprendre en base : une entrée par exemplaire, cartes inconnues ignorées,
+ *  les plus rares d'abord (versions alternatives, puis par rareté) pour qu'elles passent si la base plafonne la reprise. */
+export function toImport(local: unknown): string[] {
+  if (!local || typeof local !== "object") return [];
+  const out: { key: string; score: number }[] = [];
+  for (const [k, n] of Object.entries(local as Record<string, unknown>)) {
+    const { id, variant } = splitKey(k);
+    const card = BY_ID[id];
+    if (!card || keyOf(id, variant) !== k || typeof n !== "number" || !Number.isInteger(n) || n <= 0) continue;
+    const score = (variant ? 0 : RANK.length) + RANK.indexOf(card.rarity);
+    for (let i = 0; i < Math.min(n, 500); i++) out.push({ key: k, score });
+  }
+  return out.sort((a, b) => a.score - b.score).map((c) => c.key);
+}
+
 /** Booster de test (en local seulement) : 2 cartes normales puis 3 en version alternative. */
 export const testBooster = (rand = Math.random) =>
   Array.from({ length: BOOSTER.size }, (_, i) => keyOf(drawCard(rand).id, i < 2 ? undefined : VARIANT_IDS[(i - 2) % VARIANT_IDS.length]));

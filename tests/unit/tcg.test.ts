@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { BOOSTER, BY_ID, CARDS, claimKey, offersOf, winners, drawBooster, drawCard, drawVariant, keyOf, RARITIES, splitKey, testBooster, VARIANT_IDS } from "../../src/modules/tcg/cards.ts";
+import { BOOSTER, BY_ID, CARDS, claimKey, offersOf, winners, drawBooster, drawCard, drawVariant, keyOf, RARITIES, splitKey, testBooster, toImport, VARIANT_IDS } from "../../src/modules/tcg/cards.ts";
 
 test("tcg : chaque rareté a au moins une carte, les ids sont uniques", () => {
   for (const r of Object.keys(RARITIES)) assert.ok(CARDS.some((c) => c.rarity === r), r);
@@ -41,4 +41,14 @@ test("tcg : boosters du jour", () => {
   assert.deepEqual(offersOf({ ...base, answered: true, wonYesterday: true }), { question: "ready", win: "ready", buys: 0 });
   const taken = new Set([claimKey.question("2026-11-10"), claimKey.win("2026-11-09"), claimKey.buy("2026-11-10", 1), claimKey.buy("2026-11-10", 2), claimKey.buy("2026-11-09", 3)]);
   assert.deepEqual(offersOf({ ...base, answered: true, wonYesterday: true, taken }), { question: "done", win: "done", buys: 2 });
+});
+
+test("tcg : reprise d'une collection locale (cartes valides seulement, les plus rares d'abord)", () => {
+  const legend = CARDS.find((c) => c.rarity === "L")!.id;
+  const common = CARDS.find((c) => c.rarity === "C")!.id;
+  const rare = CARDS.find((c) => c.rarity === "PR")!.id;
+  const out = toImport({ [common]: 2, [legend]: 1, [keyOf(common, "rainbow")]: 1, [rare]: 1, inconnue: 3, [`${rare}@faux`]: 1, [legend + "@rainbow"]: 0, [rare + "x"]: 1.5 });
+  assert.deepEqual(out, [keyOf(common, "rainbow"), legend, rare, common, common]);
+  assert.deepEqual(toImport(null), []);
+  assert.deepEqual(toImport("n'importe quoi"), []);
 });

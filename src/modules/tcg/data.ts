@@ -2,7 +2,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adminDb } from "@/src/lib/db/server";
 import { challengeDay, kindFor, ranking, yesterdayOf } from "@/src/modules/challenges/data";
-import { offersOf, winners } from "./cards";
+import { offersOf, winners, type Owned } from "./cards";
 
 /** A-t-il répondu à la question du jour ? (`sb` : client de l'utilisateur, comme la page Question) */
 export async function answeredToday(sb: SupabaseClient, roomId: string, uid: string) {
@@ -26,4 +26,11 @@ export async function loadOffers(sb: SupabaseClient, roomId: string, uid: string
     adminDb().from("farm_stats").select("key").eq("room_id", roomId).eq("user_id", uid).like("key", "tcg:%"),
   ]);
   return offersOf({ answered, wonYesterday: won, taken: new Set((rows ?? []).map((r) => r.key as string)), day, yesterday });
+}
+
+/** Collection du joueur (table tcg_cards). */
+export async function loadCollection(roomId: string, uid: string): Promise<Owned> {
+  const { data, error } = await adminDb().from("tcg_cards").select("card, qty").eq("room_id", roomId).eq("user_id", uid);
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((r) => [r.card as string, r.qty as number]));
 }
