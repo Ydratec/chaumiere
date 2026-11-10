@@ -2,25 +2,25 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ItemIcon } from "@/src/modules/farm/art";
-import { openBooster } from "./actions";
+import { importLocalCards, openBooster } from "./actions";
 import { BoosterOpening, type Pulled } from "./booster-opening";
 import { CardArt } from "./card-art";
 import { TiltCard } from "./tilt";
-import { BOOSTER, CARDS, keyOf, RARITIES, splitKey, VARIANT_IDS, VARIANTS, type Card, type Offers, type Rarity, type Source, type Variant } from "./cards";
+import { BOOSTER, CARDS, keyOf, RARITIES, splitKey, VARIANT_IDS, VARIANTS, type Card, type Offers, type Owned, type Rarity, type Source, type Variant } from "./cards";
 
-type Owned = Record<string, number>; // clé : « id » ou « id@variante » (voir keyOf)
 const DEV = process.env.NODE_ENV !== "production";
 const SETS: (Variant | undefined)[] = [undefined, ...VARIANT_IDS];
 const setName = (v?: Variant) => (v ? VARIANTS[v].label : "Normal");
 const coin = (n: number) => <span className="inline-flex items-center gap-1 font-semibold tabular-nums">{n.toLocaleString("fr-FR")} <ItemIcon id="coins" size={16} /></span>;
 
-function load(key: string): Owned {
-  try { return JSON.parse(localStorage.getItem(key) ?? "{}"); } catch { return {}; }
+/** Collection gardée dans le navigateur avant que les cartes soient en base (V1 locale) : reprise une fois, puis effacée. */
+function loadLocal(key: string): Owned | null {
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
-function save(key: string, owned: Owned) {
-  try { localStorage.setItem(key, JSON.stringify(owned)); } catch {}
+function clearLocal(key: string) {
+  try { localStorage.removeItem(key); } catch {}
 }
 
 function RarityTag({ card }: { card: Card }) {
@@ -29,10 +29,21 @@ function RarityTag({ card }: { card: Card }) {
 }
 
 /** Collection de cartes : acheter un booster, voir ses cartes, compléter les classeurs (normal et versions alternatives). */
-function Collection({ roomId, userId, coins, offers }: { roomId: string; userId: string; coins: number; offers: Offers }) {
+export function TcgCollection({ roomId, userId, coins, offers, owned: initial }: { roomId: string; userId: string; coins: number; offers: Offers; owned: Owned }) {
   const key = `tcg:${roomId}:${userId}`;
   const router = useRouter();
-  const [owned, setOwned] = useState<Owned>(() => load(key));
+  const [owned, setOwned] = useState<Owned>(initial);
+
+  // Reprise de l'ancienne collection de cet appareil : envoyée au serveur, puis effacée du navigateur.
+  useEffect(() => {
+    const local = loadLocal(key);
+    if (!local) return;
+    importLocalCards(roomId, local).then((r) => {
+      if (!r.owned) return;
+      clearLocal(key);
+      setOwned(r.owned);
+    });
+  }, [key, roomId]);
   const [pack, setPack] = useState<{ n: number; pulled: Pulled[] } | null>(null); // booster de test (plein écran) ; n : le remonte à chaque fois
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
@@ -46,16 +57,14 @@ function Collection({ roomId, userId, coins, offers }: { roomId: string; userId:
     const test = source === "test";
     const r = await openBooster(roomId, source);
     if (r.error) return { error: r.error };
-    const next = { ...load(key) };
+    const seen = new Set(Object.keys(owned).filter((k) => owned[k]));
     const pulled = r.cards!.map((k) => {
-      const isNew = !next[k];
-      if (!test) next[k] = (next[k] ?? 0) + 1;
+      const isNew = !seen.has(k);
+      seen.add(k);
       return { ...splitKey(k), isNew };
     });
-    if (!test) {
-      setOwned(next);
-      save(key, next);
-    }
+    // Déjà enregistré en base par openBooster : on met juste l'affichage à jour.
+    if (!test) setOwned((prev) => r.cards!.reduce((o, k) => ({ ...o, [k]: (o[k] ?? 0) + 1 }), prev));
     router.refresh(); // met à jour les boosters du jour et les pièces
     return { pulled };
   };
@@ -153,7 +162,7 @@ function Collection({ roomId, userId, coins, offers }: { roomId: string; userId:
 
       <p className="text-xs text-zinc-500">
         Chances par carte : {Object.values(RARITIES).map((r) => `${r.label} ${r.weight.toLocaleString("fr-FR")} %`).join(" · ")}. Versions alternatives :{" "}
-        {VARIANT_IDS.map((v) => `${VARIANTS[v].label} : ${(Object.keys(RARITIES) as Rarity[]).map((r) => `${RARITIES[r].label} 1/${Math.round(1 / VARIANTS[v].chance[r])}`).join(", ")}`).join(" · ")}. Ta collection est gardée sur cet appareil pour l&apos;instant.
+        {VARIANT_IDS.map((v) => `${VARIANTS[v].label} : ${(Object.keys(RARITIES) as Rarity[]).map((r) => `${RARITIES[r].label} 1/${Math.round(1 / VARIANTS[v].chance[r])}`).join(", ")}`).join(" · ")}.
       </p>
       </div>
       )}
@@ -180,11 +189,4 @@ function Collection({ roomId, userId, coins, offers }: { roomId: string; userId:
       )}
     </section>
   );
-}
-
-const noop = () => () => {};
-/** La collection vient de l'appareil : on n'affiche qu'une fois la page chargée côté navigateur. */
-export function TcgCollection(props: { roomId: string; userId: string; coins: number; offers: Offers }) {
-  const ready = useSyncExternalStore(noop, () => true, () => false);
-  return ready ? <Collection {...props} /> : <div className="h-96 animate-pulse rounded-2xl bg-zinc-100" />;
 }
