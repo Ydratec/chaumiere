@@ -49,7 +49,7 @@ export function roomTabs(roomId: string) {
     { href: base, label: "Accueil", icon: "home" as IconName },
     { href: `${base}/question`, label: "Question", icon: "chat" as IconName },
     { href: `${base}/games`, label: "Jeux", icon: "cards" as IconName },
-    { href: `${base}/farm`, label: "Serre", icon: "farm" as IconName },
+    { href: `${base}/farm`, label: "Usine", icon: "farm" as IconName },
     { href: `${base}/tcg`, label: "Cartes", icon: "deck" as IconName },
     { href: `${base}/profile`, label: "Profil", icon: "user" as IconName },
   ];

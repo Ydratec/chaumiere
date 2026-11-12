@@ -26,7 +26,8 @@ def economy(B):
         eco[s]=dict(prods=prods,best=best,v=prods[best]['v'],cost=cost,tiles=S['tiles_per_machine'],build_s=S['build_s'],
                     raw=np.mean([pp['sable'] for pp in prods.values()])+0.05)
     return eco
-def simulate(B,seed=0,roster=ROSTER,days=20,record=False,overrides=None):
+def simulate(B,seed=0,roster=ROSTER,days=None,record=False,overrides=None):
+    days=days or B.get('season_days',20)
     rnd=random.Random(seed); eco=economy(B); T=B['tuning']
     players=[]
     for i,a in enumerate(roster):

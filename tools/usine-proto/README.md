@@ -1,9 +1,11 @@
-# Prototype jouable — Usine de Noël (étapes 1 à 3)
+# Usine de Noël — jeu (prototype intégré)
 
-Page autonome qui sert à tester le gameplay avant l'intégration dans Chaumière (à la place de la serre).
+Le jeu est servi par l'app depuis `public/usine/jeu/` et s'affiche dans l'onglet **Usine** (à la place de la serre),
+dans un cadre plein écran (`app/r/[roomId]/farm/page.tsx`).
 
-- `game.js` : logique (sac, tas et marché, machines, tapis à deux voies, jonctions, manivelles, commandes), rendu canvas et interface.
-- `index.html` : interface en pixel art (cadres, boutons, onglets, police `public/usine/ui`).
+- `public/usine/jeu/game.js` : logique (sac, tas et marché, machines, tapis à deux voies, jonctions, manivelles, commandes), rendu canvas et interface.
+- `public/usine/jeu/index.html` : interface en pixel art (cadres, boutons, onglets, police `public/usine/ui`). `<base href="/">` : les chemins `usine/…` partent de la racine.
+- `public/usine/jeu/meta.js` : fiches des étapes, **générées** : après avoir changé un `public/usine/etape-N/etape.json`, relancer
+  `node tools/usine-proto/build-meta.mjs`.
 
-Pour le lancer : copier `public/usine` dans un dossier `usine/` à côté de ces fichiers, générer `meta.js`
-(`window.USINE_META = {1: etape-1/etape.json, 2: …, 3: …}`), puis servir le dossier en HTTP.
+La partie est sauvegardée dans le navigateur (localStorage).

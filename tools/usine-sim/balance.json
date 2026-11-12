@@ -1,5 +1,6 @@
 {
   "_note": "Réglages d'équilibrage de l'Usine de Noël. Toutes les durées en secondes, débits en objets/s, énergie en kW (vapeur : u/s).",
+  "season_days": 21,
   "recipes": {
     "boule_artisanale": {
       "in": {
