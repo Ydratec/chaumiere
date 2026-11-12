@@ -45,14 +45,14 @@
       "family": "robot"
     },
     "7": {
-      "name": "Complexe industriel",
+      "name": "Usine de précision",
       "folder": "etape-7",
-      "family": "elec"
+      "family": "robot"
     },
     "8": {
-      "name": "Multinationale",
+      "name": "Usine pilotée",
       "folder": "etape-8",
-      "family": "elec"
+      "family": "robot"
     }
   }
 }

@@ -1,280 +1,36 @@
 {
-  "name": "Multinationale",
-  "family": "elec",
-  "objects": {
-    "vehicle_truck": {
-      "e": {
-        "file": "vehicle_truck_e.png",
-        "frame": [
-          96,
-          104
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          2
-        ],
-        "origin": [
-          0,
-          39
-        ],
-        "face": "façade (commandes)"
-      },
-      "s": {
-        "file": "vehicle_truck_s.png",
-        "frame": [
-          64,
-          138
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ],
-        "origin": [
-          0,
-          41
-        ],
-        "face": "bout de sortie"
-      },
-      "w": {
-        "file": "vehicle_truck_w.png",
-        "frame": [
-          96,
-          104
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          2
-        ],
-        "origin": [
-          0,
-          39
-        ],
-        "face": "arrière (service)"
-      },
-      "n": {
-        "file": "vehicle_truck_n.png",
-        "frame": [
-          64,
-          128
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ],
-        "origin": [
-          0,
-          31
-        ],
-        "face": "bout d'entrée"
-      },
-      "capacity_stacks": 40,
-      "speed": "30 s pour 10 tuiles",
-      "note": "orientation = sens de la marche"
-    },
-    "vehicle_forklift": {
-      "e": {
-        "file": "vehicle_forklift_e.png",
-        "frame": [
-          34,
-          59
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          0,
-          26
-        ],
-        "face": "façade (commandes)"
-      },
-      "s": {
-        "file": "vehicle_forklift_s.png",
-        "frame": [
-          33,
-          59
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          0,
-          26
-        ],
-        "face": "bout de sortie"
-      },
-      "w": {
-        "file": "vehicle_forklift_w.png",
-        "frame": [
-          35,
-          59
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          2,
-          26
-        ],
-        "face": "arrière (service)"
-      },
-      "n": {
-        "file": "vehicle_forklift_n.png",
-        "frame": [
-          33,
-          55
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          0,
-          22
-        ],
-        "face": "bout d'entrée"
-      }
-    },
-    "water": {
-      "file": "water.png",
-      "frame": [
-        32,
-        32
-      ],
-      "frames": 4,
-      "footprint": [
-        1,
-        1
-      ],
-      "origin": [
-        0,
-        0
-      ],
-      "layer": "sol"
-    },
-    "containers": {
-      "file": "containers.png",
-      "frame": [
-        64,
-        40
-      ],
-      "frames": 4,
-      "footprint": [
-        2,
-        1
-      ],
-      "origin": [
-        0,
-        8
-      ],
-      "variants": [
-        "rouge",
-        "vert",
-        "bleu",
-        "jaune"
-      ]
-    },
-    "cargo_ship": {
-      "file": "cargo_ship.png",
-      "frame": [
-        192,
-        112
-      ],
-      "frames": 4,
-      "footprint": [
-        6,
-        3
-      ],
-      "origin": [
-        0,
-        16
-      ],
-      "layer": "eau"
-    },
-    "port_crane": {
-      "file": "port_crane.png",
-      "frame": [
-        96,
-        144
-      ],
-      "frames": 4,
-      "footprint": [
-        3,
-        2
-      ],
-      "origin": [
-        0,
-        80
-      ]
-    },
-    "cargo_plane": {
-      "file": "cargo_plane.png",
-      "frame": [
-        160,
-        96
-      ],
-      "frames": 4,
-      "footprint": [
-        5,
-        2
-      ],
-      "origin": [
-        0,
-        32
-      ]
-    },
-    "building_hq": {
-      "file": "building_hq.png",
-      "frame": [
-        96,
-        192
-      ],
-      "frames": 4,
-      "footprint": [
-        3,
-        2
-      ],
-      "origin": [
-        0,
-        128
-      ]
-    }
-  },
+  "name": "Usine pilotée",
+  "family": "robot",
+  "objects": {},
   "tiles": {
-    "floor_asphalt": {
-      "file": "floor_asphalt.png",
+    "floor_concrete": {
+      "file": "floor_concrete.png",
       "frame": [
         32,
         32
       ],
       "tiles": [
-        "asphalte",
-        "ligne_blanche",
-        "ligne_jaune",
-        "bord_neige"
+        "béton",
+        "bord_danger",
+        "allée"
       ]
     },
-    "quay": {
-      "file": "quay.png",
+    "wall_metal": {
+      "file": "wall_metal.png",
       "frame": [
         32,
-        32
+        64
       ],
       "tiles": [
-        "quai",
-        "quai_bitte"
+        "simple",
+        "sortie",
+        "lampe"
       ]
     }
   },
-  "belt": "../tapis/metal.png"
+  "belt": "../tapis/express.png",
+  "reuses": [
+    "etape-5",
+    "etape-6"
+  ]
 }

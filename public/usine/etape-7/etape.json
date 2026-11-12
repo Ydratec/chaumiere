@@ -1,6 +1,6 @@
 {
-  "name": "Complexe industriel",
-  "family": "elec",
+  "name": "Usine de précision",
+  "family": "robot",
   "objects": {
     "pylon": {
       "file": "pylon.png",
@@ -22,208 +22,37 @@
         2
       ],
       "reach_tiles": 30
-    },
-    "building_warehouse": {
-      "file": "building_warehouse.png",
-      "frame": [
-        128,
-        112
-      ],
-      "frames": 4,
-      "footprint": [
-        4,
-        3
-      ],
-      "origin": [
-        0,
-        16
-      ]
-    },
-    "loading_dock": {
-      "file": "loading_dock.png",
-      "frame": [
-        96,
-        64
-      ],
-      "frames": 4,
-      "footprint": [
-        3,
-        2
-      ],
-      "origin": [
-        0,
-        0
-      ]
-    },
-    "vehicle_truck": {
-      "e": {
-        "file": "vehicle_truck_e.png",
-        "frame": [
-          96,
-          104
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          2
-        ],
-        "origin": [
-          0,
-          39
-        ],
-        "face": "façade (commandes)"
-      },
-      "s": {
-        "file": "vehicle_truck_s.png",
-        "frame": [
-          64,
-          138
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ],
-        "origin": [
-          0,
-          41
-        ],
-        "face": "bout de sortie"
-      },
-      "w": {
-        "file": "vehicle_truck_w.png",
-        "frame": [
-          96,
-          104
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          2
-        ],
-        "origin": [
-          0,
-          39
-        ],
-        "face": "arrière (service)"
-      },
-      "n": {
-        "file": "vehicle_truck_n.png",
-        "frame": [
-          64,
-          128
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ],
-        "origin": [
-          0,
-          31
-        ],
-        "face": "bout d'entrée"
-      },
-      "capacity_stacks": 40,
-      "speed": "30 s pour 10 tuiles",
-      "note": "orientation = sens de la marche"
-    },
-    "vehicle_forklift": {
-      "e": {
-        "file": "vehicle_forklift_e.png",
-        "frame": [
-          34,
-          59
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          0,
-          26
-        ],
-        "face": "façade (commandes)"
-      },
-      "s": {
-        "file": "vehicle_forklift_s.png",
-        "frame": [
-          33,
-          59
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          0,
-          26
-        ],
-        "face": "bout de sortie"
-      },
-      "w": {
-        "file": "vehicle_forklift_w.png",
-        "frame": [
-          35,
-          59
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          2,
-          26
-        ],
-        "face": "arrière (service)"
-      },
-      "n": {
-        "file": "vehicle_forklift_n.png",
-        "frame": [
-          33,
-          55
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ],
-        "origin": [
-          0,
-          22
-        ],
-        "face": "bout d'entrée"
-      }
     }
   },
   "tiles": {
-    "floor_asphalt": {
-      "file": "floor_asphalt.png",
+    "floor_concrete": {
+      "file": "floor_concrete.png",
       "frame": [
         32,
         32
       ],
       "tiles": [
-        "asphalte",
-        "ligne_blanche",
-        "ligne_jaune",
-        "bord_neige"
+        "béton",
+        "bord_danger",
+        "allée"
       ]
     },
-    "floor_snow": {
-      "file": "floor_snow.png",
+    "wall_metal": {
+      "file": "wall_metal.png",
       "frame": [
         32,
-        32
+        64
       ],
       "tiles": [
-        "neige",
-        "neige_herbe"
+        "simple",
+        "sortie",
+        "lampe"
       ]
     }
   },
-  "belt": "../tapis/metal.png"
+  "belt": "../tapis/express.png",
+  "reuses": [
+    "etape-5",
+    "etape-6"
+  ]
 }

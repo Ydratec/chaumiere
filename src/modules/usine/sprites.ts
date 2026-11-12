@@ -58,8 +58,8 @@ export const STAGES = [
   { n: 4, name: "Manufacture à vapeur", family: "vap", belt: "fonte" },
   { n: 5, name: "Usine électrique", family: "elec", belt: "metal" },
   { n: 6, name: "Usine automatisée", family: "robot", belt: "express" },
-  { n: 7, name: "Complexe industriel", family: "elec", belt: "metal" },
-  { n: 8, name: "Multinationale", family: "elec", belt: "metal" },
+  { n: 7, name: "Usine de précision", family: "robot", belt: "express" },
+  { n: 8, name: "Usine pilotée", family: "robot", belt: "express" },
 ] as const;
 
 /** Chemin d'un asset d'étape, ex. stageAsset(4, "steam_press_s.png"). */

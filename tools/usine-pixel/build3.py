@@ -15,8 +15,8 @@ def row(ims):
     W=sum(i.width for i in ims); H=max(i.height for i in ims); S=Image.new('RGBA',(W,H)); x=0
     for i in ims: S.paste(i,(x,H-i.height)); x+=i.width
     return S
-NAMES={1:"Atelier du lutin",2:"Atelier équipé",3:"Petite fabrique",4:"Manufacture à vapeur",5:"Usine électrique",6:"Usine automatisée",7:"Complexe industriel",8:"Multinationale"}
-FAMS={1:'art',2:'art',3:'art',4:'vap',5:'elec',6:'robot',7:'elec',8:'elec'}
+NAMES={1:"Atelier du lutin",2:"Atelier équipé",3:"Petite fabrique",4:"Manufacture à vapeur",5:"Usine électrique",6:"Usine automatisée",7:"Usine de précision",8:"Usine pilotée"}
+FAMS={1:'art',2:'art',3:'art',4:'vap',5:'elec',6:'robot',7:'robot',8:'robot'}
 st={k:{'name':v,'family':FAMS[k],'objects':{},'tiles':{}} for k,v in NAMES.items()}
 d=lambda k:f'{OUT}/etape-{k}'
 FACE_FR={'w+':'façade (commandes)','u+':'bout de sortie','w-':'arrière (service)','u-':'bout d\'entrée'}
@@ -91,7 +91,7 @@ json.dump({'frame':[32,32],'frames':4,'rows':src_names,'speed_items_per_s':{'boi
   'naming':"Droit : sens de déplacement. Virage 'A>B' : entre par le bord A, sort par le bord B.",
   'geometry':'tapis horizontal : surface y 4..24 (centre 14), hauteur 5 ; tapis vertical : surface x 6..26 (centre 16)'},
   open(f'{OUT}/tapis/tapis.json','w'),indent=2,ensure_ascii=False)
-for k,bn in ((3,'bois'),(4,'fonte'),(5,'metal'),(6,'express'),(7,'metal'),(8,'metal')): st[k]['belt']=f'../tapis/{bn}.png'
+for k,bn in ((3,'bois'),(4,'fonte'),(5,'metal'),(6,'express'),(7,'express'),(8,'express')): st[k]['belt']=f'../tapis/{bn}.png'
 # ---------------- machines ----------------
 NOPORT={'kiln','paint_table','wreath_table','kiln_bellows','lathe','tree_bench','boiler','generator','silo','chest_metal','chest_wood'}
 for name,(mk,stage,fam,ty,role) in K.MACHINES.items():
@@ -141,20 +141,11 @@ for k in (5,6):
     put_tiles(k,'floor_concrete',[S4.floor_concrete(v) for v in range(3)],['béton','bord_danger','allée'])
     put_tiles(k,'wall_metal',[S4.wall_metal(x) for x in ('plain','sign','light')],['simple','sortie','lampe'])
 put_static(6,'control_terminal',strip([S8.control_terminal(f) for f in range(4)]),frames=4,footprint=[1,1],origin=[0,16])
-for k in (7,8): put_tiles(k,'floor_asphalt',[S8.floor_asphalt(v) for v in range(4)],['asphalte','ligne_blanche','ligne_jaune','bord_neige'])
-put_tiles(7,'floor_snow',[S8.floor_snow(v) for v in range(2)],['neige','neige_herbe'])
-put_static(7,'building_warehouse',strip([S8.warehouse(f) for f in range(4)]),frames=4,footprint=[4,3],origin=[0,16])
-put_static(7,'loading_dock',strip([S8.loading_dock(f) for f in range(4)]),frames=4,footprint=[3,2],origin=[0,0])
+# étapes 7-8 : le jeu reste dans l'usine (même sol et mêmes murs que l'usine électrique)
 for k in (7,8):
-    put_obj(k,'vehicle_truck',VH.truck,extra={'capacity_stacks':40,'speed':'30 s pour 10 tuiles','note':'orientation = sens de la marche'})
-    put_obj(k,'vehicle_forklift',VH.forklift)
-put_static(8,'water',strip([S8.water(f) for f in range(4)]),frames=4,footprint=[1,1],origin=[0,0],layer='sol')
-put_tiles(8,'quay',[S8.quay(v) for v in range(2)],['quai','quai_bitte'])
-put_static(8,'containers',row([S8.container(i) for i in range(4)]),frames=4,footprint=[2,1],origin=[0,8],variants=['rouge','vert','bleu','jaune'])
-put_static(8,'cargo_ship',strip([S8.cargo_ship(f) for f in range(4)]),frames=4,footprint=[6,3],origin=[0,16],layer='eau')
-put_static(8,'port_crane',strip([S8.port_crane(f) for f in range(4)]),frames=4,footprint=[3,2],origin=[0,80])
-put_static(8,'cargo_plane',strip([S8.cargo_plane(f) for f in range(4)]),frames=4,footprint=[5,2],origin=[0,32])
-put_static(8,'building_hq',strip([S8.hq_tower(f) for f in range(4)]),frames=4,footprint=[3,2],origin=[0,128])
+    put_tiles(k,'floor_concrete',[S4.floor_concrete(v) for v in range(3)],['béton','bord_danger','allée'])
+    put_tiles(k,'wall_metal',[S4.wall_metal(x) for x in ('plain','sign','light')],['simple','sortie','lampe'])
+    st[k]['reuses']=['etape-5','etape-6']
 for k,v in st.items(): json.dump(v,open(f'{d(k)}/etape.json','w'),indent=2,ensure_ascii=False)
 json.dump({'tileSize':32,
   'placement':"Chaque sprite donne 'origin' = position, dans la case, du coin haut-gauche de son emprise. Dessiner la case à (tuile.x*32 - origin.x, tuile.y*32 - origin.y), trier par bas d'emprise.",
