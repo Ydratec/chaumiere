@@ -555,16 +555,16 @@
         "file": "elec_wreath_e.png",
         "frame": [
           66,
-          54
+          103
         ],
         "frames": 4,
         "footprint": [
           2,
-          1
+          2
         ],
         "origin": [
           1,
-          21
+          38
         ],
         "face": "façade (commandes)",
         "ports": {
@@ -572,13 +572,20 @@
             "side": "W",
             "tile": [
               0,
-              0
+              1
             ]
           },
           "out": {
             "side": "E",
             "tile": [
               1,
+              1
+            ]
+          },
+          "in2": {
+            "side": "W",
+            "tile": [
+              0,
               0
             ]
           }
@@ -587,17 +594,17 @@
       "s": {
         "file": "elec_wreath_s.png",
         "frame": [
-          33,
-          82
+          64,
+          91
         ],
         "frames": 4,
         "footprint": [
-          1,
+          2,
           2
         ],
         "origin": [
           0,
-          17
+          26
         ],
         "face": "bout de sortie",
         "ports": {
@@ -614,6 +621,13 @@
               0,
               1
             ]
+          },
+          "in2": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
           }
         }
       },
@@ -621,16 +635,16 @@
         "file": "elec_wreath_w.png",
         "frame": [
           66,
-          54
+          88
         ],
         "frames": 4,
         "footprint": [
           2,
-          1
+          2
         ],
         "origin": [
           1,
-          21
+          23
         ],
         "face": "arrière (service)",
         "ports": {
@@ -647,38 +661,52 @@
               0,
               0
             ]
+          },
+          "in2": {
+            "side": "E",
+            "tile": [
+              1,
+              1
+            ]
           }
         }
       },
       "n": {
         "file": "elec_wreath_n.png",
         "frame": [
-          33,
-          82
+          64,
+          79
         ],
         "frames": 4,
         "footprint": [
-          1,
+          2,
           2
         ],
         "origin": [
           0,
-          17
+          14
         ],
         "face": "bout d'entrée",
         "ports": {
           "in": {
             "side": "S",
             "tile": [
-              0,
+              1,
               1
             ]
           },
           "out": {
             "side": "N",
             "tile": [
-              0,
+              1,
               0
+            ]
+          },
+          "in2": {
+            "side": "S",
+            "tile": [
+              0,
+              1
             ]
           }
         }
@@ -718,6 +746,13 @@
               1,
               1
             ]
+          },
+          "in2": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
           }
         }
       },
@@ -750,6 +785,13 @@
             "tile": [
               0,
               1
+            ]
+          },
+          "in2": {
+            "side": "N",
+            "tile": [
+              1,
+              0
             ]
           }
         }
@@ -784,6 +826,13 @@
               0,
               0
             ]
+          },
+          "in2": {
+            "side": "E",
+            "tile": [
+              1,
+              1
+            ]
           }
         }
       },
@@ -816,6 +865,13 @@
             "tile": [
               1,
               0
+            ]
+          },
+          "in2": {
+            "side": "S",
+            "tile": [
+              0,
+              1
             ]
           }
         }

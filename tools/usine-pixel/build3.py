@@ -25,7 +25,11 @@ def ports_of(ob):
     lw=ob.lane_w()
     def tile(u):
         X,Y=ob.g(u,lw); return [min(ob.FW-1,max(0,int(X//32))),min(ob.FH-1,max(0,int(Y//32)))]
-    return {'in':{'side':SIDE_IN[ob.o],'tile':tile(1)},'out':{'side':SIDE_OUT[ob.o],'tile':tile(ob.L-1)}}
+    def tile2(u,w):
+        X,Y=ob.g(u,w); return [min(ob.FW-1,max(0,int(X//32))),min(ob.FH-1,max(0,int(Y//32)))]
+    res={'in':{'side':SIDE_IN[ob.o],'tile':tile(1)},'out':{'side':SIDE_OUT[ob.o],'tile':tile(ob.L-1)}}
+    if ob.two_in: res['in2']={'side':SIDE_IN[ob.o],'tile':tile2(1,lw-32)}
+    return res
 def put_obj(k,name,make,ports=False,frames=4,extra=None,orients=ORI):
     e={}
     for o in orients:

@@ -77,6 +77,7 @@ export type Orientation = "e" | "s" | "w" | "n";
 export const ORIENTATIONS: readonly Orientation[] = ["e", "s", "w", "n"];
 export const objectSheet = (stage: number, name: string, o: Orientation) => stageAsset(stage, `${name}_${o}.png`);
 
+export type Port = { side: "N" | "E" | "S" | "W"; tile: [number, number] };
 /** Ce que décrit `etape.json` pour un objet dans une orientation. */
 export type OrientedSprite = {
   file: string;
@@ -85,7 +86,8 @@ export type OrientedSprite = {
   footprint: [number, number];
   origin: [number, number];
   face: string;
-  ports?: { in: { side: "N" | "E" | "S" | "W"; tile: [number, number] }; out: { side: "N" | "E" | "S" | "W"; tile: [number, number] } };
+  /** Entrée, sortie et, pour les machines 2 × 2 à couronnes et à sapins (étapes 4+), une seconde entrée `in2`. */
+  ports?: { in: Port; out: Port; in2?: Port };
   hand?: [number, number][];
 };
 
@@ -116,3 +118,12 @@ export const ITEMS = [
 export type Item = (typeof ITEMS)[number];
 export const ITEM_SHEET = "/usine/commun/objets_16x16.png";
 export const itemRect = (item: Item) => ({ x: ITEMS.indexOf(item) * 16, y: 0, w: 16, h: 16 });
+
+// ---------- interface (pixel art, public/usine/ui) ----------
+/** Planches de l'interface : cadres 9-slice, boutons (4 états × 4 couleurs), onglets, cases, jauges, icônes 16×16. */
+export const UI = "/usine/ui";
+/** Police bitmap « Chaumiere Pixel » : nette à 8, 16 ou 24 px (1 pixel = 1/8 du corps). */
+export const UI_FONT = "/usine/ui/chaumiere-pixel.ttf";
+export const UI_ICONS = ["piece", "etoile", "main", "marteau", "loupe", "poubelle", "tourner", "plus", "moins", "sac", "marche", "horloge", "eclair",
+  "cadenas", "ok", "non", "reglages", "commandes", "progression", "accelerer", "tapis", "info", "maison"] as const;
+export const uiIconRect = (name: (typeof UI_ICONS)[number]) => ({ x: UI_ICONS.indexOf(name) * 16, y: 0, w: 16, h: 16 });

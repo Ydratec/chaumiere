@@ -1,0 +1,139 @@
+{
+  "cadre.png": {
+    "size": [
+      24,
+      24
+    ],
+    "nineSlice": 8,
+    "note": "panneau principal ; neige sur le bord haut"
+  },
+  "cadre_sans_neige.png": {
+    "size": [
+      24,
+      24
+    ],
+    "nineSlice": 8
+  },
+  "carte_*.png": {
+    "size": [
+      12,
+      12
+    ],
+    "nineSlice": 4,
+    "variants": [
+      "sombre",
+      "clair",
+      "or"
+    ]
+  },
+  "bouton_*.png": {
+    "frame": [
+      24,
+      20
+    ],
+    "nineSlice": [
+      6,
+      6,
+      8,
+      6
+    ],
+    "states": [
+      "normal",
+      "survol",
+      "appuyé",
+      "désactivé"
+    ],
+    "variants": [
+      "bois",
+      "or",
+      "rouge",
+      "vert"
+    ],
+    "note": "l'état « appuyé » descend de 2 px"
+  },
+  "onglet.png": {
+    "frame": [
+      24,
+      18
+    ],
+    "nineSlice": 6,
+    "states": [
+      "inactif",
+      "actif"
+    ]
+  },
+  "case.png": {
+    "frame": [
+      20,
+      20
+    ],
+    "states": [
+      "normale",
+      "choisie",
+      "verrou"
+    ],
+    "note": "case d'inventaire, objet 16x16 au centre"
+  },
+  "jauge.png": {
+    "size": [
+      16,
+      10
+    ],
+    "nineSlice": 3
+  },
+  "jauge_remplie.png": {
+    "frame": [
+      4,
+      8
+    ],
+    "colors": [
+      "vert",
+      "or",
+      "rouge",
+      "bleu"
+    ]
+  },
+  "bulle.png": {
+    "size": [
+      12,
+      12
+    ],
+    "nineSlice": 4
+  },
+  "icones.png": {
+    "frame": [
+      16,
+      16
+    ],
+    "order": [
+      "piece",
+      "etoile",
+      "main",
+      "marteau",
+      "loupe",
+      "poubelle",
+      "tourner",
+      "plus",
+      "moins",
+      "sac",
+      "marche",
+      "horloge",
+      "eclair",
+      "cadenas",
+      "ok",
+      "non",
+      "reglages",
+      "commandes",
+      "progression",
+      "accelerer",
+      "tapis",
+      "info",
+      "maison"
+    ]
+  },
+  "découpes": "bouton_<couleur>_<normal|survol|appuye|desactive>.png, onglet_<actif|inactif>.png, case_<état>.png, jauge_<couleur>.png : les mêmes, une image par état (border-image)",
+  "chaumiere-pixel.ttf": {
+    "note": "police bitmap : 1 pixel = 1/8 du corps ; nette à 8, 16, 24 px",
+    "chars": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~éèêëàâäîïôöùûüÿçÉÈÊËÀÂÎÏÔÙÛÜÇœŒæß«»·–—…×€★→←↑↓°’"
+  }
+}

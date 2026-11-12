@@ -16,7 +16,7 @@ class Obj:
     def __init__(s,L,D,o):
         s.L,s.D,s.o=L*32,D*32,o
         s.FW,s.FH=((L,D) if o in('e','w') else (D,L))
-        s.cv=Cv(s.FW*32+2*PAD,s.FH*32+2*PAD); s.parts=[]; s.shadow=True
+        s.cv=Cv(s.FW*32+2*PAD,s.FH*32+2*PAD); s.parts=[]; s.shadow=True; s.two_in=False
     # ---- projection ----
     def g(s,u,w):
         L,D,o=s.L,s.D,s.o
@@ -135,6 +135,8 @@ class Obj:
             x0,y0,x1,y1=r; cv.r(x0,y0,x1,y0+1,rim)
         if 'in' in which:
             s.box(0,6,lw-11,lw+11,0,12,top,side,faces={'u-':mouth,'w+':sidef,'w-':sidef})
+        if 'in2' in which:   # second input, one tile across (2 x 2 machines with two ingredient belts)
+            s.box(0,6,lw-43,lw-21,0,12,top,side,faces={'u-':mouth,'w+':sidef,'w-':sidef})
         if 'out' in which:
             s.box(s.L-6,s.L,lw-11,lw+11,0,12,top,side,faces={'u+':mouth,'w+':sidef,'w-':sidef})
     # ---- render ----

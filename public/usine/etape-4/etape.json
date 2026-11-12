@@ -555,16 +555,16 @@
         "file": "steam_wreath_e.png",
         "frame": [
           66,
-          67
+          110
         ],
         "frames": 4,
         "footprint": [
           2,
-          1
+          2
         ],
         "origin": [
           1,
-          34
+          45
         ],
         "face": "façade (commandes)",
         "ports": {
@@ -572,13 +572,20 @@
             "side": "W",
             "tile": [
               0,
-              0
+              1
             ]
           },
           "out": {
             "side": "E",
             "tile": [
               1,
+              1
+            ]
+          },
+          "in2": {
+            "side": "W",
+            "tile": [
+              0,
               0
             ]
           }
@@ -587,17 +594,17 @@
       "s": {
         "file": "steam_wreath_s.png",
         "frame": [
-          33,
-          93
+          65,
+          89
         ],
         "frames": 4,
         "footprint": [
-          1,
+          2,
           2
         ],
         "origin": [
           0,
-          28
+          24
         ],
         "face": "bout de sortie",
         "ports": {
@@ -614,6 +621,13 @@
               0,
               1
             ]
+          },
+          "in2": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
           }
         }
       },
@@ -621,16 +635,16 @@
         "file": "steam_wreath_w.png",
         "frame": [
           66,
-          67
+          110
         ],
         "frames": 4,
         "footprint": [
           2,
-          1
+          2
         ],
         "origin": [
           1,
-          34
+          45
         ],
         "face": "arrière (service)",
         "ports": {
@@ -647,38 +661,52 @@
               0,
               0
             ]
+          },
+          "in2": {
+            "side": "E",
+            "tile": [
+              1,
+              1
+            ]
           }
         }
       },
       "n": {
         "file": "steam_wreath_n.png",
         "frame": [
-          34,
-          93
+          65,
+          107
         ],
         "frames": 4,
         "footprint": [
-          1,
+          2,
           2
         ],
         "origin": [
           1,
-          28
+          42
         ],
         "face": "bout d'entrée",
         "ports": {
           "in": {
             "side": "S",
             "tile": [
-              0,
+              1,
               1
             ]
           },
           "out": {
             "side": "N",
             "tile": [
-              0,
+              1,
               0
+            ]
+          },
+          "in2": {
+            "side": "S",
+            "tile": [
+              0,
+              1
             ]
           }
         }
@@ -718,6 +746,13 @@
               1,
               1
             ]
+          },
+          "in2": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
           }
         }
       },
@@ -750,6 +785,13 @@
             "tile": [
               0,
               1
+            ]
+          },
+          "in2": {
+            "side": "N",
+            "tile": [
+              1,
+              0
             ]
           }
         }
@@ -784,6 +826,13 @@
               0,
               0
             ]
+          },
+          "in2": {
+            "side": "E",
+            "tile": [
+              1,
+              1
+            ]
           }
         }
       },
@@ -816,6 +865,13 @@
             "tile": [
               1,
               0
+            ]
+          },
+          "in2": {
+            "side": "S",
+            "tile": [
+              0,
+              1
             ]
           }
         }

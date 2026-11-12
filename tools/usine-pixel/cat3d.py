@@ -107,7 +107,7 @@ def hazard_top(ob,u0,u1,w0,w1,z):
 def top_rect(ob,u0,u1,w0,w1,z):
     (xa,ya),(xb,yb)=ob.P(u0,w0,z),ob.P(u1,w1,z); return (min(xa,xb),min(ya,yb),max(xa,xb),max(ya,yb))
 def ports_body(ob,fam,ports):
-    if ports: ob.hoods(fam); return 6,ob.L-6
+    if ports: ob.hoods(fam,('in','in2','out') if ob.two_in else ('in','out')); return 6,ob.L-6
     return 2,ob.L-2
 def chimney(ob,u,w,z0,z1,c,f_smoke=True,r=3.5):
     ob.cylz(u,w,r,z0,z1,c,cap_dark=True)
@@ -401,25 +401,49 @@ def V_loom(o):
 def puff_at(ob,u,w,z):
     def fn(f): X,Y=ob.P(u,w,z); puff(ob.cv,X,Y-2,f,1,rise=8)
     ob.custom((40,ob.g(u,w)[1]),fn)
+def hopper(ob,u0,u1,w,z0,z1,body,face,fill,rim=None):
+    """ingredient hopper sitting over one input lane: a box whose open top shows what it holds"""
+    def top(f):
+        X0,Y0,X1,Y1=[int(v) for v in top_rect(ob,u0+2,u1-2,w-7,w+7,z1)]
+        ob.cv.r(X0,Y0,X1,Y1,C('#1b1c20'))
+        for y in range(Y0+1,Y1):
+            for x in range(X0+1,X1):
+                k=fill(x,y,f)
+                if k: ob.cv.p(x,y,k)
+        if rim: ob.cv.r(X0-1,Y0-1,X1+1,Y0,rim)
+    ob.box(u0,u1,w-9,w+9,z0,z1,body,face,topfn=top)
+def fill_branches(x,y,f): return P['g1'] if (x*3+y*5+f)%4 else P['g2'] if (x+y)%3 else P['g0']
+def fill_baubles(x,y,f):
+    k=(x*7+y*11+f)%9
+    return [P['r1'],P['y1'],P['b1'],P['g1']][(x//2+y//2)%4] if k<5 else (P['r2'] if k==5 else None)
+def fill_ribbon(x,y,f): return P['r1'] if (x+y+f)%3 else P['r2']
+def turntable_wreaths(ob,uc,wc,z,R,f,n=3,r=5.5):
+    for k in range(n):
+        a=f*math.pi/6+k*2*math.pi/n
+        X,Y=ob.P(uc+math.cos(a)*R,wc+math.sin(a)*R*.8,z)
+        wreath(ob.cv,X,Y-1,r,bow=True)
 def V_wreath(o):
-    F=FAM['vap']; ob=Obj(2,1,o); D=ob.D; u0,u1=ports_body(ob,F,True)
-    def front(cv,r,f): x0,y0,x1,y1=I(r); d_gauge(cv,x1-8,y0+8,f); d_rivets(cv,r)
+    F=FAM['vap']; ob=Obj(2,2,o); ob.two_in=True; D=ob.D; u0,u1=ports_body(ob,F,True)
+    def front(cv,r,f): x0,y0,x1,y1=I(r); d_gauge(cv,x1-8,y0+8,f); d_label(cv,(x0+6,y0+4,x0+20,y0+11)); d_rivets(cv,r)
     def back(cv,r,f): d_pipes_v(cv,r); d_rivets(cv,r)
-    v_feed_pipe(ob,u0+12)
-    v_body(ob,u0,u1,16,{'w+':front,'u+':d_rivets,'u-':d_rivets,'w-':back})
-    uc=(u0+u1)/2
-    def mould(f):
-        X,Y=ob.P(uc,D/2,16); ob.cv.ell(X,Y,10,6,lambda a,b,d,x,y: C('#22262a') if d>.35 else None); wreath(ob.cv,X,Y,6,bow=f>=2)
-    ob.custom((16,ob.depth((uc,),(D/2,))),mould)
-    for du in (-14,11): ob.box(uc+du,uc+du+3,10,D-10,16,40,IRONF,IRONF)
-    ob.box(uc-16,uc+16,10,D-10,40,43,IRON,IRONF)
+    v_feed_pipe(ob,u0+30)
+    v_body(ob,u0,u1,14,{'w+':front,'u+':d_rivets,'u-':d_rivets,'w-':back})
+    lw=ob.lane_w()
+    hopper(ob,u0+1,u0+19,lw,14,30,IRON,IRONF,fill_branches,P['c1'])
+    hopper(ob,u0+1,u0+19,lw-32,14,30,IRON,IRONF,fill_baubles,P['c1'])
+    uc,wc=u0+36,D/2
+    ob.disc('z',uc,wc,14,15,P['c1'],spokes=6,ang=lambda f:f*.5)
+    ob.custom((15,ob.depth((uc,),(wc+12,))),lambda f: turntable_wreaths(ob,uc,wc,15,9,f))
+    for dw in (6,D-9): ob.box(uc+9,uc+12,dw,dw+3,14,46,IRONF,IRONF)
+    ob.box(uc+8,uc+13,6,D-6,46,50,IRON,IRONF)
     def ram(f):
-        k=[0,3,5,2][f]; X,Y=ob.P(uc,D/2,40); X2,Y2=ob.P(uc,D/2,28-k)
-        ob.cv.r(X-1,Y,X+1,Y2,C('#c9ced8')); ob.cv.r(X-11,Y2,X+11,Y2+3,P['c1'])
-    ob.custom((41,ob.depth((uc,),(D/2+1,))),ram)
+        k=[0,3,6,2][f]; X,Y=ob.P(uc+10,wc,46); X2,Y2=ob.P(uc+10,wc,30-k)
+        ob.cv.r(X-1,Y,X+1,Y2,C('#c9ced8')); ob.cv.r(X-6,Y2,X+6,Y2+3,P['c1'])
+    ob.custom((47,ob.depth((uc+10,),(wc+1,))),ram)
+    chimney(ob,u1-8,8,14,34,IRONF)
     return ob
 def V_tree(o):
-    F=FAM['vap']; ob=Obj(2,2,o); D=ob.D; u0,u1=ports_body(ob,F,True)
+    F=FAM['vap']; ob=Obj(2,2,o); ob.two_in=True; D=ob.D; u0,u1=ports_body(ob,F,True)
     def front(cv,r,f): x0,y0,x1,y1=I(r); d_gauge(cv,x1-8,y0+8,f); d_label(cv,(x0+4,y0+4,x0+18,y0+11)); d_rivets(cv,r)
     def back(cv,r,f): d_pipes_v(cv,r); d_rivets(cv,r)
     v_feed_pipe(ob,u0+12)
@@ -547,17 +571,22 @@ def E_loom(o):
     ob.custom((23,ob.depth((u0,u1),(D/2,))),strand)
     return ob
 def E_wreath(o):
-    F=FAM['elec']; ob=Obj(2,1,o); D=ob.D; u0,u1=ports_body(ob,F,True)
-    def x(cv,r,f): d_lights(cv,r[0]+6,r[1]+6,f,3)
-    e_body(ob,u0,u1,22,{'w+':e_front_std(x),'w-':e_back,'u+':e_end('door'),'u-':e_end('label')})
-    uc=(u0+u1)/2
-    def ring(f):
-        X,Y=ob.P(uc,D/2,22); ob.cv.ell(X,Y,9,6,lambda a,b,d,x,y: C('#2c303a') if d>.3 else None); wreath(ob.cv,X,Y,6,bow=f>=2)
-        a=f*math.pi/2; Xa,Ya=ob.P(uc+math.cos(a)*10,D/2+math.sin(a)*6,22); ob.cv.r(Xa-1,Ya-7,Xa+2,Ya,C('#c3c8d2'))
-    ob.custom((22,ob.depth((uc,),(D/2,))),ring)
+    F=FAM['elec']; ob=Obj(2,2,o); ob.two_in=True; D=ob.D; u0,u1=ports_body(ob,F,True)
+    def x(cv,r,f): x0,y0,x1,y1=I(r); d_screen(cv,(x0+8,y0+5,x0+26,y0+14),f); d_lights(cv,x1-18,y0+6,f,3)
+    e_body(ob,u0,u1,18,{'w+':e_front_std(x),'w-':e_back,'u+':e_end('door'),'u-':e_end('label')})
+    lw=ob.lane_w()
+    hopper(ob,u0+1,u0+19,lw,18,32,STEEL,STEELF,fill_branches,P['y1'])
+    hopper(ob,u0+1,u0+19,lw-32,18,32,STEEL,STEELF,fill_baubles,P['y1'])
+    uc,wc=u0+38,D/2
+    ob.disc('z',uc,wc,18,14,C('#8a909c'),spokes=0)
+    ob.custom((19,ob.depth((uc,),(wc+12,))),lambda f: turntable_wreaths(ob,uc,wc,19,8,f))
+    def arm(f):
+        a=f*math.pi/2; tip=(uc+math.cos(a)*8,wc+math.sin(a)*6,24)
+        arm3d(ob,[(u0+24,6,18),(u0+24,6,40),tip],2,F['rim'])
+    ob.custom((40,ob.depth((u0+24,uc+8),(6,wc+6))+1),arm)
     return ob
 def E_tree(o):
-    F=FAM['elec']; ob=Obj(2,2,o); D=ob.D; u0,u1=ports_body(ob,F,True)
+    F=FAM['elec']; ob=Obj(2,2,o); ob.two_in=True; D=ob.D; u0,u1=ports_body(ob,F,True)
     def x(cv,r,f): x0,y0,x1,y1=I(r); d_screen(cv,((x0+x1)//2-9,y0+5,(x0+x1)//2+9,y0+14),f); d_lights(cv,x1-14,y0+6,f)
     e_body(ob,u0,u1,26,{'w+':e_front_std(x),'w-':e_back,'u+':e_end('door'),'u-':e_end('fan')})
     uc,wc=(u0+u1)/2,D/2+4
@@ -650,7 +679,7 @@ def R_paint(o):
     ob.custom((14,ob.depth((u0,u1),(2,D-2))),scene)
     return ob
 def R_assembly(o):
-    F=FAM['robot']; ob=Obj(2,2,o); D=ob.D; u0,u1=ports_body(ob,F,True)
+    F=FAM['robot']; ob=Obj(2,2,o); ob.two_in=True; D=ob.D; u0,u1=ports_body(ob,F,True)
     def x(cv,r,f): x0,y0,x1,y1=I(r); d_screen(cv,((x0+x1)//2-9,y0+3,(x0+x1)//2+9,y1-3),f); d_lights(cv,x1-14,y0+4,f)
     def endf(cv,r,f): x0,y0,x1,y1=I(r); cv.r(x0+4,y0+3,x1-4,y0+6,F['rim']); d_vents(cv,(x0+6,y0+7,x1-6,y1-2))
     ob.box(u0,u1,2,D-2,0,14,WHITE,WHITEF,faces={'w+':x,'w-':d_cables,'u+':endf,'u-':endf})
