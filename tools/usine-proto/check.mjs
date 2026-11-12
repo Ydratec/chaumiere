@@ -56,6 +56,14 @@ const chest = addEnt({ kind:"chest", name:"chest_metal", stage:5, x:10, y:8, o:"
 run(30);
 out.elec = { powered:elecPowered(ex), inChest:chest.store.sable || 0 };
 
+// serre de l'usine : de base et en fleurs ; vide tant qu'on ne plante pas ; plantes à mi-pousse ; fleurs au bout de FLOWER_TIME
+newState();
+const bed = S.ents.find((e) => e.kind === "flowerbed");
+out.bed = { start:bed && bedFrame(bed) };
+bed.planted = false; bed.grown = 0; run(600); out.bed.empty = bedFrame(bed);
+bed.planted = true; run(FLOWER_TIME / 2 + 10); out.bed.half = bedFrame(bed);
+run(FLOWER_TIME); out.bed.ready = bedFrame(bed);
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -76,5 +84,6 @@ assert.ok(out.steam.fuelUsed > 1 && out.steam.fuelUsed < 3, "la chaudière brûl
 assert.ok(out.steamOff.stalled, "sans bois, le four s'arrête");
 assert.ok(out.elec.powered, "l'extracteur est sur le réseau électrique");
 assert.ok(out.elec.inChest >= 20, "l'extracteur remplit le coffre par le tapis en métal");
+assert.deepEqual({ ...out.bed }, { start:3, empty:0, half:2, ready:3 }, "la serre : en fleurs au départ, vide sans plantation, puis plantes et fleurs");
 assert.ok(out.offline.earned > 0, "l'usine gagne des pièces pendant l'absence");
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);

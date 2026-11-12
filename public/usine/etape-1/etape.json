@@ -445,6 +445,29 @@
         0,
         32
       ]
+    },
+    "serre_fleurs": {
+      "file": "serre_fleurs.png",
+      "frame": [
+        64,
+        50
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        1
+      ],
+      "origin": [
+        0,
+        17
+      ],
+      "states": [
+        "semée",
+        "pousses",
+        "plantes",
+        "fleurs"
+      ],
+      "role": "petite serre : fleurs pour la salle"
     }
   },
   "tiles": {

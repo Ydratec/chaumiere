@@ -110,7 +110,7 @@ const UPGRADE = {
 };
 const UPGRADED = new Set(Object.values(UPGRADE));
 const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
-  1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"], ["deco_tree", 300, "Serre de l'usine"]],
+  1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"], ["serre_fleurs", 300, "Serre de l'usine"]],
   2:[["wreath_table", 400], ["lathe", 830], ["tree_bench", 830], ["kiln_bellows", 830]],
   3:[["belt", 5, "Tapis en bois"], ["crank", 400, "Manivelle"], ["kiln_belt", 4700], ["paint_table_belt", 4700], ["star_press", 4700], ["loom", 4700], ["wreath_table_belt", 4700]],
   4:[["belt_fonte", 20, "Tapis en fonte"], ["boiler", 1200, "Chaudière"], ...["steam_furnace", "steam_sprayer", "steam_press", "steam_loom", "steam_wreath", "steam_tree"].map((k) => [k, 11350])],
@@ -118,8 +118,8 @@ const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
     ["chest_metal", 500, "Coffre en métal"], ...["elec_furnace", "paint_booth", "assembler", "elec_loom", "elec_wreath", "tree_decorator"].map((k) => [k, 23240])],
 };
 const BELT_COST = { bois:5, fonte:20, metal:60 };
-// Serre de l'usine : une fleur pousse en FLOWER_TIME (même hors ligne) ; la cueillir l'ajoute à l'inventaire de la salle (serveur, 8 par jour).
-// ponytail: image provisoire (le petit sapin) en attendant un dessin de serre.
+// Serre de l'usine (dessin : tools/usine-pixel/serre.py) : on plante, ça pousse en FLOWER_TIME (même hors ligne), on récolte ;
+// la fleur va dans l'inventaire de la salle (serveur, 8 par jour). Images : 0 vide, 1 pousses, 2 plantes, 3 fleurs.
 const FLOWER_TIME = 2 * 3600;
 const STAGE_OF = { crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
 // Énergie (balance.json) : une chaudière fait 6 u/s de vapeur, une machine à vapeur en prend 2 → 3 machines ; 1 bois = 60 u de vapeur.
@@ -162,7 +162,7 @@ function newState() {
     contracts:[], sales:[], stats:{}, test:false, avatar:{ species:"cat", color:0, santa:true }, area:{ ...AREA0 } };
   addEnt({ kind:"crate", name:"ship_crate", stage:1, x:8, y:4 });
   addEnt({ kind:"chest", name:"chest_wood", stage:1, x:8, y:5, o:"e", store:{} });
-  addEnt({ kind:"flowerbed", name:"deco_tree", stage:1, x:8, y:2, grown:FLOWER_TIME }); // la serre de l'usine, offerte, une fleur prête
+  addEnt({ kind:"flowerbed", name:"serre_fleurs", stage:1, x:7, y:2, planted:true, grown:FLOWER_TIME }); // la serre de l'usine, de base, en fleurs
   addEnt({ kind:"rug", name:"deco_rug", stage:1, x:3, y:6 });
   addSources(1);
   addEnt({ kind:"machine", name:"kiln", stage:1, x:0, y:4, o:"e" });
@@ -623,7 +623,11 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
   }
   if (e.kind === "crank") { e.reserve = Math.min(CRANK_MAX, e.reserve + (first ? CRANK_WIND : CRANK_WIND / 4)); p.work = 0.4; return; }
   if (e.kind === "flowerbed") {
-    if (first) { if (e.grown >= FLOWER_TIME) pick(e); else toast(`Une fleur pousse : prête dans ${fmtTime(FLOWER_TIME - e.grown)}.`); select(e); }
+    if (first) {
+      if (!e.planted) { e.planted = true; e.grown = 0; p.work = 0.4; fx(e.x * T + 32, e.y * T, "Planté !", "#6cc46a"); }
+      else if (e.grown >= FLOWER_TIME) pick(e);
+      select(e);
+    }
     return;
   }
   if (e.kind === "boiler" || e.kind === "generator") {
@@ -717,9 +721,9 @@ function place(key, rot, x, y) {
   }
   if (S.coins < cost) { toast("Pas assez de pièces"); return false; }
   if (!canPlace(key, o, x, y)) { toast("Place occupée"); return false; }
-  const kind = MACH[key] ? "machine" : ["crank", "boiler", "generator", "pole"].includes(key) ? key : key.startsWith("extractor") ? "extractor" : key === "deco_tree" ? "flowerbed" : "chest";
+  const kind = MACH[key] ? "machine" : ["crank", "boiler", "generator", "pole"].includes(key) ? key : key.startsWith("extractor") ? "extractor" : key === "serre_fleurs" ? "flowerbed" : "chest";
   addEnt({ kind, name:key, stage:stageOf(key), x, y, o:hasOri(key) ? o : key.startsWith("extractor") ? "e" : undefined, store:kind === "chest" ? {} : undefined,
-    ...(kind === "flowerbed" ? { grown:0 } : kind === "boiler" || kind === "generator" ? { fuel:0 } : kind === "extractor" ? { gives:"sable", rate:0.25, acc:0, lane:0 } : {}) });
+    ...(kind === "flowerbed" ? { planted:false, grown:0 } : kind === "boiler" || kind === "generator" ? { fuel:0 } : kind === "extractor" ? { gives:"sable", rate:0.25, acc:0, lane:0 } : {}) });
   S.coins -= cost; return true;
 }
 function demolish(x, y) {
@@ -847,7 +851,7 @@ function step(dt) {
   powerT -= dt; if (powerT <= 0) { computePower(); powerT = catching ? 2 : 0.25; } // pendant le rattrapage : l'énergie bouge peu
   for (const c of S.ents) {
     if (c.kind === "crank" && c.load > 0) c.reserve = Math.max(0, c.reserve - dt);
-    if (c.kind === "flowerbed") c.grown = Math.min(FLOWER_TIME, (c.grown || 0) + dt);
+    if (c.kind === "flowerbed" && c.planted) c.grown = Math.min(FLOWER_TIME, (c.grown || 0) + dt);
     if ((c.kind === "boiler" || c.kind === "generator") && c.load > 0) c.fuel = Math.max(0, c.fuel - dt * c.load * FUEL_RATE[c.kind]);
     if (c.kind === "source" && c.stock < RAW[c.gives].cap) c.stock = Math.min(RAW[c.gives].cap, c.stock + RAW[c.gives].refill * dt);
   }
@@ -909,15 +913,12 @@ function drawPlayer(time) {
 function drawEnt(e, time) {
   const s = spr(e), i = stageImg(e.stage, s.file);
   const working = (e.kind === "machine" && e.craft && !e.stalled) || ((e.kind === "extractor" || e.kind === "generator") && elecPowered(e));
-  const frames = s.frames || 1, f = working ? Math.floor(time * (e.boost > 0 ? 16 : 8)) % frames : 0;
+  const frames = s.frames || 1, f = e.kind === "flowerbed" ? bedFrame(e) : working ? Math.floor(time * (e.boost > 0 ? 16 : 8)) % frames : 0;
   const ox = (s.origin || [0, 0])[0], oy = (s.origin || [0, 0])[1];
   const fw = s.frame[0], fh = s.frame[1], X = e.x * T - ox, Y = e.y * T - oy;
   if (i) ctx.drawImage(i, f * fw, 0, fw, fh, X, Y, fw, fh);
   if (ui.sel === e.id) { ctx.strokeStyle = "#ffd65a"; ctx.lineWidth = 1; const f2 = fp(e); ctx.strokeRect(e.x * T + 0.5, e.y * T + 0.5, f2.w * T - 1, f2.h * T - 1); }
-  if (e.kind === "flowerbed") for (const [dx, dy, c] of [[9, 30, "#ff8fc8"], [20, 24, "#ffd1e8"], [14, 40, "#ff6fb4"], [23, 37, "#ff8fc8"], [7, 46, "#ffd1e8"]]) {
-    ctx.fillStyle = c; ctx.fillRect(X + dx, Y + dy, 3, 3); ctx.fillStyle = "#ffe066"; ctx.fillRect(X + dx + 1, Y + dy + 1, 1, 1); // petites fleurs
-  }
-  if (e.kind === "flowerbed") { if (e.grown >= FLOWER_TIME) { if (Math.floor(time * 2) % 2) drawIcon("etoile", X + fw / 2 - 8, Y - 18); } else bar(X + fw / 2 - 12, Y - 5, 24, e.grown / FLOWER_TIME, "#ff9ad5"); }
+  if (e.kind === "flowerbed" && e.planted) { if (e.grown >= FLOWER_TIME) { if (Math.floor(time * 2) % 2) drawIcon("etoile", X + fw / 2 - 8, Y - 18); } else bar(X + fw / 2 - 12, Y - 5, 24, e.grown / FLOWER_TIME, "#ff9ad5"); }
   if (e.kind === "machine" && unlinked(e).length && Math.floor(time * 2) % 2) drawIcon("non", X + fw / 2 - 8, Y - 18); // alerte : chaîne coupée
   if (e.kind === "machine") {
     if (e.craft) bar(X + fw / 2 - 12, Y - 5, 24, e.craft.t / e.craft.dur, e.stalled ? "#d8382f" : e.boost > 0 ? "#f6c445" : "#6cc46a");
@@ -1225,7 +1226,8 @@ function renderUI() {
       h += `<div class="row"><span class="muted">Débit</span><span class="grow"></span>${[0.1, 0.25, 0.5, 1, 2].map((r) => `<button class="btn sm ${e.rate === r ? "on" : ""}" data-rate="${r}">${fmtN(r)}/s</button>`).join("")}</div>`;
     } else if (e.kind === "flowerbed") {
       h += `<h3>Serre de l'usine</h3><p class="muted">Une fleur toutes les ${FLOWER_TIME / 3600} h (8 par jour).</p>`;
-      h += e.grown >= FLOWER_TIME ? `<p>${icon("etoile")} Une fleur est prête : touche la serre pour la cueillir.</p>` : `<p class="muted">Prête dans ${fmtTime(FLOWER_TIME - e.grown)}.</p>${gauge(e.grown / FLOWER_TIME, "vert")}`;
+      h += !e.planted ? `<p>Touche la serre pour planter.</p>` : e.grown >= FLOWER_TIME ? `<p>${icon("etoile")} En fleurs : touche-la pour récolter.</p>`
+        : `<p class="muted">Prête dans ${fmtTime(FLOWER_TIME - e.grown)}.</p>${gauge(e.grown / FLOWER_TIME, "vert")}`;
     } else if (e.kind === "boiler" || e.kind === "generator") {
       const boil = e.kind === "boiler", cap = boil ? BOILER_N : GEN_N, burn = (e.load || 0) * FUEL_RATE[e.kind];
       h += `<h3>${boil ? "Chaudière" : "Générateur"}</h3>`;
@@ -1295,11 +1297,14 @@ $("zout").addEventListener("click", () => { zoom = ZOOMS[Math.max(0, ZOOMS.index
 
 /** Chacun a sa serre de l'usine (elle remplace la serre fermée) : on en offre une, fleur prête, si la partie n'en a pas. */
 function ensureFlowerbed() {
+  // l'ancienne serre provisoire (le petit sapin à fleurs roses) est remplacée par la vraie
+  const old = S.ents.filter((e) => e.kind === "flowerbed" && e.name !== "serre_fleurs");
+  if (old.length) { S.ents = S.ents.filter((e) => !old.includes(e)); invalidate(); }
   if (S.demo || S.ents.some((e) => e.kind === "flowerbed")) return;
   const p = S.player; let best = null;
   for (let y = Y0; y < S.area.h; y++) for (let x = 0; x < S.area.w; x++)
-    if (fits("deco_tree", 1, undefined, x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
-  if (best) addEnt({ kind:"flowerbed", name:"deco_tree", stage:1, x:best[0], y:best[1], grown:FLOWER_TIME });
+    if (fits("serre_fleurs", 1, undefined, x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
+  if (best) addEnt({ kind:"flowerbed", name:"serre_fleurs", stage:1, x:best[0], y:best[1], planted:true, grown:FLOWER_TIME });
 }
 function useCharacter() {
   const q = new URLSearchParams(location.search), sp = q.get("sp");
@@ -1321,13 +1326,15 @@ async function pull() {
   } catch {}
   catchUp();
 }
+/** Image de la serre : 0 vide (à planter), 1 pousses, 2 plantes, 3 fleurs. */
+const bedFrame = (e) => (!e.planted ? 0 : e.grown >= FLOWER_TIME ? 3 : e.grown >= FLOWER_TIME / 2 ? 2 : 1);
 /** Cueille la fleur d'une serre de l'usine : le serveur la tire et l'ajoute à l'inventaire de la salle. */
 async function pick(e) {
   if (!API) return toast("Ouvre l'usine depuis ta salle pour cueillir les fleurs.");
   if (e.picking) return; e.picking = true;
   try {
     const r = await fetch(API + "/fleur", { method:"POST" }), j = await r.json();
-    if (r.ok) { e.grown = 0; fx(e.x * T + 16, e.y * T, "✿ " + j.name, "#ff9ad5"); toast(`Tu as cueilli : ${j.name} ! (encore ${j.left} aujourd'hui)`); push(); }
+    if (r.ok) { e.planted = false; e.grown = 0; fx(e.x * T + 16, e.y * T, "✿ " + j.name, "#ff9ad5"); toast(`Tu as cueilli : ${j.name} ! (encore ${j.left} aujourd'hui)`); push(); }
     else toast(j.error || "Cueillette impossible pour l'instant.");
   } catch { toast("Cueillette impossible pour l'instant."); }
   e.picking = false; ui.dirty = true;
