@@ -1,38 +1,56 @@
 {
   "tileSize": 32,
+  "projection": "vue 3/4 : un objet de hauteur Z sur une emprise W x H tuiles est dessiné dans une case W*32 x (H*32+Z+marge) ; le bas de la case = le bas de l'emprise. Trier l'affichage par bas d'emprise.",
+  "orientations": {
+    "h": "vue de face : le tapis entre à l'ouest et sort à l'est (rangée du bas de l'emprise)",
+    "v": "vue de côté : le tapis entre au nord et sort au sud (colonne (W-1)//2)"
+  },
+  "families": {
+    "art": "bois et argile, à la main (étapes 1-3)",
+    "vap": "fonte et cuivre, vapeur (étape 4)",
+    "elec": "acier et bandes jaunes, électricité (étapes 5-8)",
+    "robot": "blanc et bleu, robots (étape 6)"
+  },
   "stages": {
     "1": {
       "name": "Atelier du lutin",
-      "folder": "atelier"
+      "folder": "etape-1",
+      "family": "art"
     },
     "2": {
       "name": "Atelier équipé",
-      "folder": "etape-2"
+      "folder": "etape-2",
+      "family": "art"
     },
     "3": {
       "name": "Petite fabrique",
-      "folder": "etape-3"
+      "folder": "etape-3",
+      "family": "art"
     },
     "4": {
       "name": "Manufacture à vapeur",
-      "folder": "etape-4"
+      "folder": "etape-4",
+      "family": "vap"
     },
     "5": {
       "name": "Usine électrique",
-      "folder": "etape-5"
+      "folder": "etape-5",
+      "family": "elec"
     },
     "6": {
       "name": "Usine automatisée",
-      "folder": "etape-6"
+      "folder": "etape-6",
+      "family": "robot"
     },
     "7": {
       "name": "Complexe industriel",
-      "folder": "etape-7"
+      "folder": "etape-7",
+      "family": "elec"
     },
     "8": {
       "name": "Multinationale",
-      "folder": "etape-8"
+      "folder": "etape-8",
+      "family": "elec"
     }
-  },
-  "notes": "Sprites plus hauts que leur emprise : ancrer en bas de l'emprise, trier par y."
+  }
 }

@@ -1,31 +1,310 @@
 {
   "name": "Petite fabrique",
-  "assets": {
-    "wood_belt": {
-      "file": "wood_belt.png",
+  "family": "art",
+  "belt": "../tapis/bois.png",
+  "machines": {
+    "kiln_belt": {
+      "role": "sable -> boule transparente (tapis)",
+      "family": "art",
+      "h": {
+        "file": "kiln_belt_h.png",
+        "frame": [
+          64,
+          85
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "kiln_belt_v.png",
+        "frame": [
+          32,
+          94
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    },
+    "star_press": {
+      "role": "bois -> étoile (tapis)",
+      "family": "art",
+      "h": {
+        "file": "star_press_h.png",
+        "frame": [
+          64,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "star_press_v.png",
+        "frame": [
+          32,
+          106
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    },
+    "loom": {
+      "role": "branche + boules -> guirlande (tapis)",
+      "family": "art",
+      "h": {
+        "file": "loom_h.png",
+        "frame": [
+          64,
+          67
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "loom_v.png",
+        "frame": [
+          32,
+          95
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    },
+    "paint_table_belt": {
+      "role": "boule -> boule peinte (tapis)",
+      "family": "art",
+      "h": {
+        "file": "paint_table_belt_h.png",
+        "frame": [
+          64,
+          69
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "paint_table_belt_v.png",
+        "frame": [
+          32,
+          97
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    },
+    "wreath_table_belt": {
+      "role": "branche -> couronne (tapis)",
+      "family": "art",
+      "h": {
+        "file": "wreath_table_belt_h.png",
+        "frame": [
+          64,
+          71
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "wreath_table_belt_v.png",
+        "frame": [
+          32,
+          99
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    }
+  },
+  "objects": {
+    "source_sand": {
+      "file": "source_sand.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4,
-      "rows": [
-        "E",
-        "W",
-        "S",
-        "N",
-        "W>S",
-        "S>W",
-        "E>S",
-        "S>E",
-        "W>N",
-        "N>W",
-        "E>N",
-        "N>E"
+      "footprint": [
+        1,
+        1
       ],
-      "note": "même géométrie que les tapis métal"
+      "gives": "sand"
     },
-    "crank_station": {
-      "file": "crank_station.png",
+    "source_branch": {
+      "file": "source_branch.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "branch"
+    },
+    "ship_crate": {
+      "file": "ship_crate.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "accepts": "produits finis -> pièces"
+    },
+    "source_wood": {
+      "file": "source_wood.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "wood"
+    },
+    "crank": {
+      "file": "crank.png",
       "frame": [
         32,
         32
@@ -36,32 +315,33 @@
         1
       ],
       "role": "fait avancer les tapis en bois quand on clique"
-    },
-    "station_star_press": {
-      "file": "station_star_press.png",
+    }
+  },
+  "tiles": {
+    "floor_wood": {
+      "file": "floor_wood.png",
       "frame": [
-        64,
+        32,
+        32
+      ],
+      "tiles": [
+        "planche",
+        "noeud",
+        "clous"
+      ]
+    },
+    "wall_log": {
+      "file": "wall_log.png",
+      "frame": [
+        32,
         64
       ],
-      "frames": 4,
-      "footprint": [
-        2,
-        2
+      "tiles": [
+        "simple",
+        "fenêtre",
+        "étagère"
       ],
-      "makes": "wood_star + paint -> star"
-    },
-    "station_garland_loom": {
-      "file": "station_garland_loom.png",
-      "frame": [
-        64,
-        64
-      ],
-      "frames": 4,
-      "footprint": [
-        2,
-        2
-      ],
-      "makes": "branch + ball -> garland"
+      "note": "mur du fond, 2 tuiles de haut"
     }
   }
 }

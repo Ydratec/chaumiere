@@ -1,22 +1,8 @@
 {
   "name": "Complexe industriel",
-  "assets": {
-    "tiles_floor_asphalt": {
-      "file": "tiles_floor_asphalt.png",
-      "tiles": [
-        "asphalte",
-        "ligne_blanche",
-        "ligne_jaune",
-        "bord_neige"
-      ]
-    },
-    "tiles_floor_snow": {
-      "file": "tiles_floor_snow.png",
-      "tiles": [
-        "neige",
-        "neige_herbe"
-      ]
-    },
+  "family": "elec",
+  "belt": "../tapis/metal.png",
+  "objects": {
     "building_warehouse": {
       "file": "building_warehouse.png",
       "frame": [
@@ -40,34 +26,138 @@
         3,
         2
       ]
-    },
-    "vehicle_truck": {
-      "file": "vehicle_truck.png",
-      "frame": [
-        96,
-        64
-      ],
-      "frames": 4,
-      "rows": [
-        "right",
-        "left"
-      ],
-      "footprint": [
-        3,
-        1
-      ]
-    },
-    "vehicle_forklift": {
-      "file": "vehicle_forklift.png",
+    }
+  },
+  "tiles": {
+    "floor_asphalt": {
+      "file": "floor_asphalt.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4,
-      "rows": [
-        "right",
-        "left"
+      "tiles": [
+        "asphalte",
+        "ligne_blanche",
+        "ligne_jaune",
+        "bord_neige"
+      ]
+    },
+    "floor_snow": {
+      "file": "floor_snow.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "neige",
+        "neige_herbe"
       ]
     }
-  }
+  },
+  "vehicles": {
+    "truck": {
+      "right": {
+        "file": "vehicle_truck_right.png",
+        "frame": [
+          96,
+          64
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          1
+        ]
+      },
+      "left": {
+        "file": "vehicle_truck_left.png",
+        "frame": [
+          96,
+          64
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          1
+        ]
+      },
+      "down": {
+        "file": "vehicle_truck_down.png",
+        "frame": [
+          64,
+          136
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ]
+      },
+      "up": {
+        "file": "vehicle_truck_up.png",
+        "frame": [
+          64,
+          136
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ]
+      }
+    },
+    "forklift": {
+      "right": {
+        "file": "vehicle_forklift_right.png",
+        "frame": [
+          32,
+          32
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "left": {
+        "file": "vehicle_forklift_left.png",
+        "frame": [
+          32,
+          32
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "down": {
+        "file": "vehicle_forklift_down.png",
+        "frame": [
+          32,
+          60
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "up": {
+        "file": "vehicle_forklift_up.png",
+        "frame": [
+          32,
+          60
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      }
+    }
+  },
+  "reuses": [
+    "etape-5",
+    "etape-6"
+  ]
 }

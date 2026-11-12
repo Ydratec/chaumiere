@@ -12,7 +12,7 @@ def head_pos(sp,anim,f):
     else: oy=0
     return 16,12+oy
 def draw(sp,acc,d,anim,f):
-    cv=Cv(32,32); hx,hy=head_pos(sp,anim,f); side=d=='right'
+    cv=char_canvas(); hx,hy=head_pos(sp,anim,f); side=d=="right"
     if side: hx+=1
     t=hy-6+TOP.get(sp,0)
     if acc=='hat':

@@ -1,56 +1,239 @@
 {
   "name": "Usine automatisée",
-  "assets": {
-    "robot_arm": {
-      "file": "robot_arm.png",
-      "frame": [
-        32,
-        48
-      ],
-      "frames": 4,
-      "footprint": [
-        1,
-        1
-      ],
-      "note": "joue 0-1-2-3-2-1 : prend au sud, dépose au nord ; pivoter de 90° pour les autres sens"
+  "family": "robot",
+  "belt": "../tapis/metal.png",
+  "machines": {
+    "paint_robot": {
+      "role": "boule -> boule peinte (rapide)",
+      "family": "robot",
+      "h": {
+        "file": "paint_robot_h.png",
+        "frame": [
+          64,
+          80
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 1
+          },
+          "out": {
+            "side": "E",
+            "row": 1
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "paint_robot_v.png",
+        "frame": [
+          64,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
     },
-    "scanner_gate": {
-      "file": "scanner_gate.png",
-      "frame": [
-        32,
-        48
-      ],
-      "frames": 4,
-      "footprint": [
-        1,
-        1
-      ],
-      "role": "contrôle qualité, se pose au-dessus d'un tapis"
+    "assembly_robot": {
+      "role": "assemble étoiles, guirlandes, sapins, couronnes",
+      "family": "robot",
+      "h": {
+        "file": "assembly_robot_h.png",
+        "frame": [
+          64,
+          80
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 1
+          },
+          "out": {
+            "side": "E",
+            "row": 1
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "assembly_robot_v.png",
+        "frame": [
+          64,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    }
+  },
+  "objects": {
+    "qc_tunnel": {
+      "h": {
+        "file": "qc_tunnel_h.png",
+        "frame": [
+          32,
+          50
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "on": "tapis horizontal"
+      },
+      "v": {
+        "file": "qc_tunnel_v.png",
+        "frame": [
+          32,
+          50
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "on": "tapis vertical"
+      },
+      "role": "contrôle qualité au-dessus du tapis"
     },
     "splitter": {
-      "file": "splitter.png",
+      "h": {
+        "file": "splitter_h.png",
+        "frame": [
+          32,
+          76
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "flow": "ouest -> est, 2 rangées"
+      },
+      "v": {
+        "file": "splitter_v.png",
+        "frame": [
+          64,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "flow": "nord -> sud, 2 colonnes"
+      },
+      "role": "répartit les objets sur 2 tapis"
+    },
+    "robot_arm_ns": {
+      "file": "robot_arm_ns.png",
       "frame": [
         32,
-        64
+        114
       ],
       "frames": 4,
       "footprint": [
         1,
-        2
+        1
       ],
-      "role": "entrée ouest, sorties est sur les 2 rangées"
+      "footprintOrigin": [
+        0,
+        50
+      ],
+      "hand": [
+        [
+          16,
+          92
+        ],
+        [
+          16,
+          60
+        ],
+        [
+          16,
+          39
+        ],
+        [
+          16,
+          28
+        ]
+      ],
+      "play": "0-1-2-3-2-1 ; objet tenu dessiné à « hand » (frames 1-2)",
+      "move": "prend au sud, dépose au nord (inverser pour l'autre sens)"
     },
-    "station_paint_robot": {
-      "file": "station_paint_robot.png",
+    "robot_arm_we": {
+      "file": "robot_arm_we.png",
       "frame": [
-        64,
-        64
+        96,
+        72
       ],
       "frames": 4,
       "footprint": [
-        2,
-        2
-      ]
+        1,
+        1
+      ],
+      "footprintOrigin": [
+        32,
+        36
+      ],
+      "hand": [
+        [
+          16,
+          43
+        ],
+        [
+          37,
+          33
+        ],
+        [
+          59,
+          33
+        ],
+        [
+          80,
+          43
+        ]
+      ],
+      "play": "0-1-2-3-2-1 ; objet tenu dessiné à « hand » (frames 1-2)",
+      "move": "prend à l'ouest, dépose à l'est (inverser pour l'autre sens)"
     },
     "control_terminal": {
       "file": "control_terminal.png",
@@ -64,5 +247,34 @@
         1
       ]
     }
-  }
+  },
+  "tiles": {
+    "floor_concrete": {
+      "file": "floor_concrete.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "béton",
+        "bord_danger",
+        "allée"
+      ]
+    },
+    "wall_metal": {
+      "file": "wall_metal.png",
+      "frame": [
+        32,
+        64
+      ],
+      "tiles": [
+        "simple",
+        "sortie",
+        "lampe"
+      ]
+    }
+  },
+  "reuses": [
+    "etape-5"
+  ]
 }

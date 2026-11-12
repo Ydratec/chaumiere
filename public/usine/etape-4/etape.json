@@ -1,69 +1,355 @@
 {
   "name": "Manufacture à vapeur",
-  "assets": {
-    "tiles_floor_stone": {
-      "file": "tiles_floor_stone.png",
-      "tiles": [
-        "dalle",
-        "dalle_fissure"
-      ]
+  "family": "vap",
+  "belt": "../tapis/fonte.png",
+  "machines": {
+    "steam_furnace": {
+      "role": "sable -> boule transparente",
+      "family": "vap",
+      "h": {
+        "file": "steam_furnace_h.png",
+        "frame": [
+          64,
+          83
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "steam_furnace_v.png",
+        "frame": [
+          32,
+          111
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
     },
-    "tiles_wall_brick": {
-      "file": "tiles_wall_brick.png",
-      "frame": [
-        32,
-        64
-      ],
-      "tiles": [
-        "plain",
-        "window",
-        "pipe"
-      ]
+    "steam_sprayer": {
+      "role": "boule -> boule peinte",
+      "family": "vap",
+      "h": {
+        "file": "steam_sprayer_h.png",
+        "frame": [
+          64,
+          73
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "steam_sprayer_v.png",
+        "frame": [
+          32,
+          101
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
     },
-    "tiles_pipes": {
-      "file": "tiles_pipes.png",
-      "tiles": [
-        "h",
-        "v",
-        "ne",
-        "nw",
-        "se",
-        "sw"
-      ]
+    "steam_press": {
+      "role": "bois -> étoile",
+      "family": "vap",
+      "h": {
+        "file": "steam_press_h.png",
+        "frame": [
+          64,
+          75
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "steam_press_v.png",
+        "frame": [
+          32,
+          102
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
     },
+    "steam_loom": {
+      "role": "branche + boules -> guirlande",
+      "family": "vap",
+      "h": {
+        "file": "steam_loom_h.png",
+        "frame": [
+          64,
+          68
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "steam_loom_v.png",
+        "frame": [
+          32,
+          96
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    },
+    "steam_wreath": {
+      "role": "branche + ruban -> couronne",
+      "family": "vap",
+      "h": {
+        "file": "steam_wreath_h.png",
+        "frame": [
+          64,
+          74
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 0
+          },
+          "out": {
+            "side": "E",
+            "row": 0
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "steam_wreath_v.png",
+        "frame": [
+          32,
+          102
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    },
+    "boiler": {
+      "role": "énergie (vapeur)",
+      "family": "vap",
+      "h": {
+        "file": "boiler_h.png",
+        "frame": [
+          64,
+          120
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "boiler_v.png",
+        "frame": [
+          64,
+          120
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
+    },
+    "steam_tree": {
+      "role": "sapin + boules + étoile -> sapin décoré",
+      "family": "vap",
+      "h": {
+        "file": "steam_tree_h.png",
+        "frame": [
+          64,
+          94
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "W",
+            "row": 1
+          },
+          "out": {
+            "side": "E",
+            "row": 1
+          }
+        },
+        "view": "de face (ports ouest/est)"
+      },
+      "v": {
+        "file": "steam_tree_v.png",
+        "frame": [
+          64,
+          90
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "ports": {
+          "in": {
+            "side": "N",
+            "col": 0
+          },
+          "out": {
+            "side": "S",
+            "col": 0
+          }
+        },
+        "view": "de côté (ports nord/sud)"
+      }
+    }
+  },
+  "objects": {
     "pipe_valve": {
       "file": "pipe_valve.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4
-    },
-    "station_boiler": {
-      "file": "station_boiler.png",
-      "frame": [
-        64,
-        64
-      ],
       "frames": 4,
       "footprint": [
-        2,
-        2
-      ],
-      "role": "produit la vapeur des machines reliées par tuyaux"
-    },
-    "station_steam_press": {
-      "file": "station_steam_press.png",
-      "frame": [
-        64,
-        64
-      ],
-      "frames": 4,
-      "footprint": [
-        2,
-        2
-      ],
-      "makes": "glass -> ball_clear (presse)"
+        1,
+        1
+      ]
     },
     "deco_steam_lamp": {
       "file": "deco_steam_lamp.png",
@@ -75,6 +361,82 @@
         1,
         1
       ]
+    },
+    "source_sand": {
+      "file": "source_sand.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "sand"
+    },
+    "source_wood": {
+      "file": "source_wood.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "wood"
+    },
+    "ship_crate": {
+      "file": "ship_crate.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ]
+    }
+  },
+  "tiles": {
+    "floor_stone": {
+      "file": "floor_stone.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "dalle",
+        "dalle_fissure"
+      ]
+    },
+    "wall_brick": {
+      "file": "wall_brick.png",
+      "frame": [
+        32,
+        64
+      ],
+      "tiles": [
+        "simple",
+        "fenêtre",
+        "tuyau"
+      ]
+    },
+    "pipes": {
+      "file": "pipes.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "h",
+        "v",
+        "ne",
+        "nw",
+        "se",
+        "sw"
+      ],
+      "note": "tuyaux de vapeur au sol, de la chaudière aux machines"
     }
   }
 }

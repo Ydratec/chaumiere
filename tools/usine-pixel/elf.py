@@ -1,7 +1,7 @@
 from lib import *
 # Elf: 32x32 frame, feet at y=30. dirs: down, up, left, right. anims: idle(2) walk(4) work(4) carry(4)
 def elf(dir='down',anim='walk',f=0):
-    cv=Cv(32,32)
+    cv=char_canvas()
     walk = anim in ('walk','carry')
     bob = [0,-1,0,-1][f] if walk else ([0,0,-1,-1][f] if anim=='idle' else 0)
     legA = [0,-2,0,0][f] if walk else 0   # left leg lift

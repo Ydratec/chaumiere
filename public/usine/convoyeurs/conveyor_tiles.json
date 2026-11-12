@@ -1,8 +1,0 @@
-{
-  "tileSize": 32,
-  "frames": 4,
-  "frameDurationMs": 90,
-  "layout": "rows = tile types, columns = animation frames 0..3",
-  "rows": ["E","W","S","N","W>S","S>W","E>S","S>E","W>N","N>W","E>N","N>E"],
-  "naming": "Straight: direction of travel. Turn 'A>B': items enter from edge A and leave through edge B."
-}

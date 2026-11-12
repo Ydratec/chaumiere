@@ -1,0 +1,68 @@
+{
+  "items_16x16.png": {
+    "frame": [
+      16,
+      16
+    ],
+    "order": [
+      "sand",
+      "glass",
+      "ball_clear",
+      "ball_red",
+      "ball_green",
+      "ball_gold",
+      "ball_blue",
+      "paint",
+      "branch",
+      "ribbon",
+      "wreath",
+      "wood",
+      "wood_star",
+      "star",
+      "garland",
+      "tree",
+      "gift",
+      "coin"
+    ]
+  },
+  "ui_button.png": {
+    "frame": [
+      48,
+      16
+    ],
+    "states": [
+      "normal",
+      "hover",
+      "pressed",
+      "disabled"
+    ],
+    "nineSlice": 4
+  },
+  "ui_panel.png": {
+    "nineSlice": 6
+  },
+  "ui_progress_bar.png": {
+    "rows": [
+      "empty",
+      "full"
+    ]
+  },
+  "ui_icons.png": {
+    "frame": [
+      16,
+      16
+    ],
+    "order": [
+      "hand",
+      "work",
+      "exclaim"
+    ]
+  },
+  "icon_globe.png": {
+    "frame": [
+      32,
+      32
+    ],
+    "frames": 4
+  }
+}

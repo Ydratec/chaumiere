@@ -18,7 +18,7 @@ def bolt(cv,x,y):
     cv.p(x,y,C('#d7dbe3')); cv.p(x+1,y,C('#8a909c')); cv.p(x,y+1,C('#8a909c')); cv.p(x+1,y+1,C('#3a3d46'))
 def cyl_v(cv,x0,x1,y0,y1,c,cap=True):
     """vertical cylinder (tank/chimney) seen in 3/4: shaded columns + elliptical top"""
-    w=x1-x0
+    x0,x1,y0,y1=int(x0),int(x1),int(y0),int(y1); w=x1-x0
     for x in range(x0,x1):
         t=(x-x0)/max(1,w-1)
         col=lt(c,.3) if t<.2 else c if t<.6 else dk(c,.25) if t<.85 else dk(c,.4)
@@ -28,6 +28,7 @@ def cyl_v(cv,x0,x1,y0,y1,c,cap=True):
     cv.ell((x0+x1)/2,y1,w/2,max(1.5,w/6),lambda u,v,d,x,y: None if y<y1 else dk(c,.4))
 def cyl_h(cv,x0,x1,yc,r,c):
     """horizontal cylinder (boiler) : shaded rows + end cap"""
+    x0,x1=int(x0),int(x1)
     for y in range(int(yc-r),int(yc+r)):
         t=(y-(yc-r))/(2*r)
         col=lt(c,.3) if t<.2 else c if t<.6 else dk(c,.25) if t<.85 else dk(c,.4)

@@ -33,7 +33,7 @@ def shade(c,u,v):
 def draw(sp,ci,d,anim,f):
     """d in down/right/up ; left is mirrored right."""
     s=spec(sp,ci); fur,dark,belly,eye=s['fur'],s['dark'],s['belly'],s['eye']
-    cv=Cv(32,32)
+    cv=char_canvas()
     walk=anim in('walk','carry'); hop=sp in HOP
     if walk and hop: oy=[0,-2,-3,-1][f]
     elif walk: oy=[0,-1,0,-1][f]
@@ -257,7 +257,7 @@ def draw(sp,ci,d,anim,f):
         y=hy
         ec=eye
         def eye2(x,yy,c=ec):
-            cv.r(x,yy,x+2,yy+2,c); cv.p(x+1,yy,lt(c,.85) if c==INK else C('#ffffff'))
+            cv.r(x,yy-.7,x+2,yy+2,c); cv.p(x+.4,yy-.5,C('#ffffff')); cv.p(x+1.3,yy+1.3,lt(c,.5) if c==INK else lt(c,.4))
         if sp=='frog':
             cv.p(hx-3,y+3,PINK); cv.p(hx+3,y+3,PINK)
             cv.r(hx-2,y+2,hx+3,y+3,INK) if not side else cv.r(hx+2,y+2,hx+6,y+3,INK)

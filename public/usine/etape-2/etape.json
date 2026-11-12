@@ -1,31 +1,158 @@
 {
   "name": "Atelier équipé",
-  "assets": {
-    "station_kiln_bellows": {
-      "file": "station_kiln_bellows.png",
-      "frame": [
-        64,
-        64
-      ],
-      "frames": 4,
-      "footprint": [
-        2,
-        1
-      ],
-      "makes": "sand -> glass -> ball_clear (x2 vitesse)"
+  "family": "art",
+  "machines": {
+    "kiln_bellows": {
+      "role": "sable -> boule transparente (x2)",
+      "family": "art",
+      "h": {
+        "file": "kiln_bellows_h.png",
+        "frame": [
+          64,
+          85
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "kiln_bellows_v.png",
+        "frame": [
+          32,
+          98
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
     },
-    "station_lathe": {
-      "file": "station_lathe.png",
+    "lathe": {
+      "role": "bois -> étoile en bois",
+      "family": "art",
+      "h": {
+        "file": "lathe_h.png",
+        "frame": [
+          64,
+          54
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "lathe_v.png",
+        "frame": [
+          32,
+          84
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
+    },
+    "tree_bench": {
+      "role": "sapin + boules -> sapin décoré",
+      "family": "art",
+      "h": {
+        "file": "tree_bench_h.png",
+        "frame": [
+          64,
+          46
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "tree_bench_v.png",
+        "frame": [
+          32,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
+    }
+  },
+  "objects": {
+    "source_sand": {
+      "file": "source_sand.png",
       "frame": [
-        64,
-        64
+        32,
+        32
       ],
-      "frames": 4,
       "footprint": [
-        2,
+        1,
         1
       ],
-      "makes": "wood -> wood_star"
+      "gives": "sand"
+    },
+    "source_branch": {
+      "file": "source_branch.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "branch"
+    },
+    "ship_crate": {
+      "file": "ship_crate.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "accepts": "produits finis -> pièces"
+    },
+    "source_wood": {
+      "file": "source_wood.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "wood"
     },
     "storage_shelf": {
       "file": "storage_shelf.png",
@@ -37,7 +164,7 @@
         1,
         1
       ],
-      "role": "stockage +8"
+      "role": "stockage"
     },
     "deco_tool_rack": {
       "file": "deco_tool_rack.png",
@@ -49,34 +176,37 @@
         1,
         1
       ],
-      "layer": "wall"
-    },
-    "character_elf_assistant": {
-      "file": "character_elf_assistant.png",
+      "layer": "mur"
+    }
+  },
+  "tiles": {
+    "floor_wood": {
+      "file": "floor_wood.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4,
-      "rows": [
-        "idle_down",
-        "idle_left",
-        "idle_right",
-        "idle_up",
-        "walk_down",
-        "walk_left",
-        "walk_right",
-        "walk_up",
-        "work_down",
-        "work_left",
-        "work_right",
-        "work_up",
-        "carry_down",
-        "carry_left",
-        "carry_right",
-        "carry_up"
+      "tiles": [
+        "planche",
+        "noeud",
+        "clous"
+      ]
+    },
+    "wall_log": {
+      "file": "wall_log.png",
+      "frame": [
+        32,
+        64
       ],
-      "role": "lutin assistant (PNJ automatique)"
+      "tiles": [
+        "simple",
+        "fenêtre",
+        "étagère"
+      ],
+      "note": "mur du fond, 2 tuiles de haut"
     }
-  }
+  },
+  "reuses": [
+    "etape-1"
+  ]
 }

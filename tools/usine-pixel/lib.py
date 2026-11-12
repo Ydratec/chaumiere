@@ -30,7 +30,8 @@ class Cv:
             else: s.px[x,y]=c
     def g(s,x,y): return s.px[x,y] if 0<=x<s.W and 0<=y<s.H else (0,0,0,0)
     def r(s,x0,y0,x1,y1,c):
-        for y in range(int(y0),int(y1)):
+        x0,x1=int(round(x0)),int(round(x1))
+        for y in range(int(round(y0)),int(round(y1))):
             for x in range(int(x0),int(x1)): s.p(x,y,c)
     def ell(s,cx,cy,rx,ry,fn):
         for y in range(int(cy-ry-1),int(cy+ry+2)):
@@ -75,3 +76,26 @@ def table(cv,x0,x1,ytop,depth,apron,legh,wood=None):
     cv.r(x0,ytop,x1,ytop+1,w0); cv.r(x0,yt2-1,x1,yt2,w0)
     cv.r(x0,yt2,x1,ya,w2); cv.r(x0,ya-1,x1,ya,w3)
     return yt2,ya,yl
+
+# ---- character canvas: drawn in the 32x32 design space, rendered at 32x48 with finer detail ----
+CHAR_SIZE=(32,48); CHAR_K=1.4; CHAR_FEET=(16,46)
+class ScaledCv:
+    """Proxy canvas: coordinates of the 32x32 design (feet at 16,30) are mapped to a 32x48 frame
+    (feet at 16,46) with factor CHAR_K. Shapes scale, single pixels stay 1px -> more detail."""
+    def __init__(s):
+        s.base=Cv(*CHAR_SIZE); s.im=s.base.im; s.px=s.base.px; s.W,s.H=CHAR_SIZE; s.k=CHAR_K
+    def X(s,x): return CHAR_FEET[0]+(x-16)*s.k
+    def Y(s,y): return CHAR_FEET[1]+(y-30)*s.k
+    def p(s,x,y,c):
+        s.base.p(round(s.X(x+.5)-.5),round(s.Y(y+.5)-.5),c)
+    def r(s,x0,y0,x1,y1,c):
+        X0,X1=round(s.X(x0)),round(s.X(x1)); Y0,Y1=round(s.Y(y0)),round(s.Y(y1))
+        if X1<=X0: X1=X0+1
+        if Y1<=Y0: Y1=Y0+1
+        s.base.r(X0,Y0,X1,Y1,c)
+    def ell(s,cx,cy,rx,ry,fn): s.base.ell(s.X(cx),s.Y(cy),rx*s.k,ry*s.k,fn)
+    def shadow(s,cx,cy,rx,ry,a=70): s.base.shadow(s.X(cx),s.Y(cy),rx*s.k,ry*s.k,a)
+    def g(s,x,y): return s.base.g(round(s.X(x)),round(s.Y(y)))
+    def outline(s,*a,**k): s.base.outline(*a,**k)
+    def paste(s,im,x,y): s.base.paste(im,s.X(x),s.Y(y))
+def char_canvas(): return ScaledCv()

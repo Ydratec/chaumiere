@@ -1,0 +1,196 @@
+{
+  "name": "Atelier du lutin",
+  "family": "art",
+  "machines": {
+    "kiln": {
+      "role": "sable -> boule transparente",
+      "family": "art",
+      "h": {
+        "file": "kiln_h.png",
+        "frame": [
+          64,
+          85
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "kiln_v.png",
+        "frame": [
+          32,
+          98
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
+    },
+    "paint_table": {
+      "role": "boule transparente + peinture -> boule peinte",
+      "family": "art",
+      "h": {
+        "file": "paint_table_h.png",
+        "frame": [
+          64,
+          69
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "paint_table_v.png",
+        "frame": [
+          32,
+          101
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
+    },
+    "wreath_table": {
+      "role": "branche + ruban -> couronne",
+      "family": "art",
+      "h": {
+        "file": "wreath_table_h.png",
+        "frame": [
+          64,
+          71
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "ports": null,
+        "view": "de face (ports ouest/est)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      },
+      "v": {
+        "file": "wreath_table_v.png",
+        "frame": [
+          32,
+          103
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "ports": null,
+        "view": "de côté (ports nord/sud)",
+        "use": "le personnage se place sous l'emprise, face au nord"
+      }
+    }
+  },
+  "objects": {
+    "source_sand": {
+      "file": "source_sand.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "sand"
+    },
+    "source_branch": {
+      "file": "source_branch.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "gives": "branch"
+    },
+    "ship_crate": {
+      "file": "ship_crate.png",
+      "frame": [
+        32,
+        32
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "accepts": "produits finis -> pièces"
+    },
+    "deco_rug": {
+      "file": "deco_rug.png",
+      "frame": [
+        64,
+        32
+      ],
+      "footprint": [
+        2,
+        1
+      ],
+      "layer": "sol"
+    },
+    "deco_tree": {
+      "file": "deco_tree.png",
+      "frame": [
+        32,
+        64
+      ],
+      "footprint": [
+        1,
+        1
+      ]
+    }
+  },
+  "tiles": {
+    "floor_wood": {
+      "file": "floor_wood.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "planche",
+        "noeud",
+        "clous"
+      ]
+    },
+    "wall_log": {
+      "file": "wall_log.png",
+      "frame": [
+        32,
+        64
+      ],
+      "tiles": [
+        "simple",
+        "fenêtre",
+        "étagère"
+      ],
+      "note": "mur du fond, 2 tuiles de haut"
+    }
+  }
+}

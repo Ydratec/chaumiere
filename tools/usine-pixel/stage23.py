@@ -63,8 +63,8 @@ def assistant_elf():
 def wood_belt():
     """reuse conveyor geometry with wood palette (rollers + crank-driven)"""
     import importlib.util,sys
-    spec=importlib.util.spec_from_file_location('cg',__import__('os').path.join(__import__('os').path.dirname(__file__),'conveyors.py'))
-    src=open(__import__('os').path.join(__import__('os').path.dirname(__file__),'conveyors.py')).read()
+    spec=importlib.util.spec_from_file_location('cg',__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'conveyors.py'))
+    src=open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'conveyors.py')).read()
     src=src.replace("belt=C('#3b3d47'); belt_e=C('#2c2e36'); rid_h=C('#62667a'); rid_d=C('#202128')",
                     "belt=C('#a8743f'); belt_e=C('#8a5a2e'); rid_h=C('#d9a066'); rid_d=C('#5e3620')")
     src=src.replace("rail_o=C('#f2bd3e'); rail_i=C('#a86f18')","rail_o=C('#c48f55'); rail_i=C('#6b4223')")

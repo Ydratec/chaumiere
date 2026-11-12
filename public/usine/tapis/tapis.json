@@ -1,0 +1,28 @@
+{
+  "frame": [
+    32,
+    32
+  ],
+  "frames": 4,
+  "rows": [
+    "E",
+    "W",
+    "S",
+    "N",
+    "W>S",
+    "S>W",
+    "E>S",
+    "S>E",
+    "W>N",
+    "N>W",
+    "E>N",
+    "N>E"
+  ],
+  "files": {
+    "bois": "étape 3",
+    "fonte": "étape 4",
+    "metal": "étapes 5 à 8"
+  },
+  "naming": "Droit : sens de déplacement. Virage 'A>B' : entre par le bord A, sort par le bord B.",
+  "geometry": "tapis horizontal : surface y 4..24, face 24..29 (hauteur 5) ; tapis vertical : surface x 6..26"
+}

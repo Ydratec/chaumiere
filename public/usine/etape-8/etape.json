@@ -1,26 +1,30 @@
 {
   "name": "Multinationale",
-  "assets": {
+  "family": "elec",
+  "belt": "../tapis/metal.png",
+  "objects": {
     "tiles_water": {
       "file": "tiles_water.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4
-    },
-    "tiles_quay": {
-      "file": "tiles_quay.png",
-      "tiles": [
-        "quai",
-        "quai_bitte"
-      ]
+      "frames": 4,
+      "footprint": [
+        1,
+        1
+      ],
+      "layer": "sol"
     },
     "containers": {
       "file": "containers.png",
       "frame": [
-        64,
+        256,
         40
+      ],
+      "footprint": [
+        2,
+        1
       ],
       "variants": [
         "rouge",
@@ -28,10 +32,7 @@
         "bleu",
         "jaune"
       ],
-      "footprint": [
-        2,
-        1
-      ]
+      "note": "4 variantes côte à côte, 64x40 chacune"
     },
     "vehicle_cargo_ship": {
       "file": "vehicle_cargo_ship.png",
@@ -81,15 +82,139 @@
         3,
         2
       ]
-    },
-    "icon_globe": {
-      "file": "icon_globe.png",
+    }
+  },
+  "tiles": {
+    "quay": {
+      "file": "quay.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4,
-      "role": "icône UI marchés internationaux"
+      "tiles": [
+        "quai",
+        "quai_bitte"
+      ]
+    },
+    "floor_asphalt": {
+      "file": "floor_asphalt.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "asphalte",
+        "ligne_blanche",
+        "ligne_jaune",
+        "bord_neige"
+      ]
     }
-  }
+  },
+  "vehicles": {
+    "truck": {
+      "right": {
+        "file": "vehicle_truck_right.png",
+        "frame": [
+          96,
+          64
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          1
+        ]
+      },
+      "left": {
+        "file": "vehicle_truck_left.png",
+        "frame": [
+          96,
+          64
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          1
+        ]
+      },
+      "down": {
+        "file": "vehicle_truck_down.png",
+        "frame": [
+          64,
+          136
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ]
+      },
+      "up": {
+        "file": "vehicle_truck_up.png",
+        "frame": [
+          64,
+          136
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ]
+      }
+    },
+    "forklift": {
+      "right": {
+        "file": "vehicle_forklift_right.png",
+        "frame": [
+          32,
+          32
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "left": {
+        "file": "vehicle_forklift_left.png",
+        "frame": [
+          32,
+          32
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "down": {
+        "file": "vehicle_forklift_down.png",
+        "frame": [
+          32,
+          60
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "up": {
+        "file": "vehicle_forklift_up.png",
+        "frame": [
+          32,
+          60
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ]
+      }
+    }
+  },
+  "reuses": [
+    "etape-5",
+    "etape-6",
+    "etape-7"
+  ]
 }
