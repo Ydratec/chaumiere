@@ -71,21 +71,30 @@ const RECIPES = {
   loom:[{ id:"guirlande", name:"Guirlande", in:{ fil:1, perles:12 }, out:{ guirlande:1 }, t:3 }, { id:"ruban", name:"Ruban", in:{ fil:2, "@peinture":1 }, out:{ ruban:2 }, t:1 }],
   wreath_table_belt:[{ id:"couronne", name:"Couronne", in:{ branche:4, ruban:1, "@boule_finie":2 }, out:{ couronne:1 }, t:4 }],
 };
+RECIPES.elec_furnace = RECIPES.kiln_belt; RECIPES.paint_booth = RECIPES.paint_table_belt; RECIPES.assembler = RECIPES.star_press;
+RECIPES.elec_loom = RECIPES.loom; RECIPES.elec_wreath = RECIPES.wreath_table_belt;
+RECIPES.tree_decorator = [{ id:"sapin", name:"Sapin décoré", in:{ sapin_brut:1, "@boule_finie":6, guirlande:1, etoile_doree:1 }, out:{ sapin_decore:1 }, t:6 }];
 const MACH = {
   kiln:{ stage:1, name:"Four à boules" }, paint_table:{ stage:1, name:"Table de peinture" }, wreath_table:{ stage:1, name:"Table à couronnes" },
   kiln_bellows:{ stage:2, name:"Four à soufflet" }, lathe:{ stage:2, name:"Tour à bois" }, tree_bench:{ stage:2, name:"Établi à sapins" },
   kiln_belt:{ stage:3, name:"Four à tapis", power:true }, paint_table_belt:{ stage:3, name:"Peinture à tapis", power:true },
   star_press:{ stage:3, name:"Presse à manivelle", power:true }, loom:{ stage:3, name:"Métier à tisser", power:true },
   wreath_table_belt:{ stage:3, name:"Couronnes à tapis", power:true },
+  elec_furnace:{ stage:5, name:"Four à induction", power:"elec" }, paint_booth:{ stage:5, name:"Cabine de peinture", power:"elec" },
+  assembler:{ stage:5, name:"Assembleur", power:"elec" }, elec_loom:{ stage:5, name:"Métier électrique", power:"elec" },
+  elec_wreath:{ stage:5, name:"Machine à couronnes", power:"elec" }, tree_decorator:{ stage:5, name:"Décoratrice électrique", power:"elec" },
 };
-const SPEED = { 1:0.5, 2:0.75, 3:1 };
+const SPEED = { 1:0.5, 2:0.75, 3:1, 4:1.5, 5:2 };
 const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
   1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"]],
   2:[["wreath_table", 400], ["lathe", 830], ["tree_bench", 830], ["kiln_bellows", 830]],
   3:[["belt", 5, "Tapis en bois"], ["crank", 400, "Manivelle"], ["kiln_belt", 4700], ["paint_table_belt", 4700], ["star_press", 4700], ["loom", 4700], ["wreath_table_belt", 4700]],
 };
 const GATES = { 2:{ coins:50 }, 3:{ coins:20610, rate:{ key:"@boule_peinte", per_min:1 } } };
-const STAGE_NAMES = { 1:"Atelier du lutin", 2:"Atelier équipé", 3:"Petite fabrique" };
+const STAGE_NAMES = { 1:"Atelier du lutin", 2:"Atelier équipé", 3:"Petite fabrique", 4:"Manufacture à vapeur", 5:"Usine électrique" };
+const TILESET = { 1:["floor_wood", "wall_log"], 2:["floor_wood", "wall_log"], 3:["floor_wood", "wall_log"], 4:["floor_stone", "wall_brick"], 5:["floor_concrete", "wall_metal"] };
+const BELT_SPEED = { bois:0.5, fonte:1, metal:2 };      // cases/s : 1, 2 et 4 objets/s par voie
+const POLE_R = 4;
 const UNLOCK_TEXT = { 2:"Bois, fil et sapins ; table à couronnes, tour à bois, établi à sapins, four à soufflet.",
   3:"Tapis à deux voies, goulottes sur les tas, manivelles et machines à tapis." };
 const DIRS = { E:[1,0], S:[0,1], W:[-1,0], N:[0,-1] };
@@ -125,7 +134,7 @@ function addSources(stage) {
 }
 function addEnt(e) {
   e.id = S.ids++;
-  if (e.kind === "machine") Object.assign(e, { inb:{}, outb:{}, craft:null, boost:0, recipe:"auto", color:null, lane:0 });
+  if (e.kind === "machine") Object.assign(e, { inb:{}, outb:{}, craft:null, boost:0, recipe:e.recipe || "auto", color:e.color || null, lane:0 });
   if (e.kind === "crank") e.reserve = CRANK_MAX / 2;
   S.ents.push(e); invalidate(); return e;
 }
@@ -246,7 +255,7 @@ function updateMachine(m, dt) {
     if (r) { for (const k in r.in) consume(m, k, r.in[k]); m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; }
   }
   if (m.craft) {
-    if (info.power && !powered.has("m" + m.id)) m.stalled = true;
+    if (info.power === true ? !powered.has("m" + m.id) : info.power === "elec" ? !elecPowered(m) : false) m.stalled = true;
     else {
       m.stalled = false;
       m.craft.t += dt * (m.boost > 0 ? 3 : 1);
@@ -266,10 +275,8 @@ function updateMachine(m, dt) {
   if (pt && outTotal(m) > 0) {
     const [bx, by] = pt.out.outside, b = S.belts[bx + "," + by];
     if (b && b.d !== OPP[pt.out.side] && b.on) {
-      for (let tries = 0; tries < 2; tries++) {
-        const lane = (m.lane + tries) % 2;
-        if (laneRoom(b, lane, 0)) { const it = Object.keys(m.outb)[0]; b.lanes[lane].push({ it, p:0 }); if (!--m.outb[it]) delete m.outb[it]; m.lane = 1 - lane; break; }
-      }
+      // une machine pose toujours sur la voie de gauche : la voie de droite reste libre pour les jonctions
+      if (laneRoom(b, 0, 0)) { const it = Object.keys(m.outb)[0]; b.lanes[0].push({ it, p:0 }); if (!--m.outb[it]) delete m.outb[it]; }
     }
   }
 }
@@ -278,15 +285,18 @@ function updateMachine(m, dt) {
 // voie 0 = à gauche du sens de marche, voie 1 = à droite. Un tapis qui arrive par le flanc d'un autre dépose sur la voie de ce côté.
 const laneRoom = (b, lane, at) => b.lanes[lane].every((o) => Math.abs(o.p - at) >= GAP);
 let powered = new Set();
+function elecPowered(e) {   // réseau électrique : un générateur dans l'usine et un poteau à 4 cases au plus
+  return S.ents.some((g) => g.kind === "generator") && S.ents.some((p) => p.kind === "pole" && distTo(e, p.x, p.y) <= POLE_R);
+}
 function computePower() {
   powered = new Set();
   for (const c of S.ents) {
     if (c.kind !== "crank") continue;
     c.load = 0;
     if (c.reserve <= 0) continue;
-    const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power && !powered.has("m" + m.id))
+    const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === true && !powered.has("m" + m.id))
       .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, 4);
-    const bs = Object.values(S.belts).filter((b) => !powered.has("b" + b.x + "," + b.y))
+    const bs = Object.values(S.belts).filter((b) => (b.k || "bois") === "bois" && !powered.has("b" + b.x + "," + b.y))
       .map((b) => [Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)), b]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, 8);
     for (const [, m] of ms) powered.add("m" + m.id);
     for (const [, b] of bs) powered.add("b" + b.x + "," + b.y);
@@ -340,31 +350,37 @@ function deliver(b, lane, it) {   // l'objet de tête est au bout du tapis : où
 }
 function updateBelts(dt) {
   for (const b of Object.values(S.belts)) {
-    b.on = powered.has("b" + b.x + "," + b.y);
+    b.on = (b.k || "bois") === "bois" ? powered.has("b" + b.x + "," + b.y) : true;
+    const V = BELT_SPEED[b.k || "bois"];
     if (!b.on) continue;
     for (let lane = 0; lane < 2; lane++) {
       const L = b.lanes[lane]; L.sort((a, c) => c.p - a.p);
-      let limit = 1; b.blocked = b.blocked || [false, false]; b.blocked[lane] = false;
+      let limit = 1; b.blocked = b.blocked || [false, false]; b.bt = b.bt || [0, 0]; b.blocked[lane] = false;
       for (let i = 0; i < L.length; i++) {
         const o = L[i];
-        o.p = Math.min(o.p + BELT_V * dt, limit);
+        o.p = Math.min(o.p + V * dt, limit);
         if (i === 0 && o.p >= 1) {
           if (deliver(b, lane, o.it)) { L.shift(); i--; limit = 1; continue; }
           b.blocked[lane] = true;
         }
         limit = o.p - GAP;
       }
+      b.bt[lane] = b.blocked[lane] ? b.bt[lane] + dt : 0;
     }
   }
-  for (const s of S.ents) {                         // goulottes : le tas verse sur le tapis qui part de lui
-    if (s.kind !== "source" || !s.chute || s.stock < 1) continue;
-    s.acc = Math.min(1, s.acc + dt * CHUTE_RATE); if (s.acc < 1) continue;
-    for (const [dx, dy] of Object.values(DIRS)) {
+  // goulottes (le tas verse sur le tapis qui part de lui) et extracteurs (étape 5) : la matière tombe sur la voie de leur côté
+  for (const s of S.ents) {
+    const chute = s.kind === "source" && s.chute && s.stock >= 1, ext = s.kind === "extractor" && elecPowered(s);
+    if (!chute && !ext) continue;
+    s.acc = Math.min(1, (s.acc || 0) + dt * (ext ? s.rate : CHUTE_RATE)); if (s.acc < 1) continue;
+    for (const [side, [dx, dy]] of Object.entries(DIRS)) {
       const b = S.belts[(s.x + dx) + "," + (s.y + dy)];
-      if (!b || !b.on || (DIRS[b.d][0] === -dx && DIRS[b.d][1] === -dy)) continue;
-      const lane = laneRoom(b, s.lane, 0) ? s.lane : laneRoom(b, 1 - s.lane, 0) ? 1 - s.lane : -1;
-      if (lane < 0) continue;
-      b.lanes[lane].push({ it:s.gives, p:0 }); s.stock--; s.acc = 0; s.lane = 1 - lane; break;
+      if (!b || !b.on || b.d === OPP[side]) continue;
+      const from = OPP[side];                          // côté du tapis où se trouve la source
+      const lane = from === b.d || from === OPP[b.d] ? (s.lane || 0) : from === LEFT[b.d] ? 0 : 1;
+      const at = from === OPP[b.d] ? 0 : 0.5;
+      if (!laneRoom(b, lane, at)) continue;
+      b.lanes[lane].push({ it:s.gives, p:at }); if (chute) s.stock--; s.acc = 0; s.lane = 1 - (s.lane || 0); break;
     }
   }
 }
@@ -395,8 +411,8 @@ function buy(raw, n) {
   const cost = n * RAW[raw].cost; if (S.coins < cost) { toast("Pas assez de pièces"); return; }
   S.coins -= cost; s.stock += n; fx(s.x * T + 16, s.y * T, "+" + n, "#9fe3ff"); ui.dirty = true;
 }
-const SELL = { 1:["boule_rouge", "boule_verte", "boule_or", "boule_bleue", "@boule_peinte"], 2:["couronne", "etoile_bois", "sapin_decore"], 3:["@boule_finie", "etoile_doree", "guirlande"] };
-const BASE_VALUE = { 1:20, 2:150, 3:1200 };
+const SELL = { 1:["boule_rouge", "boule_verte", "boule_or", "boule_bleue", "@boule_peinte"], 2:["couronne", "etoile_bois", "sapin_decore"], 3:["@boule_finie", "etoile_doree", "guirlande"], 4:[], 5:[] };
+const BASE_VALUE = { 1:20, 2:150, 3:1200, 4:4000, 5:9000 };
 function newContract() {
   const keys = []; for (let s = 1; s <= S.stage; s++) keys.push(...SELL[s]);
   const free = keys.filter((k) => !S.contracts.some((c) => c.key === k)), pool = free.length ? free : keys;
@@ -465,6 +481,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     p.work = 0.3; select(e, true); return;
   }
   if (e.kind === "crank") { e.reserve = Math.min(CRANK_MAX, e.reserve + (first ? CRANK_WIND : CRANK_WIND / 4)); p.work = 0.4; return; }
+  if (e.kind === "extractor" || e.kind === "generator" || e.kind === "pole") { if (first) select(e); return; }
   if (e.kind !== "machine") return;
   let moved = 0;
   for (let i = 0; i < BAG; i++) {                       // déposer ce que la machine accepte
@@ -611,7 +628,7 @@ function drawPlayer(time) {
 }
 function drawEnt(e, time) {
   const s = spr(e), i = stageImg(e.stage, s.file);
-  const working = e.kind === "machine" && e.craft && !e.stalled;
+  const working = (e.kind === "machine" && e.craft && !e.stalled) || ((e.kind === "extractor" || e.kind === "generator") && elecPowered(e));
   const frames = s.frames || 1, f = working ? Math.floor(time * (e.boost > 0 ? 16 : 8)) % frames : 0;
   const ox = (s.origin || [0, 0])[0], oy = (s.origin || [0, 0])[1];
   const fw = s.frame[0], fh = s.frame[1], X = e.x * T - ox, Y = e.y * T - oy;
@@ -630,6 +647,7 @@ function drawEnt(e, time) {
     if (e.chute) drawIcon("tapis", e.x * T + 8, e.y * T + 20);
   }
   if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > 10 ? "#9ad8ff" : "#d8382f");
+  if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
 function draw(time) {
@@ -640,25 +658,41 @@ function draw(time) {
   cam.y = H * T <= vh ? (H * T - vh) / 2 : Math.max(0, Math.min(H * T - vh + 60, p.py * T + 16 - vh / 2));
   ctx.setTransform(s, 0, 0, s, Math.round(-cam.x * s), Math.round(-cam.y * s));
   ctx.imageSmoothingEnabled = false;
-  const st = Math.min(S.stage, 3), wall = stageImg(st, "wall_log.png"), floor = stageImg(st, "floor_wood.png");
+  const st = S.stage, wall = stageImg(st, TILESET[st][1] + ".png"), floor = stageImg(st, TILESET[st][0] + ".png");
   for (let x = 0; x < W; x++) {
     if (wall) ctx.drawImage(wall, (hash(x, 0) % 7 === 0 ? 1 : hash(x, 1) % 9 === 0 ? 2 : 0) * 32, 0, 32, 64, x * T, 0, 32, 64);
-    for (let y = Y0; y < H; y++) if (floor) { const h = hash(x, y) % 10; ctx.drawImage(floor, (h < 7 ? 0 : h < 9 ? 1 : 2) * 32, 0, 32, 32, x * T, y * T, 32, 32); }
+    for (let y = Y0; y < H; y++) if (floor) { const h = hash(x, y) % 10, n = floor.width / 32; const v = n === 2 ? (h < 8 ? 0 : 1) : st === 5 ? 0 : (h < 7 ? 0 : h < 9 ? 1 : 2); ctx.drawImage(floor, v * 32, 0, 32, 32, x * T, y * T, 32, 32); }
   }
   // portée du personnage
   if (ui.mode === "hand") { ctx.fillStyle = "rgba(255,240,160,.05)"; ctx.fillRect((p.x - RANGE) * T, (p.y - RANGE) * T, (2 * RANGE + 1) * T, (2 * RANGE + 1) * T); }
   for (const e of S.ents) if (e.kind === "rug") drawEnt(e, time);
   const belt = img("usine/tapis/bois.png"), bl = Object.values(S.belts);
-  for (const b of bl) if (belt) ctx.drawImage(belt, (b.on ? Math.floor(time * 6) % 4 : 0) * 32, BELT_ROWS.indexOf(beltRow(b)) * 32, 32, 32, b.x * T, b.y * T, 32, 32);
+  for (const b of bl) { const bi = img(`usine/tapis/${b.k || "bois"}.png`); if (bi) ctx.drawImage(bi, (b.on ? Math.floor(time * 6 * BELT_SPEED[b.k || "bois"] / 0.5) % 4 : 0) * 32, BELT_ROWS.indexOf(beltRow(b)) * 32, 32, 32, b.x * T, b.y * T, 32, 32); }
   for (const b of bl) for (let l = 0; l < 2; l++) for (const o of b.lanes[l]) { const [x, y] = beltPos(b, l, o.p); drawItem(o.it, x - 8, y - 11); }
   for (const b of bl) {
     if (!b.on) drawIcon("eclair", b.x * T + 8, b.y * T + 6);
-    else if (b.blocked && (b.blocked[0] || b.blocked[1]) && Math.floor(time * 2) % 2) drawIcon("non", b.x * T + 8, b.y * T + 6);
+    else if (b.bt && (b.bt[0] > 4 || b.bt[1] > 4) && Math.floor(time * 2) % 2) drawIcon("non", b.x * T + 8, b.y * T + 6);   // voie bloquée depuis plus de 4 s
   }
   const list = [];
   for (const e of S.ents) if (e.kind !== "rug") list.push([(e.y + fp(e).h) * T - 1, () => drawEnt(e, time)]);
   list.push([p.py * T + T, () => drawPlayer(time)]);
   list.sort((a, b) => a[0] - b[0]); for (const [, fn] of list) fn();
+  // câbles : arbre couvrant des poteaux (chaque poteau relié au plus proche déjà relié), plus le générateur
+  const poles = S.ents.filter((e) => e.kind === "pole"), gen = S.ents.find((e) => e.kind === "generator");
+  if (poles.length) {
+    const top = (e) => e.kind === "pole" ? [e.x * T + 16, e.y * T - 30] : [e.x * T + 20, e.y * T - 20];
+    const done = [gen || poles[0]], left = poles.filter((p) => p !== done[0]), edges = [];
+    while (left.length) {
+      let best = null;
+      for (const a of done) for (const b of left) { const d = Math.hypot(a.x - b.x, a.y - b.y); if (!best || d < best[0]) best = [d, a, b]; }
+      edges.push([best[1], best[2]]); done.push(best[2]); left.splice(left.indexOf(best[2]), 1);
+    }
+    ctx.strokeStyle = "#1c1820"; ctx.lineWidth = 1;
+    for (const [a, b] of edges) {
+      const [ax, ay] = top(a), [bx, by] = top(b);
+      ctx.beginPath(); ctx.moveTo(ax + 0.5, ay + 0.5); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + 10, bx + 0.5, by + 0.5); ctx.stroke();
+    }
+  }
   if (ui.hover && ui.mode === "build" && ui.build) {
     const [hx, hy] = ui.hover, key = ui.build, ok = canPlace(key, ROT[ui.rot], hx, hy) && S.coins >= costOf(key);
     ctx.globalAlpha = 0.6;
@@ -769,7 +803,9 @@ function renderUI() {
       h += `<p>Pour passer à l'étape ${S.stage + 1} (${STAGE_NAMES[S.stage + 1]}) :</p>`;
       for (const p of g.parts) h += `<div class="card"><div class="row">${icon(p.ok ? "ok" : "cadenas")}<span>${p.text}</span></div>${gauge(p.frac, p.ok ? "vert" : "or")}</div>`;
       h += `<p class="muted">Débloque : ${UNLOCK_TEXT[S.stage + 1]}</p><button class="btn vert wide" id="advance" ${g.ok ? "" : "disabled"}>Passer à l'étape ${S.stage + 1}</button>`;
-    } else h += `<p>Fin du prototype : les étapes 4 à 8 (vapeur, électricité, robots) viendront ensuite.</p>`;
+    } else if (!S.demo) h += `<p>Fin du prototype : les étapes 4 à 8 (vapeur, électricité, robots) viendront ensuite.</p>`;
+    h += S.demo ? `<div class="card"><p>${icon("info")} Démo : une usine électrique (étape 5) déjà montée. Inspecte les machines, change le débit des extracteurs pour voir les voies se boucher.</p><button class="btn or wide" id="quitdemo">Revenir à ma partie</button></div>`
+      : `<button class="btn or wide" id="demo">${icon("eclair")} Voir une usine automatisée (étape 5)</button>`;
     h += `<h3>${icon("info")} Comment jouer</h3><p class="muted">Touche un tas et garde le doigt appuyé pour remplir ton sac. Touche une machine pour y déposer ce qu'elle accepte et reprendre ce qui en sort ; garde le doigt dessus pour l'accélérer. Vends à la caisse. Tu agis jusqu'à ${RANGE} cases autour de toi.</p>`;
   }
   if (ui.tab === "construire") {
@@ -809,6 +845,13 @@ function renderUI() {
       h += `<h3>Manivelle</h3><p>Réserve : ${Math.floor(e.reserve)} / ${CRANK_MAX} s. Alimente 4 machines à tapis et 8 cases de tapis à ${CRANK_R} cases au plus. Touche-la pour la remonter.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}<div class="row"><button class="btn rouge" id="demol">${icon("poubelle")} Démonter</button></div>`;
     } else if (e.kind === "chest") {
       h += `<h3>Coffre</h3><div class="wrap">${Object.entries(e.store).map(([k, n]) => `<span class="chip">${itemHTML(k, n)}</span>`).join("") || '<span class="muted">vide</span>'}</div><p class="muted">Touche-le avec quelque chose dans le sac pour tout y ranger ; avec le sac vide pour tout reprendre. Un tapis qui finit dans un coffre y range ses objets (trop-plein).</p>`;
+    } else if (e.kind === "extractor") {
+      h += `<h3>${itemHTML(e.gives)} Extracteur de ${label(e.gives).toLowerCase()}</h3><p>Pose ${fmtN(e.rate)} objet/s sur le tapis voisin, sur la voie de son côté. Demande un poteau électrique à ${POLE_R} cases.</p>`;
+      h += `<div class="row"><span class="muted">Débit</span><span class="grow"></span>${[0.1, 0.25, 0.5, 1, 2].map((r) => `<button class="btn sm ${e.rate === r ? "on" : ""}" data-rate="${r}">${fmtN(r)}/s</button>`).join("")}</div>`;
+    } else if (e.kind === "generator") {
+      h += `<h3>Générateur</h3><p class="muted">900 kW. Tout ce qui a un poteau à ${POLE_R} cases ou moins est alimenté.</p>`;
+    } else if (e.kind === "pole") {
+      h += `<h3>Poteau électrique</h3><p class="muted">Alimente les machines et extracteurs à ${POLE_R} cases ou moins.</p>`;
     } else h += `<h3>Caisse d'expédition</h3><p class="muted">Touche-la pour vendre tout ce que ton sac contient de produits finis.</p>`;
   }
   if (ui.tab === "progression") h += `<h3>${icon("maison")} Ton personnage</h3><div id="avslot" class="row"></div><button class="btn rouge wide" id="reset2">Recommencer la partie</button>`;
@@ -828,6 +871,9 @@ function bindPanel() {
   $("color")?.addEventListener("change", (ev) => { e.color = ev.target.value || null; ui.dirty = true; });
   $("rotate")?.addEventListener("click", () => { rotateEnt(e); ui.dirty = true; });
   $("demol")?.addEventListener("click", () => { demolish(e.x, e.y); ui.dirty = true; });
+  for (const b of document.querySelectorAll("[data-rate]")) b.addEventListener("click", () => { e.rate = +b.dataset.rate; ui.dirty = true; });
+  $("demo")?.addEventListener("click", () => openDemo());
+  $("quitdemo")?.addEventListener("click", () => closeDemo());
   $("reset2")?.addEventListener("click", () => $("confirm").classList.add("on"));
   $("chute")?.addEventListener("click", () => { if (S.coins < CHUTE_COST) return toast("Pas assez de pièces"); S.coins -= CHUTE_COST; e.chute = true; ui.dirty = true; });
 }
@@ -850,12 +896,43 @@ colSel.addEventListener("change", () => { S.avatar.color = +colSel.value; });
 $("santa").addEventListener("change", (ev) => { S.avatar.santa = ev.target.checked; });
 
 // ---------------------------------------------------------------- sauvegarde
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
+function save() { if (S.demo) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
+// ---------------------------------------------------------------- démo : une usine électrique montée (étape 5)
+function demoState() {
+  newState(); S.demo = true; S.stage = 5; S.coins = 250000; S.earned = 250000;
+  S.ents = S.ents.filter((e) => e.kind === "deco" || e.kind === "chest" || e.kind === "crate"); invalidate();
+  for (const e of S.ents) { if (e.kind === "crate") { e.x = 20; e.y = 7; } if (e.kind === "chest") { e.name = "chest_metal"; e.stage = 5; e.x = 20; e.y = 12; } if (e.kind === "deco") { e.x = 23; e.y = 16; } }
+  const M = (name, x, y, extra) => addEnt({ kind:"machine", name, stage:5, x, y, o:"e", ...extra });
+  const X = (gives, x, y, rate) => addEnt({ kind:"extractor", name:"extractor_" + gives, stage:5, x, y, o:"e", gives, rate, acc:0, lane:0 });
+  const B = (x, y, d) => { S.belts[x + "," + y] = { x, y, d, k:"metal", lanes:[[], []], on:true }; };
+  // ligne 1 : sable -> four à induction -> cabine de peinture (+ pigment) -> assembleur (+ fil) -> machine à couronnes (entrée du haut)
+  X("sable", 0, 5, 0.9); B(1, 5, "E"); M("elec_furnace", 2, 5);
+  B(4, 5, "E"); B(5, 5, "E"); X("pigment_rouge", 5, 6, 0.12); M("paint_booth", 6, 4, { color:"rouge" });
+  B(8, 5, "E"); B(9, 5, "E"); X("fil", 9, 6, 0.12); M("assembler", 10, 4, { color:"rouge" });
+  B(12, 5, "E"); B(13, 5, "E"); B(14, 5, "S"); B(14, 6, "E");
+  // ligne 2 : pigment -> cabine (peinture seule) -> métier (+ fil) -> rubans, + branches -> machine à couronnes (entrée du bas)
+  X("pigment_rouge", 0, 9, 0.03); B(1, 9, "E"); M("paint_booth", 2, 8, { recipe:"peinture_rouge" });
+  B(4, 9, "E"); B(5, 9, "E"); X("fil", 5, 10, 0.2); M("elec_loom", 6, 9, { recipe:"ruban" });
+  for (let x = 8; x <= 13; x++) B(x, 9, "E"); X("branche", 10, 10, 0.8);
+  B(14, 9, "N"); B(14, 8, "N"); B(14, 7, "E");
+  M("elec_wreath", 15, 6);
+  B(17, 7, "E"); B(18, 7, "E"); B(19, 7, "E");
+  // énergie
+  addEnt({ kind:"generator", name:"generator", stage:5, x:21, y:14, o:"e" });
+  for (const [x, y] of [[4, 7], [9, 7], [13, 11], [17, 9], [19, 13], [4, 11]]) addEnt({ kind:"pole", name:"pole", stage:5, x, y });
+  S.player = { x:12, y:11, px:12, py:11, path:[], dir:"up", work:0, job:null };
+  S.contracts = []; for (let i = 0; i < 3; i++) newContract();
+  for (let i = 0; i < 1800; i++) step(0.05);       // 90 s de mise en route : les tapis sont pleins à l'ouverture
+}
+let saved = null;
+function openDemo() { save(); saved = S; demoState(); ui.sel = null; ui.tab = "progression"; ui.dirty = true; try { location.hash = "demo-etape-5"; } catch {} toast("Démo : usine électrique (étape 5). Touche une machine ou un extracteur pour voir ce qui s'y passe.", 6000); }
+function closeDemo() { S = saved || S; if (!saved) load(); saved = null; if (S.demo) newState(); invalidate(); ui.sel = null; ui.dirty = true; try { history.replaceState(null, "", location.pathname); } catch {} }
 function load() {
   try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = JSON.parse(raw); if (s.v === 2) { S = s; invalidate(); return; } } } catch {}
   newState();
 }
 load(); syncAvatar();
+if (location.hash === "#demo-etape-5") { saved = S; demoState(); ui.tab = "progression"; }
 setInterval(save, 4000); window.addEventListener("beforeunload", save);
 new ResizeObserver(() => resize()).observe(cv.parentElement);
 resize(); fitZoom();
