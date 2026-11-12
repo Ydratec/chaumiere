@@ -380,7 +380,7 @@
         "file": "steam_press_n.png",
         "frame": [
           34,
-          98
+          100
         ],
         "frames": 4,
         "footprint": [
@@ -389,7 +389,7 @@
         ],
         "origin": [
           1,
-          33
+          35
         ],
         "face": "bout d'entrée",
         "ports": {
@@ -517,7 +517,7 @@
         "file": "steam_loom_n.png",
         "frame": [
           34,
-          86
+          88
         ],
         "frames": 4,
         "footprint": [
@@ -526,7 +526,7 @@
         ],
         "origin": [
           1,
-          21
+          23
         ],
         "face": "bout d'entrée",
         "ports": {
@@ -919,7 +919,7 @@
         "file": "pipe_straight_s.png",
         "frame": [
           32,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -928,7 +928,7 @@
         ],
         "origin": [
           0,
-          12
+          13
         ],
         "face": "bout de sortie"
       },
@@ -956,7 +956,7 @@
         "file": "pipe_corner_s.png",
         "frame": [
           33,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -965,7 +965,7 @@
         ],
         "origin": [
           1,
-          12
+          13
         ],
         "face": "bout de sortie"
       },
@@ -973,7 +973,7 @@
         "file": "pipe_corner_w.png",
         "frame": [
           33,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -982,7 +982,7 @@
         ],
         "origin": [
           0,
-          12
+          13
         ],
         "face": "arrière (service)"
       },
@@ -1027,7 +1027,7 @@
         "file": "pipe_tee_s.png",
         "frame": [
           33,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -1036,7 +1036,7 @@
         ],
         "origin": [
           1,
-          12
+          13
         ],
         "face": "bout de sortie"
       },
@@ -1044,7 +1044,7 @@
         "file": "pipe_tee_w.png",
         "frame": [
           34,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -1053,7 +1053,7 @@
         ],
         "origin": [
           1,
-          12
+          13
         ],
         "face": "arrière (service)"
       },
@@ -1061,7 +1061,7 @@
         "file": "pipe_tee_n.png",
         "frame": [
           33,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -1070,7 +1070,7 @@
         ],
         "origin": [
           0,
-          12
+          13
         ],
         "face": "bout d'entrée"
       },
@@ -1081,7 +1081,7 @@
         "file": "pipe_cross_e.png",
         "frame": [
           34,
-          44
+          45
         ],
         "frames": 1,
         "footprint": [
@@ -1090,7 +1090,7 @@
         ],
         "origin": [
           1,
-          12
+          13
         ],
         "face": "façade (commandes)"
       },
@@ -1118,7 +1118,7 @@
         "file": "pipe_valve_s.png",
         "frame": [
           32,
-          44
+          45
         ],
         "frames": 4,
         "footprint": [
@@ -1127,7 +1127,7 @@
         ],
         "origin": [
           0,
-          12
+          13
         ],
         "face": "bout de sortie"
       },

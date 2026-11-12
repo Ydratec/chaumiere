@@ -115,6 +115,62 @@ def chimney(ob,u,w,z0,z1,c,f_smoke=True,r=3.5):
         def fn(f):
             X,Y=ob.P(u,w,z1); puff(ob.cv,X,Y-1,f,2,rise=12,drift=3)
         ob.custom((30,ob.g(u,w)[1]+r+1),fn)
+def slab_top(ob,u0,u1,w0,w1,z):
+    def fn(f):
+        X0,Y0,X1,Y1=[int(v) for v in top_rect(ob,u0,u1,w0,w1,z)]
+        for y in range(Y0+1,Y1-1):
+            for x in range(X0+1,X1-1):
+                if (y-Y0)%8==0 or (x-X0+((y-Y0)//8)*5)%11==0: ob.cv.p(x,y,C('#7e848e'))
+                elif (x*7+y*13)%23==0: ob.cv.p(x,y,C('#b0b6be'))
+    return fn
+def dome3d(ob,uc,wc,zb,R,col,mouth=False):
+    """ray-cast hemisphere (brick courses, lit from the upper left). The mouth faces the operator side (w+):
+    seen from the front in 'e', on the edge in 's'/'n', hidden in 'w'."""
+    gx,gy=ob.g(uc,wc); hx,hy=ob.g(uc,wc+1); mx,my=hx-gx,hy-gy; mn=math.hypot(mx,my) or 1; mx/=mn; my/=mn
+    L=(-0.55,-0.45,0.70); ln=math.sqrt(sum(v*v for v in L)); L=tuple(v/ln for v in L)
+    H=R*.78
+    pal=[dk(col,.42),dk(col,.22),col,lt(col,.16),lt(col,.34)]
+    mortar=dk(col,.3)
+    def fn(f):
+        cv=ob.cv; Xc=PAD+gx; Yc=PAD+gy-zb
+        rnd=random.Random(f*7)
+        for Y in range(int(Yc-R*1.3)-1,int(Yc+R)+2):
+            for X in range(int(Xc-R)-1,int(Xc+R)+2):
+                x=X+.5-Xc; sy=Y+.5-Yc
+                # oblate dome: x²/R² + y²/R² + z²/H² = 1, on the ray (x, sy+t, t)
+                A=1/(R*R)+1/(H*H); Bq=2*sy/(R*R); Cq=(x*x+sy*sy)/(R*R)-1
+                disc=Bq*Bq-4*A*Cq
+                if disc<0: continue
+                t=(-Bq+math.sqrt(disc))/(2*A)
+                if t<0: continue
+                y=sy+t; z=t
+                nx,ny,nz=x/(R*R),y/(R*R),z/(H*H); nn=math.sqrt(nx*nx+ny*ny+nz*nz); nx,ny,nz=nx/nn,ny/nn,nz/nn
+                # mouth: an arch cut on the operator side, up to 55% of the height
+                ang=(nx*mx+ny*my)/max(1e-6,math.hypot(nx,ny))
+                off=math.degrees(math.acos(max(-1,min(1,ang)))); half=36; Hm=H*.72
+                arch=Hm*math.sqrt(max(0,1-(off/half)**2)) if off<half else -1
+                if mouth and z<arch:
+                    rim = off>half-7 or z>arch-2.2
+                    if rim: cv.p(X,Y,C('#3a1a10') if z>arch-1.2 else lt(col,.22)); continue
+                    if my>0.5:   # we look into it: fire
+                        h=z/(Hm*.85)+rnd.uniform(-.15,.2)
+                        cv.p(X,Y,[P['f0'],P['f1'],P['f2'],P['f3'],P['f4']][min(4,max(0,int(h*4.2)))])
+                    else: cv.p(X,Y,C('#3a1a10') if (Y+f)%3 else P['f3'])
+                    continue
+                l=max(0,nx*L[0]+ny*L[1]+nz*L[2])
+                band=min(4,int(l*5.2)); c=pal[band]
+                # brick courses every 6 px of height, staggered joints every ~7 px of arc
+                course=int(z/6)
+                if z%6<1.0 and z>1: c=dk(pal[band],.22)
+                else:
+                    phi=math.atan2(y,x)*R/7+course*0.5
+                    if (phi%1)<0.1 and z>1: c=dk(pal[band],.18)
+                cv.p(X,Y,c)
+        # ground contact line
+        for X in range(int(Xc-R),int(Xc+R)+1):
+            xx=X+.5-Xc
+            if abs(xx)<R: cv.p(X,Yc+math.sqrt(max(0,R*R-xx*xx))*0+R*0+0,None) if False else None
+    ob.custom((zb,gy+R),fn,bounds=((uc-R,uc+R),(wc-R,wc+R),zb,zb+H))
 # ======================= ARTISANAL =======================
 def A_kiln(o,ports=False,bellows=False):
     F=FAM['art']; ob=Obj(2,1,o); D=ob.D; L=ob.L
@@ -127,25 +183,10 @@ def A_kiln(o,ports=False,bellows=False):
         d_stone(cv,r,f); x0,y0,x1,y1=I(r)
         for k in range(3): cv.r(x0+3+k*5,y1-7,x0+7+k*5,y1-2,P['w1']); cv.p(x0+5+k*5,y1-5,P['w0'])
     def back(cv,r,f): d_stone(cv,r,f); x0,y0,x1,y1=I(r); cv.r(x0+6,y0+3,x0+10,y1-2,P['m2'])
-    ob.box(u0,u1,2,D-2,0,12,stone,sf,faces={'w+':d_stone,'u+':ash_door,'u-':stoke,'w-':back})
+    ob.box(u0,u1,2,D-2,0,12,stone,sf,faces={'w+':d_stone,'u+':ash_door,'u-':stoke,'w-':back},topfn=slab_top(ob,u0,u1,2,D-2,12))
     uc,wc=(u0+u1)/2,D/2
-    duc,R=u0+20,13
-    def dome(f):
-        cv=ob.cv
-        X,Yg=ob.P(duc,D/2,12); cy0=Yg-R*.45; cut=Yg+R*.8
-        cv.ell(X,cy0,R+1,R*1.25,lambda a,b,d,x,y: (sphere(P['c1'],a,b,d,False) if y<=cut else None))
-        for y in range(int(cy0-R*1.3),int(cut)):
-            for x in range(int(X-R),int(X+R)):
-                c=cv.g(x,y)
-                if c[3] and c[:3]==P['c1'][:3] and (x*3+y*5)%13==0: cv.p(x,y,P['c2'])
-        Xf,Yf=ob.P(duc,D/2+R-2,12)   # point of the dome facing the operator side
-        if o=='e':
-            mw=7; cv.ell(Xf,Yf,mw+2,mw+3,lambda a,b,d,x,y: C('#3a1a10') if y<=Yf else None); d_fire(cv,(Xf-mw+1,Yf-mw,Xf+mw-1,Yf+1),f)
-        elif o in('s','n'):
-            for y in range(int(Yg-10),int(Yg+2)): cv.r(Xf-1,y,Xf+1,y+1,(255,150,60,int(160*[.6,.9,.7,1][f])))
-        else:
-            cv.ell(X,cy0-R*.3,3,2,lambda a,b,d,x,y: C('#3a1a10'))
-    ob.custom((12,ob.depth((duc,),(D/2+R,))),dome)
+    duc,R=u0+20,14
+    dome3d(ob,duc,D/2,12,R,P['c1'],mouth=True)
     chimney(ob,u1-12,D/2,12,40,P['c2'])
     if bellows:
         def bel(cv,r,f):
@@ -332,7 +373,7 @@ def V_press(o):
     uc=(u0+u1)/2
     for du in (-14,11): ob.box(uc+du,uc+du+3,8,D-8,16,42,IRONF,IRONF)
     ob.box(uc-16,uc+16,8,D-8,42,46,IRON,IRONF)
-    ob.disc('u',u1-1,D/2,30,9,P['c1'],spokes=4,ang=lambda f:f*math.pi/4)   # flywheel on the output end
+    ob.disc('u',u1+1,D/2,30,9,P['c1'],spokes=4,ang=lambda f:f*math.pi/4)   # flywheel on the output end
     def piston(f):
         k=[0,6,10,5][f]; X,Y=ob.P(uc,D/2,42); X2,Y2=ob.P(uc,D/2,30-k)
         cyl_v(ob.cv,X-3,X+3,Y,Y2,C('#c9ced8')); ob.cv.r(X-9,Y2,X+9,Y2+3,P['c1'])
@@ -347,7 +388,7 @@ def V_loom(o):
     v_feed_pipe(ob,u0+10)
     v_body(ob,u0,u1,16,{'w+':front,'u+':outend,'u-':outend,'w-':back})
     for uu in (u0+9,u1-9): ob.disc('w',uu,D/2+2,28,7,P['c1'],spokes=6,ang=lambda f,uu=uu:(f*.5 if uu<40 else -f*.5))
-    ob.disc('u',u1-2,8,22,5,P['c0'],spokes=3,ang=lambda f:f*.6)   # drive pulley on the output end
+    ob.disc('u',u1+1,8,22,5,P['c0'],spokes=3,ang=lambda f:f*.6)   # drive pulley on the output end
     def strand(f):
         a,b=ob.P(u0+14,D/2+2,28),ob.P(u1-14,D/2+2,28); n=int(max(abs(a[0]-b[0]),abs(a[1]-b[1])))
         for i in range(n):
@@ -404,7 +445,7 @@ def V_boiler(o):
     def endf(cv,r,f):
         d_bricks(cv,r,f); x0,y0,x1,y1=I(r); cv.r(x0+4,y0+4,x0+7,y1-4,C('#bfe6ff')); cv.r(x0+4,y0+4+[6,5,6,7][f],x0+7,y1-4,C('#3d8be0'))
     def back(cv,r,f): d_bricks(cv,r,f); x0,y0,x1,y1=I(r); cv.r(x0+6,y0+6,x0+16,y1-4,C('#3a3531'))
-    ob.box(2,L-2,2,D-2,0,18,C('#6b6660'),C('#9a4a36'),faces={'w+':front,'u+':endf,'u-':endf,'w-':back})
+    ob.box(2,L-2,2,D-2,0,18,C('#5c5752'),C('#9a4a36'),faces={'w+':front,'u+':endf,'u-':endf,'w-':back},topfn=slab_top(ob,2,L-2,2,D-2,18))
     ob.cyl_lie('u',6,L-14,D/2,32,13,P['c1'])
     for uu in (16,32,46):
         def band(f,uu=uu):

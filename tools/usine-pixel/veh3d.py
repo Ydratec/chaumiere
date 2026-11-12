@@ -28,13 +28,16 @@ def truck(o):
             ob.disc('w',uu,ww,7,7,C('#1c1d23'),spokes=2,ang=lambda f:f*math.pi/4,rim=C('#1c1d23'))
     return ob
 def forklift(o):
-    ob=Obj(1,1,o)
-    ob.box(4,22,6,26,4,16,P['y1'],P['y2'],faces={'w+':lambda cv,r,f: cv.r(r[0]+3,r[1]+3,r[0]+8,r[1]+7,C('#2a2d36'))})
-    for (u,w) in ((5,7),(5,23),(19,7),(19,23)): ob.box(u,u+2,w,w+2,16,32,C('#2a2d36'),C('#2a2d36'))
-    ob.box(4,22,6,26,32,34,C('#2a2d36'),C('#2a2d36'))
-    ob.box(22,24,8,24,2,26,C('#5e6475'),C('#5e6475'))
-    ob.box(24,31,10,13,2,4,C('#8a909c'),C('#8a909c')); ob.box(24,31,19,22,2,4,C('#8a909c'),C('#8a909c'))
-    for (u,w) in ((8,5),(8,27),(18,5),(18,27)): ob.disc('w',u,w,4,4,C('#1c1d23'),rim=C('#1c1d23'))
-    def load(f): X,Y=ob.P(28,16,4); ob.cv.paste(item('gift'),X-8,Y-14)
-    ob.custom((4,ob.g(30,16)[1]),load)
+    ob=Obj(1,1,o); Y,YD=P['y1'],P['y2']
+    ob.box(3,8,7,25,3,17,YD,dk(YD,.2))                       # counterweight at the back
+    ob.box(8,21,7,25,3,13,Y,YD,faces={'w+':lambda cv,r,f: cv.r(r[0]+3,r[1]+3,r[0]+9,r[1]+6,C('#2a2d36'))})
+    ob.box(9,15,11,21,13,17,C('#2a2d36'),C('#2a2d36'))       # seat
+    for (u,w) in ((8,8),(8,23),(19,8),(19,23)): ob.box(u,u+1,w,w+1,13,30,C('#2a2d36'),C('#2a2d36'),out=False)
+    for (u0,u1,w0,w1) in ((7,21,7,9),(7,21,23,25),(7,9,7,25),(19,21,7,25),(13,15,7,25)):   # open roof guard (bars)
+        ob.box(u0,u1,w0,w1,30,32,C('#3c404b'),C('#2a2d36'))
+    ob.box(21,23,9,23,2,30,C('#6d7384'),C('#4e5361'))        # mast
+    ob.box(23,31,10,13,2,4,C('#a8b0bc'),C('#6d7384')); ob.box(23,31,19,22,2,4,C('#a8b0bc'),C('#6d7384'))
+    for (u,w) in ((7,6),(7,26),(18,6),(18,26)): ob.disc('w',u,w,4,4,C('#1c1d23'),rim=C('#1c1d23'))
+    def load(f): X,Yy=ob.P(27,16,4); ob.cv.paste(item('gift'),X-8,Yy-14)
+    ob.custom((4,ob.g(27,16)[1]),load,bounds=((23,31),(9,23),4,16))
     return ob

@@ -68,9 +68,11 @@ def splitter(o,filt=False,kind='metal'):
         hazard(ob.cv,X0+2,Y0+2,X1-2,Y0+5,3) if X1-X0>Y1-Y0 else hazard(ob.cv,X0+2,Y0+2,X0+5,Y1-2,3)
         for k,lw in enumerate((L0,L1)):
             on=(f%2)==k; c=P['g0'] if on else C('#3c404b')
-            a=ob.P(10,lw,14); b=ob.P(22,lw,14)
-            ob.cv.r(min(a[0],b[0])-1,min(a[1],b[1])-1,max(a[0],b[0])+1,max(a[1],b[1])+1,c)
-            ob.cv.ell(b[0],b[1],2.5,2.5,lambda a_,b_,d,x,y,c=c: c)
+            for uu in range(9,24):          # shaft
+                X,Y=ob.P(uu,lw,14); ob.cv.r(X,Y,X+1,Y+1,c); X2,Y2=ob.P(uu,lw+.6,14); ob.cv.r(X2,Y2,X2+1,Y2+1,c)
+            for k2 in range(5):             # head : a chevron in local coords, so it turns with the flow
+                for sgn in (-1,1):
+                    X,Y=ob.P(24-k2,lw+sgn*k2,14); ob.cv.r(X,Y,X+1,Y+1,c)
         m=ob.P(16,(L0+L1)/2,14); gear2d(ob.cv,m[0],m[1],2,3.5,6,f*.4,C('#c9ced8'))
         if filt:
             ob.cv.r(m[0]-6,m[1]-9,m[0]+6,m[1]-5,C('#2a2d36'))
@@ -98,7 +100,10 @@ ARMS={'simple':(P['y1'],1),'rapide':(P['b1'],1),'long':(P['r1'],2),'filtrant':(C
 def arm(o,kind='simple',t=0.0):
     col,reach=ARMS[kind]; ob=Obj(1,1,o); lw=lanes(ob)[0]
     def bodyf(cv,r,f): x0,y0,x1,y1=I(r); hazard(cv,x0+1,y0+1,x1-1,y0+4,2)
-    ob.box(8,24,lw-8,lw+8,0,8,STEEL,STEELF,faces={k:bodyf for k in ('w+','w-','u+','u-')})
+    ob.box(7,25,lw-9,lw+9,0,5,STEELF,dk(STEELF,.2),faces={k:bodyf for k in ('w+','w-','u+','u-')})
+    ob.cylz(16,lw,6,5,10,STEEL)                       # turntable
+    def ring(f): X,Y=ob.P(16,lw,10); ob.cv.ell(X,Y,5,2,lambda a,b,d,x,y: col if d>.5 else STEELF)
+    ob.custom((10,ob.g(16,lw)[1]+6),ring,bounds=((10,22),(lw-6,lw+6),10,11))
     pick_u=16-32*reach; drop_u=16+32*reach
     hu=pick_u+(drop_u-pick_u)*t; hz=9+math.sin(math.pi*t)*(12+6*reach)
     sh=(16,lw,22); el=((16+hu)/2,lw,30+math.sin(math.pi*t)*4+6*(reach-1)); hand=(hu,lw,hz)
@@ -106,9 +111,9 @@ def arm(o,kind='simple',t=0.0):
     store={}
     def draw(f):
         ob.box  # noqa
-        X,Y=ob.P(16,lw,8); ob.cv.r(X-2,Y-14,X+3,Y,STEELF)
-        hp=arm3d(ob,[sh,el,hand],3 if kind!='rapide' else 2,col,C('#c3c8d2'))
-        ob.cv.r(hp[0]-4,hp[1],hp[0]-2,hp[1]+4,C('#c3c8d2')); ob.cv.r(hp[0]+2,hp[1],hp[0]+4,hp[1]+4,C('#c3c8d2'))
+        X,Y=ob.P(16,lw,10); ob.cv.r(X-3,Y-12,X+3,Y,STEELF); ob.cv.r(X-3,Y-12,X-2,Y,STEEL)
+        hp=arm3d(ob,[sh,el,hand],4 if kind!='rapide' else 3,col,C('#c3c8d2'))
+        for dx in (-5,4): ob.cv.r(hp[0]+dx,hp[1]-1,hp[0]+dx+2,hp[1]+5,C('#c3c8d2')); ob.cv.p(hp[0]+dx,hp[1]+5,OUT)
         if kind=='filtrant':
             Xb,Yb=ob.P(16,lw,8); ob.cv.r(Xb-4,Yb-3,Xb+4,Yb-1,C('#9a6ad8'))
         store['hand']=hp
@@ -129,11 +134,17 @@ def pipe(o,shape='straight',valve=False):
     ob=Obj(1,1,o); ob.shadow=False; col,dcol=PIPE_KIND['vap']
     con={'straight':('u-','u+'),'corner':('u-','w+'),'tee':('u-','u+','w+'),'cross':('u-','u+','w-','w+')}[shape]
     for c in con:
-        if c=='u-': ob.cyl_lie('u',0,16,16,7,4,col)
-        if c=='u+': ob.cyl_lie('u',16,32,16,7,4,col)
-        if c=='w-': ob.cyl_lie('w',0,16,16,7,4,col)
-        if c=='w+': ob.cyl_lie('w',16,32,16,7,4,col)
-    ob.box(11,21,11,21,2,12,lt(col,.1),dcol)
+        if c=='u-': ob.cyl_lie('u',0,16,16,7,4,col,caps=False)
+        if c=='u+': ob.cyl_lie('u',16,32,16,7,4,col,caps=False)
+        if c=='w-': ob.cyl_lie('w',0,16,16,7,4,col,caps=False)
+        if c=='w+': ob.cyl_lie('w',16,32,16,7,4,col,caps=False)
+    # flanges where the pipe leaves the tile (so neighbours read as one line)
+    for c in con:
+        if c=='u-': ob.box(0,2,11,21,2,12,dcol,dk(dcol,.2))
+        if c=='u+': ob.box(30,32,11,21,2,12,dcol,dk(dcol,.2))
+        if c=='w-': ob.box(11,21,0,2,2,12,dcol,dk(dcol,.2))
+        if c=='w+': ob.box(11,21,30,32,2,12,dcol,dk(dcol,.2))
+    if shape!='straight' or valve: ob.box(11,21,11,21,2,12,lt(col,.1),dcol)
     if valve:
         def wheel(f):
             X,Y=ob.P(16,16,12); ob.cv.r(X-1,Y-8,X+1,Y,P['m1'])
@@ -145,9 +156,12 @@ def pipe(o,shape='straight',valve=False):
 def pole(o='e',big=False):
     if not big:
         ob=Obj(1,1,o); ob.shadow=False
-        ob.cylz(16,16,2,0,44,P['w2'] if True else STEELF)
-        ob.box(8,24,15,18,40,43,P['w1'],P['w2'])
+        ob.box(12,20,12,20,0,4,STEELF,dk(STEELF,.2))                     # concrete-steel foot
+        ob.cylz(16,16,2,4,44,C('#8a909c'))                                  # steel mast
+        ob.box(8,24,15,18,40,43,C('#6d7384'),C('#4e5361'))                  # cross-arm
         for uu in (9,23): ob.cylz(uu,16.5,1.5,43,47,C('#e9e3d4'))
+        def tag(f): X,Y=ob.P(16,18,24); ob.cv.r(X-2,Y-3,X+2,Y+1,P['y1']); ob.cv.p(X,Y-2,OUT)
+        ob.custom((24,18),tag,bounds=((14,18),(18,18),20,26))
         return ob,(16,16,47)
     ob=Obj(2,2,o)
     for (u,w) in ((8,8),(56,8),(8,56),(56,56)): ob.box(u-2,u+2,w-2,w+2,0,6,STEELF,STEELF)

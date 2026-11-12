@@ -24,7 +24,7 @@
         "file": "kiln_s.png",
         "frame": [
           33,
-          78
+          76
         ],
         "frames": 4,
         "footprint": [
@@ -33,7 +33,7 @@
         ],
         "origin": [
           0,
-          13
+          11
         ],
         "face": "bout de sortie"
       },

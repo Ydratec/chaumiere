@@ -24,7 +24,7 @@
         "file": "kiln_bellows_s.png",
         "frame": [
           33,
-          78
+          76
         ],
         "frames": 4,
         "footprint": [
@@ -33,7 +33,7 @@
         ],
         "origin": [
           0,
-          13
+          11
         ],
         "face": "bout de sortie"
       },
@@ -170,7 +170,7 @@
         "file": "tree_bench_s.png",
         "frame": [
           33,
-          80
+          81
         ],
         "frames": 4,
         "footprint": [
@@ -179,7 +179,7 @@
         ],
         "origin": [
           0,
-          15
+          16
         ],
         "face": "bout de sortie"
       },

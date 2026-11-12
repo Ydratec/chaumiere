@@ -79,8 +79,8 @@
       "e": {
         "file": "vehicle_forklift_e.png",
         "frame": [
-          35,
-          62
+          34,
+          59
         ],
         "frames": 4,
         "footprint": [
@@ -89,7 +89,7 @@
         ],
         "origin": [
           0,
-          29
+          26
         ],
         "face": "façade (commandes)"
       },
@@ -97,7 +97,7 @@
         "file": "vehicle_forklift_s.png",
         "frame": [
           33,
-          64
+          59
         ],
         "frames": 4,
         "footprint": [
@@ -106,15 +106,15 @@
         ],
         "origin": [
           0,
-          31
+          26
         ],
         "face": "bout de sortie"
       },
       "w": {
         "file": "vehicle_forklift_w.png",
         "frame": [
-          36,
-          62
+          35,
+          59
         ],
         "frames": 4,
         "footprint": [
@@ -122,8 +122,8 @@
           1
         ],
         "origin": [
-          3,
-          29
+          2,
+          26
         ],
         "face": "arrière (service)"
       },
@@ -131,7 +131,7 @@
         "file": "vehicle_forklift_n.png",
         "frame": [
           33,
-          58
+          55
         ],
         "frames": 4,
         "footprint": [
@@ -140,7 +140,7 @@
         ],
         "origin": [
           0,
-          25
+          22
         ],
         "face": "bout d'entrée"
       }
