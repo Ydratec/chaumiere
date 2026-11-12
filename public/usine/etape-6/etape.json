@@ -1,0 +1,68 @@
+{
+  "name": "Usine automatisée",
+  "assets": {
+    "robot_arm": {
+      "file": "robot_arm.png",
+      "frame": [
+        32,
+        48
+      ],
+      "frames": 4,
+      "footprint": [
+        1,
+        1
+      ],
+      "note": "joue 0-1-2-3-2-1 : prend au sud, dépose au nord ; pivoter de 90° pour les autres sens"
+    },
+    "scanner_gate": {
+      "file": "scanner_gate.png",
+      "frame": [
+        32,
+        48
+      ],
+      "frames": 4,
+      "footprint": [
+        1,
+        1
+      ],
+      "role": "contrôle qualité, se pose au-dessus d'un tapis"
+    },
+    "splitter": {
+      "file": "splitter.png",
+      "frame": [
+        32,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        1,
+        2
+      ],
+      "role": "entrée ouest, sorties est sur les 2 rangées"
+    },
+    "station_paint_robot": {
+      "file": "station_paint_robot.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ]
+    },
+    "control_terminal": {
+      "file": "control_terminal.png",
+      "frame": [
+        32,
+        48
+      ],
+      "frames": 4,
+      "footprint": [
+        1,
+        1
+      ]
+    }
+  }
+}

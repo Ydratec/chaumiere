@@ -1,0 +1,67 @@
+{
+  "name": "Petite fabrique",
+  "assets": {
+    "wood_belt": {
+      "file": "wood_belt.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": [
+        "E",
+        "W",
+        "S",
+        "N",
+        "W>S",
+        "S>W",
+        "E>S",
+        "S>E",
+        "W>N",
+        "N>W",
+        "E>N",
+        "N>E"
+      ],
+      "note": "même géométrie que les tapis métal"
+    },
+    "crank_station": {
+      "file": "crank_station.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "footprint": [
+        1,
+        1
+      ],
+      "role": "fait avancer les tapis en bois quand on clique"
+    },
+    "station_star_press": {
+      "file": "station_star_press.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ],
+      "makes": "wood_star + paint -> star"
+    },
+    "station_garland_loom": {
+      "file": "station_garland_loom.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ],
+      "makes": "branch + ball -> garland"
+    }
+  }
+}

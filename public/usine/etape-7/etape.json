@@ -1,0 +1,73 @@
+{
+  "name": "Complexe industriel",
+  "assets": {
+    "tiles_floor_asphalt": {
+      "file": "tiles_floor_asphalt.png",
+      "tiles": [
+        "asphalte",
+        "ligne_blanche",
+        "ligne_jaune",
+        "bord_neige"
+      ]
+    },
+    "tiles_floor_snow": {
+      "file": "tiles_floor_snow.png",
+      "tiles": [
+        "neige",
+        "neige_herbe"
+      ]
+    },
+    "building_warehouse": {
+      "file": "building_warehouse.png",
+      "frame": [
+        128,
+        112
+      ],
+      "frames": 4,
+      "footprint": [
+        4,
+        3
+      ]
+    },
+    "loading_dock": {
+      "file": "loading_dock.png",
+      "frame": [
+        96,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        3,
+        2
+      ]
+    },
+    "vehicle_truck": {
+      "file": "vehicle_truck.png",
+      "frame": [
+        96,
+        64
+      ],
+      "frames": 4,
+      "rows": [
+        "right",
+        "left"
+      ],
+      "footprint": [
+        3,
+        1
+      ]
+    },
+    "vehicle_forklift": {
+      "file": "vehicle_forklift.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": [
+        "right",
+        "left"
+      ]
+    }
+  }
+}

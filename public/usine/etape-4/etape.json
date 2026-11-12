@@ -1,0 +1,80 @@
+{
+  "name": "Manufacture à vapeur",
+  "assets": {
+    "tiles_floor_stone": {
+      "file": "tiles_floor_stone.png",
+      "tiles": [
+        "dalle",
+        "dalle_fissure"
+      ]
+    },
+    "tiles_wall_brick": {
+      "file": "tiles_wall_brick.png",
+      "frame": [
+        32,
+        64
+      ],
+      "tiles": [
+        "plain",
+        "window",
+        "pipe"
+      ]
+    },
+    "tiles_pipes": {
+      "file": "tiles_pipes.png",
+      "tiles": [
+        "h",
+        "v",
+        "ne",
+        "nw",
+        "se",
+        "sw"
+      ]
+    },
+    "pipe_valve": {
+      "file": "pipe_valve.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4
+    },
+    "station_boiler": {
+      "file": "station_boiler.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ],
+      "role": "produit la vapeur des machines reliées par tuyaux"
+    },
+    "station_steam_press": {
+      "file": "station_steam_press.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ],
+      "makes": "glass -> ball_clear (presse)"
+    },
+    "deco_steam_lamp": {
+      "file": "deco_steam_lamp.png",
+      "frame": [
+        32,
+        64
+      ],
+      "footprint": [
+        1,
+        1
+      ]
+    }
+  }
+}

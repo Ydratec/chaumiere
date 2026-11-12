@@ -19,3 +19,23 @@ python3 build_animals.py ../../public/usine
 Format des planches de personnages : 4 colonnes (images) × 16 lignes, dans l'ordre
 `idle`, `walk`, `work`, `carry` × `down`, `left`, `right`, `up`. Les pieds sont en (16, 30).
 Voir `public/usine/personnages.json` et `src/modules/usine/sprites.ts`.
+
+## Étapes 2 à 8
+
+```sh
+cd tools/usine-pixel
+python3 build_stages.py ../../public/usine
+```
+
+Produit `public/usine/etape-2/` … `etape-8/`, chacun avec un `etape.json` (taille des cases, nombre d'images,
+emprise au sol, ce que fabrique chaque poste), et l'index `public/usine/etapes.json`.
+
+| Étape | Nom | Contenu |
+|---|---|---|
+| 2 | Atelier équipé | four à soufflet, tour à pédale, étagère, râtelier d'outils, lutin assistant |
+| 3 | Petite fabrique | tapis en bois, manivelle, presse à étoiles, métier à guirlandes |
+| 4 | Manufacture à vapeur | sol pierre, mur brique, tuyaux, vanne, chaudière, presse à vapeur, lampadaire |
+| 5 | Usine électrique | sol béton, mur métal, cabine de peinture, générateur (+ tapis et machines métal) |
+| 6 | Usine automatisée | bras robot, portique de contrôle, séparateur, robot peintre, terminal |
+| 7 | Complexe industriel | asphalte, neige, entrepôt, quai de chargement, camion, chariot élévateur |
+| 8 | Multinationale | eau, quai, conteneurs, porte-conteneurs, grue portuaire, avion cargo, siège social, globe |

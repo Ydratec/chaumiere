@@ -1,0 +1,95 @@
+{
+  "name": "Multinationale",
+  "assets": {
+    "tiles_water": {
+      "file": "tiles_water.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4
+    },
+    "tiles_quay": {
+      "file": "tiles_quay.png",
+      "tiles": [
+        "quai",
+        "quai_bitte"
+      ]
+    },
+    "containers": {
+      "file": "containers.png",
+      "frame": [
+        64,
+        40
+      ],
+      "variants": [
+        "rouge",
+        "vert",
+        "bleu",
+        "jaune"
+      ],
+      "footprint": [
+        2,
+        1
+      ]
+    },
+    "vehicle_cargo_ship": {
+      "file": "vehicle_cargo_ship.png",
+      "frame": [
+        192,
+        112
+      ],
+      "frames": 4,
+      "footprint": [
+        6,
+        3
+      ],
+      "layer": "eau"
+    },
+    "port_crane": {
+      "file": "port_crane.png",
+      "frame": [
+        96,
+        144
+      ],
+      "frames": 4,
+      "footprint": [
+        3,
+        2
+      ]
+    },
+    "vehicle_cargo_plane": {
+      "file": "vehicle_cargo_plane.png",
+      "frame": [
+        160,
+        96
+      ],
+      "frames": 4,
+      "footprint": [
+        5,
+        2
+      ]
+    },
+    "building_hq": {
+      "file": "building_hq.png",
+      "frame": [
+        96,
+        192
+      ],
+      "frames": 4,
+      "footprint": [
+        3,
+        2
+      ]
+    },
+    "icon_globe": {
+      "file": "icon_globe.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "role": "icône UI marchés internationaux"
+    }
+  }
+}

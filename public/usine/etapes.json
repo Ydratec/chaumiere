@@ -1,0 +1,38 @@
+{
+  "tileSize": 32,
+  "stages": {
+    "1": {
+      "name": "Atelier du lutin",
+      "folder": "atelier"
+    },
+    "2": {
+      "name": "Atelier équipé",
+      "folder": "etape-2"
+    },
+    "3": {
+      "name": "Petite fabrique",
+      "folder": "etape-3"
+    },
+    "4": {
+      "name": "Manufacture à vapeur",
+      "folder": "etape-4"
+    },
+    "5": {
+      "name": "Usine électrique",
+      "folder": "etape-5"
+    },
+    "6": {
+      "name": "Usine automatisée",
+      "folder": "etape-6"
+    },
+    "7": {
+      "name": "Complexe industriel",
+      "folder": "etape-7"
+    },
+    "8": {
+      "name": "Multinationale",
+      "folder": "etape-8"
+    }
+  },
+  "notes": "Sprites plus hauts que leur emprise : ancrer en bas de l'emprise, trier par y."
+}

@@ -1,0 +1,82 @@
+{
+  "name": "Atelier équipé",
+  "assets": {
+    "station_kiln_bellows": {
+      "file": "station_kiln_bellows.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        1
+      ],
+      "makes": "sand -> glass -> ball_clear (x2 vitesse)"
+    },
+    "station_lathe": {
+      "file": "station_lathe.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        1
+      ],
+      "makes": "wood -> wood_star"
+    },
+    "storage_shelf": {
+      "file": "storage_shelf.png",
+      "frame": [
+        32,
+        64
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "role": "stockage +8"
+    },
+    "deco_tool_rack": {
+      "file": "deco_tool_rack.png",
+      "frame": [
+        32,
+        64
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "layer": "wall"
+    },
+    "character_elf_assistant": {
+      "file": "character_elf_assistant.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": [
+        "idle_down",
+        "idle_left",
+        "idle_right",
+        "idle_up",
+        "walk_down",
+        "walk_left",
+        "walk_right",
+        "walk_up",
+        "work_down",
+        "work_left",
+        "work_right",
+        "work_up",
+        "carry_down",
+        "carry_left",
+        "carry_right",
+        "carry_up"
+      ],
+      "role": "lutin assistant (PNJ automatique)"
+    }
+  }
+}

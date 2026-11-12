@@ -1,0 +1,57 @@
+{
+  "name": "Usine électrique",
+  "assets": {
+    "tiles_floor_concrete": {
+      "file": "tiles_floor_concrete.png",
+      "tiles": [
+        "beton",
+        "beton_bord_danger",
+        "beton_allee"
+      ]
+    },
+    "tiles_wall_metal": {
+      "file": "tiles_wall_metal.png",
+      "frame": [
+        32,
+        64
+      ],
+      "tiles": [
+        "plain",
+        "sortie",
+        "lampe"
+      ]
+    },
+    "station_paint_booth": {
+      "file": "station_paint_booth.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ],
+      "makes": "ball_clear -> boule peinte (4 couleurs)"
+    },
+    "station_generator": {
+      "file": "station_generator.png",
+      "frame": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "footprint": [
+        2,
+        2
+      ],
+      "role": "électricité"
+    }
+  },
+  "uses": [
+    "../convoyeurs/conveyor_32x32_3-4_sheet.png",
+    "../machines/machine_furnace_2x2.png",
+    "../machines/machine_assembler_3x3.png",
+    "../machines/machine_chest_1x1.png"
+  ]
+}

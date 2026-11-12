@@ -38,5 +38,20 @@ export function frameRect(animation: Animation, direction: Direction, frame: num
   return { x: (frame % FRAMES) * FRAME, y: row * FRAME, w: FRAME, h: FRAME };
 }
 
+/** Les 8 étapes de l'usine, de l'atelier artisanal à la multinationale (détail : public/usine/etapes.json). */
+export const STAGES = [
+  { n: 1, name: "Atelier du lutin", folder: "atelier" },
+  { n: 2, name: "Atelier équipé", folder: "etape-2" },
+  { n: 3, name: "Petite fabrique", folder: "etape-3" },
+  { n: 4, name: "Manufacture à vapeur", folder: "etape-4" },
+  { n: 5, name: "Usine électrique", folder: "etape-5" },
+  { n: 6, name: "Usine automatisée", folder: "etape-6" },
+  { n: 7, name: "Complexe industriel", folder: "etape-7" },
+  { n: 8, name: "Multinationale", folder: "etape-8" },
+] as const;
+
+/** Chemin d'un asset d'étape, ex. stageAsset(4, "station_boiler.png"). */
+export const stageAsset = (stage: number, file: string) => `/usine/${STAGES[stage - 1]?.folder ?? "atelier"}/${file}`;
+
 /** Image d'animation à afficher au temps `ms` (pour une boucle de jeu). */
 export const frameAt = (animation: Animation, ms: number) => Math.floor((ms / 1000) * FPS[animation]) % FRAMES;
