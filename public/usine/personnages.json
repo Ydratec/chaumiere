@@ -1,0 +1,58 @@
+{
+  "frame": [
+    32,
+    32
+  ],
+  "frames": 4,
+  "rows": [
+    "idle_down",
+    "idle_left",
+    "idle_right",
+    "idle_up",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up",
+    "work_down",
+    "work_left",
+    "work_right",
+    "work_up",
+    "carry_down",
+    "carry_left",
+    "carry_right",
+    "carry_up"
+  ],
+  "anchorFeet": [
+    16,
+    30
+  ],
+  "carryAnchor": [
+    16,
+    4
+  ],
+  "fps": {
+    "idle": 3,
+    "walk": 8,
+    "work": 8,
+    "carry": 8
+  },
+  "colorable": [
+    "cat",
+    "dog",
+    "bunny",
+    "duck",
+    "turtle",
+    "fish"
+  ],
+  "colors": 8,
+  "accessories": [
+    "bow",
+    "flower",
+    "glasses",
+    "scarf",
+    "hat",
+    "crown",
+    "witch",
+    "santa"
+  ]
+}
