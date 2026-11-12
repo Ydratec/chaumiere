@@ -1,13 +1,13 @@
 // Commandes du jour de l'Usine de Noël : 3 par jour et par joueur, payées en pièces de la salle (boosters, questions…).
 // C'est le serveur qui fixe le montant et n'accepte chaque commande qu'une fois par jour (heure de Paris) :
-// la clé primaire de farm_stats garantit l'unicité. Le jeu tourne dans le navigateur : le plafond (2 100 pièces par jour)
+// la clé primaire de farm_stats garantit l'unicité. Le jeu tourne dans le navigateur : le plafond (3 600 pièces par jour)
 // borne ce qu'on pourrait gagner en trichant.
 import { adminDb } from "@/src/lib/db/server";
 import { challengeDay } from "@/src/modules/challenges/data";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 export const dynamic = "force-dynamic";
-const PAY = [300, 600, 1200]; // petite, moyenne, grosse (même tableau dans public/usine/jeu/game.js, pour l'affichage)
+const PAY = [600, 1200, 1800]; // petite, moyenne, grosse : 3 600 par jour, de quoi ouvrir 3 boosters et un peu plus (même tableau dans public/usine/jeu/game.js, pour l'affichage)
 
 export async function POST(req: Request, { params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;

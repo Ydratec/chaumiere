@@ -162,7 +162,7 @@ function newState() {
     contracts:[], sales:[], stats:{}, test:false, avatar:{ species:"cat", color:0, santa:true }, area:{ ...AREA0 } };
   addEnt({ kind:"crate", name:"ship_crate", stage:1, x:8, y:4 });
   addEnt({ kind:"chest", name:"chest_wood", stage:1, x:8, y:5, o:"e", store:{} });
-  addEnt({ kind:"deco", name:"deco_tree", stage:1, x:8, y:2 });
+  addEnt({ kind:"flowerbed", name:"deco_tree", stage:1, x:8, y:2, grown:FLOWER_TIME }); // la serre de l'usine, offerte, une fleur prête
   addEnt({ kind:"rug", name:"deco_rug", stage:1, x:3, y:6 });
   addSources(1);
   addEnt({ kind:"machine", name:"kiln", stage:1, x:0, y:4, o:"e" });
@@ -518,7 +518,7 @@ const SELL = { 1:["boule_rouge", "boule_verte", "boule_or", "boule_bleue", "@bou
 const BASE_VALUE = { 1:20, 2:150, 3:1200, 4:4000, 5:9000 };
 // ---- Commandes du jour : payées en pièces de la salle par le serveur (/api/usine/<salle>/commande), 3 par jour.
 // Les mêmes pour toute la salle (tirées de la date et de la salle), à la taille de l'étape de chacun.
-const ORDER_PAY = [300, 600, 1200], ORDER_MULT = [1, 2, 4]; // le montant affiché ; c'est le serveur qui paie (même tableau)
+const ORDER_PAY = [600, 1200, 1800], ORDER_MULT = [1, 2, 3]; // le montant affiché ; c'est le serveur qui paie (même tableau)
 const parisDay = () => new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Paris" }).format(new Date());
 function dailyOrders() {
   const day = parisDay();
@@ -914,6 +914,9 @@ function drawEnt(e, time) {
   const fw = s.frame[0], fh = s.frame[1], X = e.x * T - ox, Y = e.y * T - oy;
   if (i) ctx.drawImage(i, f * fw, 0, fw, fh, X, Y, fw, fh);
   if (ui.sel === e.id) { ctx.strokeStyle = "#ffd65a"; ctx.lineWidth = 1; const f2 = fp(e); ctx.strokeRect(e.x * T + 0.5, e.y * T + 0.5, f2.w * T - 1, f2.h * T - 1); }
+  if (e.kind === "flowerbed") for (const [dx, dy, c] of [[9, 30, "#ff8fc8"], [20, 24, "#ffd1e8"], [14, 40, "#ff6fb4"], [23, 37, "#ff8fc8"], [7, 46, "#ffd1e8"]]) {
+    ctx.fillStyle = c; ctx.fillRect(X + dx, Y + dy, 3, 3); ctx.fillStyle = "#ffe066"; ctx.fillRect(X + dx + 1, Y + dy + 1, 1, 1); // petites fleurs
+  }
   if (e.kind === "flowerbed") { if (e.grown >= FLOWER_TIME) { if (Math.floor(time * 2) % 2) drawIcon("etoile", X + fw / 2 - 8, Y - 18); } else bar(X + fw / 2 - 12, Y - 5, 24, e.grown / FLOWER_TIME, "#ff9ad5"); }
   if (e.kind === "machine" && unlinked(e).length && Math.floor(time * 2) % 2) drawIcon("non", X + fw / 2 - 8, Y - 18); // alerte : chaîne coupée
   if (e.kind === "machine") {
@@ -1290,6 +1293,14 @@ $("beltdone").addEventListener("click", () => setMode("hand"));
 $("zin").addEventListener("click", () => { zoom = ZOOMS[Math.min(ZOOMS.length - 1, ZOOMS.indexOf(zoom) + 1)]; });
 $("zout").addEventListener("click", () => { zoom = ZOOMS[Math.max(0, ZOOMS.indexOf(zoom) - 1)]; });
 
+/** Chacun a sa serre de l'usine (elle remplace la serre fermée) : on en offre une, fleur prête, si la partie n'en a pas. */
+function ensureFlowerbed() {
+  if (S.demo || S.ents.some((e) => e.kind === "flowerbed")) return;
+  const p = S.player; let best = null;
+  for (let y = Y0; y < S.area.h; y++) for (let x = 0; x < S.area.w; x++)
+    if (fits("deco_tree", 1, undefined, x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
+  if (best) addEnt({ kind:"flowerbed", name:"deco_tree", stage:1, x:best[0], y:best[1], grown:FLOWER_TIME });
+}
 function useCharacter() {
   const q = new URLSearchParams(location.search), sp = q.get("sp");
   if (sp && SPECIES.includes(sp)) S.avatar = { species:sp, color:Math.max(0, Math.min(7, +q.get("co") || 0)), santa:true };
@@ -1306,7 +1317,7 @@ function push() {
 async function pull() {
   if (API) try {
     const r = await fetch(API, { cache:"no-store" });
-    if (r.ok) { const { state } = await r.json(); if (state && state.v === 2 && state.area && (state.savedAt || 0) > (S.savedAt || 0)) { S = state; invalidate(); camReady = false; ui.sel = null; ui.dirty = true; } }
+    if (r.ok) { const { state } = await r.json(); if (state && state.v === 2 && state.area && (state.savedAt || 0) > (S.savedAt || 0)) { S = state; useCharacter(); ensureFlowerbed(); invalidate(); camReady = false; ui.sel = null; ui.dirty = true; } }
   } catch {}
   catchUp();
 }
@@ -1378,7 +1389,7 @@ function load() {
     if (s.v === 2) setTimeout(() => toast("Nouvelle version : l'atelier commence petit, la partie recommence.", 6000), 500); } } catch {}
   newState();
 }
-load(); useCharacter();
+load(); useCharacter(); ensureFlowerbed();
 setInterval(save, 4000); setInterval(push, 20000);
 window.addEventListener("beforeunload", push);
 // onglet caché : on enregistre ; de retour : l'usine rattrape le temps passé
