@@ -1,46 +1,83 @@
 {
   "name": "Atelier équipé",
   "family": "art",
-  "machines": {
+  "objects": {
     "kiln_bellows": {
-      "role": "sable -> boule transparente (x2)",
-      "family": "art",
-      "h": {
-        "file": "kiln_bellows_h.png",
+      "e": {
+        "file": "kiln_bellows_e.png",
         "frame": [
-          64,
-          85
+          65,
+          70
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          1,
+          37
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "kiln_bellows_v.png",
+      "s": {
+        "file": "kiln_bellows_s.png",
         "frame": [
-          32,
-          98
+          33,
+          78
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
+        "origin": [
+          0,
+          13
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "kiln_bellows_w.png",
+        "frame": [
+          65,
+          70
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          37
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "kiln_bellows_n.png",
+        "frame": [
+          33,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "four",
+      "family": "art",
+      "role": "four à soufflet"
     },
     "lathe": {
-      "role": "bois -> étoile en bois",
-      "family": "art",
-      "h": {
-        "file": "lathe_h.png",
+      "e": {
+        "file": "lathe_e.png",
         "frame": [
           64,
           54
@@ -50,85 +87,292 @@
           2,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          21
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "lathe_v.png",
+      "s": {
+        "file": "lathe_s.png",
         "frame": [
-          32,
-          84
+          33,
+          89
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
-    },
-    "tree_bench": {
-      "role": "sapin + boules -> sapin décoré",
-      "family": "art",
-      "h": {
-        "file": "tree_bench_h.png",
+        "origin": [
+          0,
+          24
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "lathe_w.png",
         "frame": [
           64,
-          46
+          54
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          21
+        ],
+        "face": "arrière (service)"
       },
-      "v": {
-        "file": "tree_bench_v.png",
+      "n": {
+        "file": "lathe_n.png",
         "frame": [
-          32,
-          78
+          33,
+          87
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
-    }
-  },
-  "objects": {
-    "source_sand": {
-      "file": "source_sand.png",
-      "frame": [
-        32,
-        32
-      ],
-      "footprint": [
-        1,
-        1
-      ],
-      "gives": "sand"
+        "origin": [
+          0,
+          22
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "façonnage",
+      "family": "art",
+      "role": "planche, étoile en bois"
     },
-    "source_branch": {
-      "file": "source_branch.png",
+    "tree_bench": {
+      "e": {
+        "file": "tree_bench_e.png",
+        "frame": [
+          64,
+          59
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          26
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "tree_bench_s.png",
+        "frame": [
+          33,
+          80
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          15
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "tree_bench_w.png",
+        "frame": [
+          64,
+          59
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          26
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "tree_bench_n.png",
+        "frame": [
+          33,
+          81
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          16
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "sapins",
+      "family": "art",
+      "role": "sapin décoré"
+    },
+    "source_sable": {
+      "file": "source_sable.png",
       "frame": [
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
       ],
-      "gives": "branch"
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "sable"
+    },
+    "source_bois": {
+      "file": "source_bois.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "bois"
+    },
+    "source_branche": {
+      "file": "source_branche.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "branche"
+    },
+    "source_fil": {
+      "file": "source_fil.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "fil"
+    },
+    "source_sapin": {
+      "file": "source_sapin.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "sapin"
+    },
+    "source_pigment_rouge": {
+      "file": "source_pigment_rouge.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_rouge"
+    },
+    "source_pigment_vert": {
+      "file": "source_pigment_vert.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_vert"
+    },
+    "source_pigment_or": {
+      "file": "source_pigment_or.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_or"
+    },
+    "source_pigment_bleu": {
+      "file": "source_pigment_bleu.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_bleu"
     },
     "ship_crate": {
       "file": "ship_crate.png",
@@ -136,47 +380,16 @@
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
+      ],
+      "origin": [
+        0,
+        0
       ],
       "accepts": "produits finis -> pièces"
-    },
-    "source_wood": {
-      "file": "source_wood.png",
-      "frame": [
-        32,
-        32
-      ],
-      "footprint": [
-        1,
-        1
-      ],
-      "gives": "wood"
-    },
-    "storage_shelf": {
-      "file": "storage_shelf.png",
-      "frame": [
-        32,
-        64
-      ],
-      "footprint": [
-        1,
-        1
-      ],
-      "role": "stockage"
-    },
-    "deco_tool_rack": {
-      "file": "deco_tool_rack.png",
-      "frame": [
-        32,
-        64
-      ],
-      "footprint": [
-        1,
-        1
-      ],
-      "layer": "mur"
     }
   },
   "tiles": {
@@ -205,8 +418,5 @@
       ],
       "note": "mur du fond, 2 tuiles de haut"
     }
-  },
-  "reuses": [
-    "etape-1"
-  ]
+  }
 }

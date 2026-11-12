@@ -1,134 +1,400 @@
 {
   "name": "Atelier du lutin",
   "family": "art",
-  "machines": {
+  "objects": {
     "kiln": {
-      "role": "sable -> boule transparente",
-      "family": "art",
-      "h": {
-        "file": "kiln_h.png",
+      "e": {
+        "file": "kiln_e.png",
         "frame": [
           64,
-          85
+          70
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          37
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "kiln_v.png",
+      "s": {
+        "file": "kiln_s.png",
         "frame": [
-          32,
-          98
+          33,
+          78
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
+        "origin": [
+          0,
+          13
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "kiln_w.png",
+        "frame": [
+          64,
+          70
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          37
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "kiln_n.png",
+        "frame": [
+          33,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "four",
+      "family": "art",
+      "role": "sable -> boule transparente (recette 1)"
     },
     "paint_table": {
-      "role": "boule transparente + peinture -> boule peinte",
-      "family": "art",
-      "h": {
-        "file": "paint_table_h.png",
+      "e": {
+        "file": "paint_table_e.png",
         "frame": [
           64,
-          69
+          76
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          43
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "paint_table_v.png",
+      "s": {
+        "file": "paint_table_s.png",
         "frame": [
-          32,
-          101
+          33,
+          108
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
+        "origin": [
+          0,
+          43
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "paint_table_w.png",
+        "frame": [
+          64,
+          55
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          22
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "paint_table_n.png",
+        "frame": [
+          33,
+          108
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          43
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "peinture",
+      "family": "art",
+      "role": "boule -> boule peinte"
     },
     "wreath_table": {
-      "role": "branche + ruban -> couronne",
-      "family": "art",
-      "h": {
-        "file": "wreath_table_h.png",
+      "e": {
+        "file": "wreath_table_e.png",
         "frame": [
           64,
-          71
+          77
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          44
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "wreath_table_v.png",
+      "s": {
+        "file": "wreath_table_s.png",
         "frame": [
-          32,
-          103
+          33,
+          107
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
-    }
-  },
-  "objects": {
-    "source_sand": {
-      "file": "source_sand.png",
-      "frame": [
-        32,
-        32
-      ],
-      "footprint": [
-        1,
-        1
-      ],
-      "gives": "sand"
+        "origin": [
+          0,
+          42
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "wreath_table_w.png",
+        "frame": [
+          64,
+          54
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          21
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "wreath_table_n.png",
+        "frame": [
+          33,
+          107
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          42
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "couronnes",
+      "family": "art",
+      "role": "couronne"
     },
-    "source_branch": {
-      "file": "source_branch.png",
+    "chest_wood": {
+      "e": {
+        "file": "chest_wood_e.png",
+        "frame": [
+          33,
+          40
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          7
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "chest_wood_s.png",
+        "frame": [
+          33,
+          42
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          9
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "chest_wood_w.png",
+        "frame": [
+          33,
+          42
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          9
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "chest_wood_n.png",
+        "frame": [
+          33,
+          42
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          9
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "stockage",
+      "family": "art",
+      "role": "coffre 16 piles"
+    },
+    "source_sable": {
+      "file": "source_sable.png",
       "frame": [
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
       ],
-      "gives": "branch"
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "sable"
+    },
+    "source_branche": {
+      "file": "source_branche.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "branche"
+    },
+    "source_pigment_rouge": {
+      "file": "source_pigment_rouge.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_rouge"
+    },
+    "source_pigment_vert": {
+      "file": "source_pigment_vert.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_vert"
+    },
+    "source_pigment_or": {
+      "file": "source_pigment_or.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_or"
+    },
+    "source_pigment_bleu": {
+      "file": "source_pigment_bleu.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_bleu"
     },
     "ship_crate": {
       "file": "ship_crate.png",
@@ -136,9 +402,14 @@
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
+      ],
+      "origin": [
+        0,
+        0
       ],
       "accepts": "produits finis -> pièces"
     },
@@ -148,9 +419,14 @@
         64,
         32
       ],
+      "frames": 1,
       "footprint": [
         2,
         1
+      ],
+      "origin": [
+        0,
+        0
       ],
       "layer": "sol"
     },
@@ -160,9 +436,14 @@
         32,
         64
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
+      ],
+      "origin": [
+        0,
+        32
       ]
     }
   },

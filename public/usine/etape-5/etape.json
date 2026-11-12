@@ -1,15 +1,12 @@
 {
   "name": "Usine électrique",
   "family": "elec",
-  "belt": "../tapis/metal.png",
-  "machines": {
+  "objects": {
     "elec_furnace": {
-      "role": "sable -> boule transparente",
-      "family": "elec",
-      "h": {
-        "file": "elec_furnace_h.png",
+      "e": {
+        "file": "elec_furnace_e.png",
         "frame": [
-          64,
+          66,
           56
         ],
         "frames": 4,
@@ -17,22 +14,32 @@
           2,
           1
         ],
+        "origin": [
+          1,
+          23
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "E",
-            "row": 0
+            "tile": [
+              1,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "elec_furnace_v.png",
+      "s": {
+        "file": "elec_furnace_s.png",
         "frame": [
-          32,
+          33,
           84
         ],
         "frames": 4,
@@ -40,26 +47,103 @@
           1,
           2
         ],
+        "origin": [
+          0,
+          19
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "elec_furnace_w.png",
+        "frame": [
+          66,
+          56
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          23
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "elec_furnace_n.png",
+        "frame": [
+          33,
+          84
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          19
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "four",
+      "family": "elec",
+      "role": "four à induction"
     },
     "paint_booth": {
-      "role": "boule -> boule peinte",
-      "family": "elec",
-      "h": {
-        "file": "paint_booth_h.png",
+      "e": {
+        "file": "paint_booth_e.png",
         "frame": [
-          64,
+          66,
           92
         ],
         "frames": 4,
@@ -67,20 +151,30 @@
           2,
           2
         ],
+        "origin": [
+          1,
+          27
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 1
+            "tile": [
+              0,
+              1
+            ]
           },
           "out": {
             "side": "E",
-            "row": 1
+            "tile": [
+              1,
+              1
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "paint_booth_v.png",
+      "s": {
+        "file": "paint_booth_s.png",
         "frame": [
           64,
           88
@@ -90,26 +184,103 @@
           2,
           2
         ],
+        "origin": [
+          0,
+          23
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "paint_booth_w.png",
+        "frame": [
+          66,
+          92
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          27
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "paint_booth_n.png",
+        "frame": [
+          64,
+          88
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          23
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              1,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "type": "peinture",
+      "family": "elec",
+      "role": "cabine de peinture"
     },
     "assembler": {
-      "role": "bois + peinture -> étoile",
-      "family": "elec",
-      "h": {
-        "file": "assembler_h.png",
+      "e": {
+        "file": "assembler_e.png",
         "frame": [
-          64,
+          66,
           90
         ],
         "frames": 4,
@@ -117,20 +288,30 @@
           2,
           2
         ],
+        "origin": [
+          1,
+          25
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 1
+            "tile": [
+              0,
+              1
+            ]
           },
           "out": {
             "side": "E",
-            "row": 1
+            "tile": [
+              1,
+              1
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "assembler_v.png",
+      "s": {
+        "file": "assembler_s.png",
         "frame": [
           64,
           86
@@ -140,26 +321,103 @@
           2,
           2
         ],
+        "origin": [
+          0,
+          21
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "assembler_w.png",
+        "frame": [
+          66,
+          90
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          25
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "assembler_n.png",
+        "frame": [
+          64,
+          86
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          21
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              1,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "type": "façonnage",
+      "family": "elec",
+      "role": "assembleur"
     },
     "elec_loom": {
-      "role": "branche + boules -> guirlande",
-      "family": "elec",
-      "h": {
-        "file": "elec_loom_h.png",
+      "e": {
+        "file": "elec_loom_e.png",
         "frame": [
-          64,
+          66,
           54
         ],
         "frames": 4,
@@ -167,22 +425,32 @@
           2,
           1
         ],
+        "origin": [
+          1,
+          21
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "E",
-            "row": 0
+            "tile": [
+              1,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "elec_loom_v.png",
+      "s": {
+        "file": "elec_loom_s.png",
         "frame": [
-          32,
+          33,
           82
         ],
         "frames": 4,
@@ -190,26 +458,103 @@
           1,
           2
         ],
+        "origin": [
+          0,
+          17
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "elec_loom_w.png",
+        "frame": [
+          66,
+          54
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          21
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "elec_loom_n.png",
+        "frame": [
+          33,
+          82
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          17
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "métier",
+      "family": "elec",
+      "role": "métier électrique"
     },
     "elec_wreath": {
-      "role": "branche + ruban -> couronne",
-      "family": "elec",
-      "h": {
-        "file": "elec_wreath_h.png",
+      "e": {
+        "file": "elec_wreath_e.png",
         "frame": [
-          64,
+          66,
           54
         ],
         "frames": 4,
@@ -217,22 +562,32 @@
           2,
           1
         ],
+        "origin": [
+          1,
+          21
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "E",
-            "row": 0
+            "tile": [
+              1,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "elec_wreath_v.png",
+      "s": {
+        "file": "elec_wreath_s.png",
         "frame": [
-          32,
+          33,
           82
         ],
         "frames": 4,
@@ -240,170 +595,1029 @@
           1,
           2
         ],
+        "origin": [
+          0,
+          17
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "elec_wreath_w.png",
+        "frame": [
+          66,
+          54
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          21
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "elec_wreath_n.png",
+        "frame": [
+          33,
+          82
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          17
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "couronnes",
+      "family": "elec",
+      "role": "machine à couronnes"
     },
     "tree_decorator": {
-      "role": "sapin + boules + étoile -> sapin décoré",
-      "family": "elec",
-      "h": {
-        "file": "tree_decorator_h.png",
+      "e": {
+        "file": "tree_decorator_e.png",
         "frame": [
-          64,
-          90
+          66,
+          99
         ],
         "frames": 4,
         "footprint": [
           2,
           2
         ],
+        "origin": [
+          1,
+          34
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 1
+            "tile": [
+              0,
+              1
+            ]
           },
           "out": {
             "side": "E",
-            "row": 1
+            "tile": [
+              1,
+              1
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "tree_decorator_v.png",
+      "s": {
+        "file": "tree_decorator_s.png",
         "frame": [
           64,
-          86
+          93
         ],
         "frames": 4,
         "footprint": [
           2,
           2
         ],
+        "origin": [
+          0,
+          28
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "tree_decorator_w.png",
+        "frame": [
+          66,
+          93
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          28
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "tree_decorator_n.png",
+        "frame": [
+          64,
+          93
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          28
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              1,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "type": "sapins",
+      "family": "elec",
+      "role": "décoratrice électrique"
     },
     "generator": {
-      "role": "énergie (électricité)",
-      "family": "elec",
-      "h": {
-        "file": "generator_h.png",
+      "e": {
+        "file": "generator_e.png",
         "frame": [
           64,
-          102
+          95
         ],
         "frames": 4,
         "footprint": [
           2,
           2
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          30
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "generator_v.png",
+      "s": {
+        "file": "generator_s.png",
         "frame": [
-          64,
-          102
+          65,
+          103
         ],
         "frames": 4,
         "footprint": [
           2,
           2
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
+        "origin": [
+          0,
+          38
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "generator_w.png",
+        "frame": [
+          64,
+          84
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          19
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "generator_n.png",
+        "frame": [
+          65,
+          97
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          32
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "énergie",
+      "family": "elec",
+      "role": "générateur 900 kW (10 u/s de vapeur)"
     },
     "silo": {
-      "role": "source de matière première",
-      "family": "elec",
-      "h": {
-        "file": "silo_h.png",
+      "e": {
+        "file": "silo_e.png",
         "frame": [
-          32,
-          78
+          33,
+          68
         ],
         "frames": 4,
         "footprint": [
           1,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          35
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "silo_v.png",
+      "s": {
+        "file": "silo_s.png",
         "frame": [
-          32,
-          78
+          33,
+          68
         ],
         "frames": 4,
         "footprint": [
           1,
           1
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
+        "origin": [
+          0,
+          35
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "silo_w.png",
+        "frame": [
+          33,
+          68
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          35
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "silo_n.png",
+        "frame": [
+          33,
+          68
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          35
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "source",
+      "family": "elec",
+      "role": "extracteur de matière première"
     },
-    "metal_chest": {
-      "role": "stockage",
-      "family": "elec",
-      "h": {
-        "file": "metal_chest_h.png",
+    "chest_metal": {
+      "e": {
+        "file": "chest_metal_e.png",
         "frame": [
-          32,
-          46
+          33,
+          44
         ],
         "frames": 4,
         "footprint": [
           1,
           1
         ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        "origin": [
+          0,
+          11
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "metal_chest_v.png",
+      "s": {
+        "file": "chest_metal_s.png",
         "frame": [
-          32,
-          46
+          33,
+          45
         ],
         "frames": 4,
         "footprint": [
           1,
           1
         ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
+        "origin": [
+          0,
+          12
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "chest_metal_w.png",
+        "frame": [
+          33,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          11
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "chest_metal_n.png",
+        "frame": [
+          33,
+          45
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "stockage",
+      "family": "elec",
+      "role": "coffre 32 piles"
+    },
+    "underground_metal_in": {
+      "e": {
+        "file": "underground_metal_in_e.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "underground_metal_in_s.png",
+        "frame": [
+          32,
+          39
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          6
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "underground_metal_in_w.png",
+        "frame": [
+          35,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "underground_metal_in_n.png",
+        "frame": [
+          32,
+          48
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          15
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "entrée de tapis souterrain",
+      "range_tiles": 4
+    },
+    "underground_metal_out": {
+      "e": {
+        "file": "underground_metal_out_e.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "underground_metal_out_s.png",
+        "frame": [
+          32,
+          48
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          15
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "underground_metal_out_w.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "underground_metal_out_n.png",
+        "frame": [
+          32,
+          39
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          6
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "sortie de tapis souterrain",
+      "range_tiles": 4
+    },
+    "splitter": {
+      "e": {
+        "file": "splitter_e.png",
+        "frame": [
+          33,
+          73
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          8
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "splitter_s.png",
+        "frame": [
+          64,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          11
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "splitter_w.png",
+        "frame": [
+          33,
+          73
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          8
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "splitter_n.png",
+        "frame": [
+          64,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          11
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "2 entrées, 2 sorties, 1:1",
+      "note": "emprise 1 x 2 en travers du flux"
+    },
+    "arm_simple": {
+      "e": {
+        "file": "arm_simple_e.png",
+        "frame": [
+          74,
+          52
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          21,
+          19
+        ],
+        "hand": [
+          [
+            5,
+            29
+          ],
+          [
+            26,
+            13
+          ],
+          [
+            48,
+            13
+          ],
+          [
+            69,
+            29
+          ]
+        ],
+        "pick": "W",
+        "drop": "E"
+      },
+      "s": {
+        "file": "arm_simple_s.png",
+        "frame": [
+          33,
+          79
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          35
+        ],
+        "hand": [
+          [
+            16,
+            10
+          ],
+          [
+            16,
+            16
+          ],
+          [
+            16,
+            37
+          ],
+          [
+            16,
+            74
+          ]
+        ],
+        "pick": "N",
+        "drop": "S"
+      },
+      "w": {
+        "file": "arm_simple_w.png",
+        "frame": [
+          74,
+          52
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          21,
+          19
+        ],
+        "hand": [
+          [
+            69,
+            29
+          ],
+          [
+            48,
+            13
+          ],
+          [
+            26,
+            13
+          ],
+          [
+            5,
+            29
+          ]
+        ],
+        "pick": "E",
+        "drop": "W"
+      },
+      "n": {
+        "file": "arm_simple_n.png",
+        "frame": [
+          33,
+          79
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          35
+        ],
+        "hand": [
+          [
+            16,
+            74
+          ],
+          [
+            16,
+            37
+          ],
+          [
+            16,
+            16
+          ],
+          [
+            16,
+            10
+          ]
+        ],
+        "pick": "S",
+        "drop": "N"
+      },
+      "play": "0-1-2-3 puis 3-2-1-0 ; objet tenu dessiné à « hand »",
+      "speed": 0.83,
+      "reach_tiles": 1
+    },
+    "pole": {
+      "file": "pole.png",
+      "frame": [
+        32,
+        65
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        33
+      ],
+      "wire_anchor": [
+        16,
+        2
+      ],
+      "reach_tiles": 7,
+      "area": "5x5"
+    },
+    "extractor_sable": {
+      "e": {
+        "file": "extractor_sable_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "sable",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_bois": {
+      "e": {
+        "file": "extractor_bois_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "bois",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_branche": {
+      "e": {
+        "file": "extractor_branche_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "branche",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_fil": {
+      "e": {
+        "file": "extractor_fil_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "fil",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_sapin": {
+      "e": {
+        "file": "extractor_sapin_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "sapin",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_pigment_rouge": {
+      "e": {
+        "file": "extractor_pigment_rouge_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "pigment_rouge",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_pigment_vert": {
+      "e": {
+        "file": "extractor_pigment_vert_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "pigment_vert",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_pigment_or": {
+      "e": {
+        "file": "extractor_pigment_or_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "pigment_or",
+      "role": "source (débit améliorable)"
+    },
+    "extractor_pigment_bleu": {
+      "e": {
+        "file": "extractor_pigment_bleu_e.png",
+        "frame": [
+          33,
+          66
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          33
+        ],
+        "face": "façade (commandes)"
+      },
+      "gives": "pigment_bleu",
+      "role": "source (débit améliorable)"
     }
   },
   "tiles": {
@@ -431,5 +1645,6 @@
         "lampe"
       ]
     }
-  }
+  },
+  "belt": "../tapis/metal.png"
 }

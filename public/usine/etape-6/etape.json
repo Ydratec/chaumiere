@@ -1,36 +1,43 @@
 {
   "name": "Usine automatisée",
   "family": "robot",
-  "belt": "../tapis/metal.png",
-  "machines": {
+  "objects": {
     "paint_robot": {
-      "role": "boule -> boule peinte (rapide)",
-      "family": "robot",
-      "h": {
-        "file": "paint_robot_h.png",
+      "e": {
+        "file": "paint_robot_e.png",
         "frame": [
-          64,
-          80
+          66,
+          78
         ],
         "frames": 4,
         "footprint": [
           2,
           2
         ],
+        "origin": [
+          1,
+          13
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 1
+            "tile": [
+              0,
+              1
+            ]
           },
           "out": {
             "side": "E",
-            "row": 1
+            "tile": [
+              1,
+              1
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "paint_robot_v.png",
+      "s": {
+        "file": "paint_robot_s.png",
         "frame": [
           64,
           78
@@ -40,49 +47,103 @@
           2,
           2
         ],
+        "origin": [
+          0,
+          13
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
+        }
+      },
+      "w": {
+        "file": "paint_robot_w.png",
+        "frame": [
+          66,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          13
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "paint_robot_n.png",
+        "frame": [
+          64,
+          83
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          18
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              1,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "type": "peinture",
+      "family": "robot",
+      "role": "robot peintre"
     },
     "assembly_robot": {
-      "role": "assemble étoiles, guirlandes, sapins, couronnes",
-      "family": "robot",
-      "h": {
-        "file": "assembly_robot_h.png",
+      "e": {
+        "file": "assembly_robot_e.png",
         "frame": [
-          64,
-          80
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          2
-        ],
-        "ports": {
-          "in": {
-            "side": "W",
-            "row": 1
-          },
-          "out": {
-            "side": "E",
-            "row": 1
-          }
-        },
-        "view": "de face (ports ouest/est)"
-      },
-      "v": {
-        "file": "assembly_robot_v.png",
-        "frame": [
-          64,
+          66,
           78
         ],
         "frames": 4,
@@ -90,66 +151,295 @@
           2,
           2
         ],
+        "origin": [
+          1,
+          13
+        ],
+        "face": "façade (commandes)",
+        "ports": {
+          "in": {
+            "side": "W",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "E",
+            "tile": [
+              1,
+              1
+            ]
+          }
+        }
+      },
+      "s": {
+        "file": "assembly_robot_s.png",
+        "frame": [
+          64,
+          87
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          22
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    }
-  },
-  "objects": {
-    "qc_tunnel": {
-      "h": {
-        "file": "qc_tunnel_h.png",
+        }
+      },
+      "w": {
+        "file": "assembly_robot_w.png",
         "frame": [
-          32,
-          50
+          66,
+          78
         ],
         "frames": 4,
         "footprint": [
-          1,
-          1
+          2,
+          2
         ],
-        "on": "tapis horizontal"
+        "origin": [
+          1,
+          13
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
       },
-      "v": {
-        "file": "qc_tunnel_v.png",
+      "n": {
+        "file": "assembly_robot_n.png",
         "frame": [
-          32,
-          50
+          64,
+          87
         ],
         "frames": 4,
         "footprint": [
-          1,
-          1
+          2,
+          2
         ],
-        "on": "tapis vertical"
+        "origin": [
+          0,
+          22
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              1,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
       },
-      "role": "contrôle qualité au-dessus du tapis"
+      "type": "façonnage",
+      "family": "robot",
+      "role": "robot d'assemblage (toutes recettes, une à la fois)"
     },
-    "splitter": {
-      "h": {
-        "file": "splitter_h.png",
+    "underground_express_in": {
+      "e": {
+        "file": "underground_express_in_e.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "underground_express_in_s.png",
         "frame": [
           32,
-          76
+          39
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          6
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "underground_express_in_w.png",
+        "frame": [
+          35,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "underground_express_in_n.png",
+        "frame": [
+          32,
+          48
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          15
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "entrée de tapis souterrain",
+      "range_tiles": 8
+    },
+    "underground_express_out": {
+      "e": {
+        "file": "underground_express_out_e.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "underground_express_out_s.png",
+        "frame": [
+          32,
+          48
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          15
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "underground_express_out_w.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "underground_express_out_n.png",
+        "frame": [
+          32,
+          39
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          6
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "sortie de tapis souterrain",
+      "range_tiles": 8
+    },
+    "splitter_filter": {
+      "e": {
+        "file": "splitter_filter_e.png",
+        "frame": [
+          33,
+          73
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
-        "flow": "ouest -> est, 2 rangées"
+        "origin": [
+          0,
+          8
+        ],
+        "face": "façade (commandes)"
       },
-      "v": {
-        "file": "splitter_v.png",
+      "s": {
+        "file": "splitter_filter_s.png",
         "frame": [
           64,
           44
@@ -159,81 +449,582 @@
           2,
           1
         ],
-        "flow": "nord -> sud, 2 colonnes"
-      },
-      "role": "répartit les objets sur 2 tapis"
-    },
-    "robot_arm_ns": {
-      "file": "robot_arm_ns.png",
-      "frame": [
-        32,
-        114
-      ],
-      "frames": 4,
-      "footprint": [
-        1,
-        1
-      ],
-      "footprintOrigin": [
-        0,
-        50
-      ],
-      "hand": [
-        [
-          16,
-          92
+        "origin": [
+          0,
+          11
         ],
-        [
-          16,
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "splitter_filter_w.png",
+        "frame": [
+          33,
+          73
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          8
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "splitter_filter_n.png",
+        "frame": [
+          64,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          0,
+          11
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "priorités + filtre par objet"
+    },
+    "qc_tunnel": {
+      "e": {
+        "file": "qc_tunnel_e.png",
+        "frame": [
+          32,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "qc_tunnel_s.png",
+        "frame": [
+          32,
+          43
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          11
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "qc_tunnel_w.png",
+        "frame": [
+          32,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "qc_tunnel_n.png",
+        "frame": [
+          32,
+          43
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          11
+        ],
+        "face": "bout d'entrée"
+      },
+      "role": "contrôle qualité posé sur un tapis"
+    },
+    "arm_rapide": {
+      "e": {
+        "file": "arm_rapide_e.png",
+        "frame": [
+          74,
+          51
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          21,
+          18
+        ],
+        "hand": [
+          [
+            5,
+            28
+          ],
+          [
+            26,
+            12
+          ],
+          [
+            48,
+            12
+          ],
+          [
+            69,
+            28
+          ]
+        ],
+        "pick": "W",
+        "drop": "E"
+      },
+      "s": {
+        "file": "arm_rapide_s.png",
+        "frame": [
+          33,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          34
+        ],
+        "hand": [
+          [
+            16,
+            9
+          ],
+          [
+            16,
+            15
+          ],
+          [
+            16,
+            36
+          ],
+          [
+            16,
+            73
+          ]
+        ],
+        "pick": "N",
+        "drop": "S"
+      },
+      "w": {
+        "file": "arm_rapide_w.png",
+        "frame": [
+          74,
+          51
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          21,
+          18
+        ],
+        "hand": [
+          [
+            69,
+            28
+          ],
+          [
+            48,
+            12
+          ],
+          [
+            26,
+            12
+          ],
+          [
+            5,
+            28
+          ]
+        ],
+        "pick": "E",
+        "drop": "W"
+      },
+      "n": {
+        "file": "arm_rapide_n.png",
+        "frame": [
+          33,
+          78
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          34
+        ],
+        "hand": [
+          [
+            16,
+            73
+          ],
+          [
+            16,
+            36
+          ],
+          [
+            16,
+            15
+          ],
+          [
+            16,
+            9
+          ]
+        ],
+        "pick": "S",
+        "drop": "N"
+      },
+      "play": "0-1-2-3 puis 3-2-1-0 ; objet tenu dessiné à « hand »",
+      "speed": 2.3,
+      "reach_tiles": 1
+    },
+    "arm_long": {
+      "e": {
+        "file": "arm_long_e.png",
+        "frame": [
+          138,
+          58
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          53,
+          25
+        ],
+        "hand": [
+          [
+            5,
+            35
+          ],
+          [
+            48,
+            14
+          ],
+          [
+            90,
+            14
+          ],
+          [
+            133,
+            35
+          ]
+        ],
+        "pick": "W",
+        "drop": "E"
+      },
+      "s": {
+        "file": "arm_long_s.png",
+        "frame": [
+          33,
+          136
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
           60
         ],
-        [
-          16,
-          39
+        "hand": [
+          [
+            16,
+            3
+          ],
+          [
+            16,
+            25
+          ],
+          [
+            16,
+            68
+          ],
+          [
+            16,
+            131
+          ]
         ],
-        [
-          16,
-          28
-        ]
-      ],
-      "play": "0-1-2-3-2-1 ; objet tenu dessiné à « hand » (frames 1-2)",
-      "move": "prend au sud, dépose au nord (inverser pour l'autre sens)"
+        "pick": "N",
+        "drop": "S"
+      },
+      "w": {
+        "file": "arm_long_w.png",
+        "frame": [
+          138,
+          58
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          53,
+          25
+        ],
+        "hand": [
+          [
+            133,
+            35
+          ],
+          [
+            90,
+            14
+          ],
+          [
+            48,
+            14
+          ],
+          [
+            5,
+            35
+          ]
+        ],
+        "pick": "E",
+        "drop": "W"
+      },
+      "n": {
+        "file": "arm_long_n.png",
+        "frame": [
+          33,
+          136
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          60
+        ],
+        "hand": [
+          [
+            16,
+            131
+          ],
+          [
+            16,
+            68
+          ],
+          [
+            16,
+            25
+          ],
+          [
+            16,
+            3
+          ]
+        ],
+        "pick": "S",
+        "drop": "N"
+      },
+      "play": "0-1-2-3 puis 3-2-1-0 ; objet tenu dessiné à « hand »",
+      "speed": 1.2,
+      "reach_tiles": 2
     },
-    "robot_arm_we": {
-      "file": "robot_arm_we.png",
+    "arm_filtrant": {
+      "e": {
+        "file": "arm_filtrant_e.png",
+        "frame": [
+          74,
+          52
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          21,
+          19
+        ],
+        "hand": [
+          [
+            5,
+            29
+          ],
+          [
+            26,
+            13
+          ],
+          [
+            48,
+            13
+          ],
+          [
+            69,
+            29
+          ]
+        ],
+        "pick": "W",
+        "drop": "E"
+      },
+      "s": {
+        "file": "arm_filtrant_s.png",
+        "frame": [
+          33,
+          79
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          35
+        ],
+        "hand": [
+          [
+            16,
+            10
+          ],
+          [
+            16,
+            16
+          ],
+          [
+            16,
+            37
+          ],
+          [
+            16,
+            74
+          ]
+        ],
+        "pick": "N",
+        "drop": "S"
+      },
+      "w": {
+        "file": "arm_filtrant_w.png",
+        "frame": [
+          74,
+          52
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          21,
+          19
+        ],
+        "hand": [
+          [
+            69,
+            29
+          ],
+          [
+            48,
+            13
+          ],
+          [
+            26,
+            13
+          ],
+          [
+            5,
+            29
+          ]
+        ],
+        "pick": "E",
+        "drop": "W"
+      },
+      "n": {
+        "file": "arm_filtrant_n.png",
+        "frame": [
+          33,
+          79
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          35
+        ],
+        "hand": [
+          [
+            16,
+            74
+          ],
+          [
+            16,
+            37
+          ],
+          [
+            16,
+            16
+          ],
+          [
+            16,
+            10
+          ]
+        ],
+        "pick": "S",
+        "drop": "N"
+      },
+      "play": "0-1-2-3 puis 3-2-1-0 ; objet tenu dessiné à « hand »",
+      "speed": 2.3,
+      "reach_tiles": 1
+    },
+    "accumulator": {
+      "file": "accumulator.png",
       "frame": [
-        96,
-        72
+        64,
+        87
       ],
       "frames": 4,
       "footprint": [
-        1,
-        1
+        2,
+        2
       ],
-      "footprintOrigin": [
-        32,
-        36
+      "origin": [
+        0,
+        22
       ],
-      "hand": [
-        [
-          16,
-          43
-        ],
-        [
-          37,
-          33
-        ],
-        [
-          59,
-          33
-        ],
-        [
-          80,
-          43
-        ]
-      ],
-      "play": "0-1-2-3-2-1 ; objet tenu dessiné à « hand » (frames 1-2)",
-      "move": "prend à l'ouest, dépose à l'est (inverser pour l'autre sens)"
+      "note": "image = niveau de charge 25/50/75/100 %"
     },
     "control_terminal": {
       "file": "control_terminal.png",
@@ -245,6 +1036,10 @@
       "footprint": [
         1,
         1
+      ],
+      "origin": [
+        0,
+        16
       ]
     }
   },
@@ -274,7 +1069,5 @@
       ]
     }
   },
-  "reuses": [
-    "etape-5"
-  ]
+  "belt": "../tapis/express.png"
 }

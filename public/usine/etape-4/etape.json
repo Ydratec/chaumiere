@@ -1,165 +1,78 @@
 {
   "name": "Manufacture à vapeur",
   "family": "vap",
-  "belt": "../tapis/fonte.png",
-  "machines": {
+  "objects": {
     "steam_furnace": {
-      "role": "sable -> boule transparente",
-      "family": "vap",
-      "h": {
-        "file": "steam_furnace_h.png",
+      "e": {
+        "file": "steam_furnace_e.png",
         "frame": [
-          64,
-          83
+          66,
+          80
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
+        "origin": [
+          1,
+          47
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "E",
-            "row": 0
+            "tile": [
+              1,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "steam_furnace_v.png",
+      "s": {
+        "file": "steam_furnace_s.png",
         "frame": [
-          32,
-          111
+          33,
+          84
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
+        "origin": [
+          0,
+          19
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    },
-    "steam_sprayer": {
-      "role": "boule -> boule peinte",
-      "family": "vap",
-      "h": {
-        "file": "steam_sprayer_h.png",
-        "frame": [
-          64,
-          73
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          1
-        ],
-        "ports": {
-          "in": {
-            "side": "W",
-            "row": 0
-          },
-          "out": {
-            "side": "E",
-            "row": 0
-          }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "steam_sprayer_v.png",
+      "w": {
+        "file": "steam_furnace_w.png",
         "frame": [
-          32,
-          101
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          2
-        ],
-        "ports": {
-          "in": {
-            "side": "N",
-            "col": 0
-          },
-          "out": {
-            "side": "S",
-            "col": 0
-          }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    },
-    "steam_press": {
-      "role": "bois -> étoile",
-      "family": "vap",
-      "h": {
-        "file": "steam_press_h.png",
-        "frame": [
-          64,
-          75
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          1
-        ],
-        "ports": {
-          "in": {
-            "side": "W",
-            "row": 0
-          },
-          "out": {
-            "side": "E",
-            "row": 0
-          }
-        },
-        "view": "de face (ports ouest/est)"
-      },
-      "v": {
-        "file": "steam_press_v.png",
-        "frame": [
-          32,
-          102
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          2
-        ],
-        "ports": {
-          "in": {
-            "side": "N",
-            "col": 0
-          },
-          "out": {
-            "side": "S",
-            "col": 0
-          }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    },
-    "steam_loom": {
-      "role": "branche + boules -> guirlande",
-      "family": "vap",
-      "h": {
-        "file": "steam_loom_h.png",
-        "frame": [
-          64,
+          66,
           68
         ],
         "frames": 4,
@@ -167,22 +80,240 @@
           2,
           1
         ],
+        "origin": [
+          1,
+          35
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "steam_furnace_n.png",
+        "frame": [
+          34,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          1,
+          39
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "four",
+      "family": "vap",
+      "role": "fourneau à vapeur"
+    },
+    "steam_sprayer": {
+      "e": {
+        "file": "steam_sprayer_e.png",
+        "frame": [
+          66,
+          60
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          27
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "E",
-            "row": 0
+            "tile": [
+              1,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "steam_loom_v.png",
+      "s": {
+        "file": "steam_sprayer_s.png",
         "frame": [
-          32,
+          33,
+          89
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          24
+        ],
+        "face": "bout de sortie",
+        "ports": {
+          "in": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          },
+          "out": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      "w": {
+        "file": "steam_sprayer_w.png",
+        "frame": [
+          66,
+          52
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          19
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "steam_sprayer_n.png",
+        "frame": [
+          34,
+          80
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          1,
+          15
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "peinture",
+      "family": "vap",
+      "role": "pulvérisateur"
+    },
+    "steam_press": {
+      "e": {
+        "file": "steam_press_e.png",
+        "frame": [
+          66,
+          72
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          39
+        ],
+        "face": "façade (commandes)",
+        "ports": {
+          "in": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          },
+          "out": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "s": {
+        "file": "steam_press_s.png",
+        "frame": [
+          33,
           96
         ],
         "frames": 4,
@@ -190,201 +321,970 @@
           1,
           2
         ],
+        "origin": [
+          0,
+          31
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    },
-    "steam_wreath": {
-      "role": "branche + ruban -> couronne",
-      "family": "vap",
-      "h": {
-        "file": "steam_wreath_h.png",
+        }
+      },
+      "w": {
+        "file": "steam_press_w.png",
         "frame": [
-          64,
-          74
+          66,
+          72
         ],
         "frames": 4,
         "footprint": [
           2,
           1
         ],
+        "origin": [
+          1,
+          39
+        ],
+        "face": "arrière (service)",
         "ports": {
           "in": {
-            "side": "W",
-            "row": 0
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
           },
           "out": {
-            "side": "E",
-            "row": 0
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "steam_wreath_v.png",
+      "n": {
+        "file": "steam_press_n.png",
         "frame": [
-          32,
-          102
+          34,
+          98
         ],
         "frames": 4,
         "footprint": [
           1,
           2
         ],
+        "origin": [
+          1,
+          33
+        ],
+        "face": "bout d'entrée",
         "ports": {
           "in": {
-            "side": "N",
-            "col": 0
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
           },
           "out": {
-            "side": "S",
-            "col": 0
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    },
-    "boiler": {
-      "role": "énergie (vapeur)",
-      "family": "vap",
-      "h": {
-        "file": "boiler_h.png",
-        "frame": [
-          64,
-          120
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          2
-        ],
-        "ports": null,
-        "view": "de face (ports ouest/est)",
-        "use": "le personnage se place sous l'emprise, face au nord"
+        }
       },
-      "v": {
-        "file": "boiler_v.png",
-        "frame": [
-          64,
-          120
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          2
-        ],
-        "ports": null,
-        "view": "de côté (ports nord/sud)",
-        "use": "le personnage se place sous l'emprise, face au nord"
-      }
-    },
-    "steam_tree": {
-      "role": "sapin + boules + étoile -> sapin décoré",
+      "type": "façonnage",
       "family": "vap",
-      "h": {
-        "file": "steam_tree_h.png",
+      "role": "presse à vapeur"
+    },
+    "steam_loom": {
+      "e": {
+        "file": "steam_loom_e.png",
         "frame": [
-          64,
-          94
+          66,
+          60
         ],
         "frames": 4,
         "footprint": [
           2,
-          2
+          1
         ],
+        "origin": [
+          1,
+          27
+        ],
+        "face": "façade (commandes)",
         "ports": {
           "in": {
             "side": "W",
-            "row": 1
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "E",
-            "row": 1
+            "tile": [
+              1,
+              0
+            ]
           }
-        },
-        "view": "de face (ports ouest/est)"
+        }
       },
-      "v": {
-        "file": "steam_tree_v.png",
+      "s": {
+        "file": "steam_loom_s.png",
         "frame": [
-          64,
-          90
+          33,
+          86
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          21
+        ],
+        "face": "bout de sortie",
+        "ports": {
+          "in": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          },
+          "out": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      "w": {
+        "file": "steam_loom_w.png",
+        "frame": [
+          66,
+          55
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          22
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "steam_loom_n.png",
+        "frame": [
+          34,
+          86
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          1,
+          21
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "métier",
+      "family": "vap",
+      "role": "métier à vapeur"
+    },
+    "steam_wreath": {
+      "e": {
+        "file": "steam_wreath_e.png",
+        "frame": [
+          66,
+          67
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          34
+        ],
+        "face": "façade (commandes)",
+        "ports": {
+          "in": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          },
+          "out": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "s": {
+        "file": "steam_wreath_s.png",
+        "frame": [
+          33,
+          93
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          0,
+          28
+        ],
+        "face": "bout de sortie",
+        "ports": {
+          "in": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          },
+          "out": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      "w": {
+        "file": "steam_wreath_w.png",
+        "frame": [
+          66,
+          67
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          1
+        ],
+        "origin": [
+          1,
+          34
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "steam_wreath_n.png",
+        "frame": [
+          34,
+          93
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          2
+        ],
+        "origin": [
+          1,
+          28
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "type": "couronnes",
+      "family": "vap",
+      "role": "presse à couronnes"
+    },
+    "steam_tree": {
+      "e": {
+        "file": "steam_tree_e.png",
+        "frame": [
+          66,
+          104
         ],
         "frames": 4,
         "footprint": [
           2,
           2
         ],
+        "origin": [
+          1,
+          39
+        ],
+        "face": "façade (commandes)",
+        "ports": {
+          "in": {
+            "side": "W",
+            "tile": [
+              0,
+              1
+            ]
+          },
+          "out": {
+            "side": "E",
+            "tile": [
+              1,
+              1
+            ]
+          }
+        }
+      },
+      "s": {
+        "file": "steam_tree_s.png",
+        "frame": [
+          65,
+          83
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          18
+        ],
+        "face": "bout de sortie",
         "ports": {
           "in": {
             "side": "N",
-            "col": 0
+            "tile": [
+              0,
+              0
+            ]
           },
           "out": {
             "side": "S",
-            "col": 0
+            "tile": [
+              0,
+              1
+            ]
           }
-        },
-        "view": "de côté (ports nord/sud)"
-      }
-    }
-  },
-  "objects": {
+        }
+      },
+      "w": {
+        "file": "steam_tree_w.png",
+        "frame": [
+          66,
+          93
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          28
+        ],
+        "face": "arrière (service)",
+        "ports": {
+          "in": {
+            "side": "E",
+            "tile": [
+              1,
+              0
+            ]
+          },
+          "out": {
+            "side": "W",
+            "tile": [
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "n": {
+        "file": "steam_tree_n.png",
+        "frame": [
+          65,
+          96
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          1,
+          31
+        ],
+        "face": "bout d'entrée",
+        "ports": {
+          "in": {
+            "side": "S",
+            "tile": [
+              1,
+              1
+            ]
+          },
+          "out": {
+            "side": "N",
+            "tile": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      "type": "sapins",
+      "family": "vap",
+      "role": "décoratrice à vapeur"
+    },
+    "boiler": {
+      "e": {
+        "file": "boiler_e.png",
+        "frame": [
+          64,
+          116
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          51
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "boiler_s.png",
+        "frame": [
+          64,
+          110
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          45
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "boiler_w.png",
+        "frame": [
+          64,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "boiler_n.png",
+        "frame": [
+          64,
+          126
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          2
+        ],
+        "origin": [
+          0,
+          61
+        ],
+        "face": "bout d'entrée"
+      },
+      "type": "énergie",
+      "family": "vap",
+      "role": "chaudière 6 u/s"
+    },
+    "pipe_straight": {
+      "e": {
+        "file": "pipe_straight_e.png",
+        "frame": [
+          34,
+          34
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          2
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "pipe_straight_s.png",
+        "frame": [
+          32,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "bout de sortie"
+      },
+      "note": "tuyau de vapeur : centre de la tuile, hauteur 7"
+    },
+    "pipe_corner": {
+      "e": {
+        "file": "pipe_corner_e.png",
+        "frame": [
+          33,
+          34
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          2
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "pipe_corner_s.png",
+        "frame": [
+          33,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          12
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "pipe_corner_w.png",
+        "frame": [
+          33,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "pipe_corner_n.png",
+        "frame": [
+          33,
+          34
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          2
+        ],
+        "face": "bout d'entrée"
+      },
+      "note": "tuyau de vapeur : centre de la tuile, hauteur 7"
+    },
+    "pipe_tee": {
+      "e": {
+        "file": "pipe_tee_e.png",
+        "frame": [
+          34,
+          34
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          2
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "pipe_tee_s.png",
+        "frame": [
+          33,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          12
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "pipe_tee_w.png",
+        "frame": [
+          34,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          12
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "pipe_tee_n.png",
+        "frame": [
+          33,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "bout d'entrée"
+      },
+      "note": "tuyau de vapeur : centre de la tuile, hauteur 7"
+    },
+    "pipe_cross": {
+      "e": {
+        "file": "pipe_cross_e.png",
+        "frame": [
+          34,
+          44
+        ],
+        "frames": 1,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          12
+        ],
+        "face": "façade (commandes)"
+      },
+      "note": "tuyau de vapeur : centre de la tuile, hauteur 7"
+    },
     "pipe_valve": {
-      "file": "pipe_valve.png",
+      "e": {
+        "file": "pipe_valve_e.png",
+        "frame": [
+          34,
+          40
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          1,
+          8
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "pipe_valve_s.png",
+        "frame": [
+          32,
+          44
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          12
+        ],
+        "face": "bout de sortie"
+      },
+      "role": "vanne : limite le débit d'une branche"
+    },
+    "source_sable": {
+      "file": "source_sable.png",
       "frame": [
         32,
         32
       ],
-      "frames": 4,
+      "frames": 1,
       "footprint": [
         1,
         1
-      ]
-    },
-    "deco_steam_lamp": {
-      "file": "deco_steam_lamp.png",
-      "frame": [
-        32,
-        64
       ],
-      "footprint": [
-        1,
-        1
-      ]
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "sable"
     },
-    "source_sand": {
-      "file": "source_sand.png",
+    "source_bois": {
+      "file": "source_bois.png",
       "frame": [
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
       ],
-      "gives": "sand"
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "bois"
     },
-    "source_wood": {
-      "file": "source_wood.png",
+    "source_branche": {
+      "file": "source_branche.png",
       "frame": [
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
       ],
-      "gives": "wood"
+      "origin": [
+        0,
+        0
+      ],
+      "gives": "branche"
+    },
+    "source_fil": {
+      "file": "source_fil.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "fil"
+    },
+    "source_sapin": {
+      "file": "source_sapin.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "sapin"
+    },
+    "source_pigment_rouge": {
+      "file": "source_pigment_rouge.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_rouge"
+    },
+    "source_pigment_vert": {
+      "file": "source_pigment_vert.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_vert"
+    },
+    "source_pigment_or": {
+      "file": "source_pigment_or.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_or"
+    },
+    "source_pigment_bleu": {
+      "file": "source_pigment_bleu.png",
+      "frame": [
+        32,
+        40
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        8
+      ],
+      "gives": "pigment_bleu"
     },
     "ship_crate": {
       "file": "ship_crate.png",
@@ -392,9 +1292,31 @@
         32,
         32
       ],
+      "frames": 1,
       "footprint": [
         1,
         1
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "accepts": "produits finis -> pièces"
+    },
+    "deco_steam_lamp": {
+      "file": "deco_steam_lamp.png",
+      "frame": [
+        32,
+        64
+      ],
+      "frames": 1,
+      "footprint": [
+        1,
+        1
+      ],
+      "origin": [
+        0,
+        32
       ]
     }
   },
@@ -421,22 +1343,7 @@
         "fenêtre",
         "tuyau"
       ]
-    },
-    "pipes": {
-      "file": "pipes.png",
-      "frame": [
-        32,
-        32
-      ],
-      "tiles": [
-        "h",
-        "v",
-        "ne",
-        "nw",
-        "se",
-        "sw"
-      ],
-      "note": "tuyaux de vapeur au sol, de la chaudière aux machines"
     }
-  }
+  },
+  "belt": "../tapis/fonte.png"
 }

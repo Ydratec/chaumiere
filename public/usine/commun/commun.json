@@ -1,31 +1,51 @@
 {
-  "items_16x16.png": {
+  "objets_16x16.png": {
     "frame": [
       16,
       16
     ],
     "order": [
-      "sand",
-      "glass",
-      "ball_clear",
-      "ball_red",
-      "ball_green",
-      "ball_gold",
-      "ball_blue",
-      "paint",
-      "branch",
-      "ribbon",
-      "wreath",
-      "wood",
-      "wood_star",
-      "star",
-      "garland",
-      "tree",
-      "gift",
-      "coin"
-    ]
+      "sable",
+      "bois",
+      "branche",
+      "fil",
+      "sapin_brut",
+      "pigment_rouge",
+      "pigment_vert",
+      "pigment_or",
+      "pigment_bleu",
+      "verre_fondu",
+      "verre",
+      "perles",
+      "eclats",
+      "planche",
+      "sciure",
+      "crochet",
+      "peinture_rouge",
+      "peinture_vert",
+      "peinture_or",
+      "peinture_bleu",
+      "boule_transparente",
+      "boule_rouge",
+      "boule_verte",
+      "boule_or",
+      "boule_bleue",
+      "boule_finie_rouge",
+      "boule_finie_vert",
+      "boule_finie_or",
+      "boule_finie_bleu",
+      "etoile_bois",
+      "etoile_doree",
+      "ruban",
+      "guirlande",
+      "couronne",
+      "sapin_decore",
+      "cadeau",
+      "piece"
+    ],
+    "note": "sur un tapis : 2 voies, à ±5 px du centre de la voie"
   },
-  "ui_button.png": {
+  "ui_bouton.png": {
     "frame": [
       48,
       16
@@ -38,27 +58,27 @@
     ],
     "nineSlice": 4
   },
-  "ui_panel.png": {
+  "ui_panneau.png": {
     "nineSlice": 6
   },
-  "ui_progress_bar.png": {
+  "ui_barre.png": {
     "rows": [
-      "empty",
-      "full"
+      "vide",
+      "pleine"
     ]
   },
-  "ui_icons.png": {
+  "ui_icones.png": {
     "frame": [
       16,
       16
     ],
     "order": [
-      "hand",
-      "work",
-      "exclaim"
+      "main",
+      "travail",
+      "alerte"
     ]
   },
-  "icon_globe.png": {
+  "icone_globe.png": {
     "frame": [
       32,
       32

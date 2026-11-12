@@ -1,10 +1,152 @@
 {
   "name": "Multinationale",
   "family": "elec",
-  "belt": "../tapis/metal.png",
   "objects": {
-    "tiles_water": {
-      "file": "tiles_water.png",
+    "vehicle_truck": {
+      "e": {
+        "file": "vehicle_truck_e.png",
+        "frame": [
+          96,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "vehicle_truck_s.png",
+        "frame": [
+          64,
+          138
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ],
+        "origin": [
+          0,
+          41
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "vehicle_truck_w.png",
+        "frame": [
+          96,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "vehicle_truck_n.png",
+        "frame": [
+          64,
+          128
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ],
+        "origin": [
+          0,
+          31
+        ],
+        "face": "bout d'entrée"
+      },
+      "capacity_stacks": 40,
+      "speed": "30 s pour 10 tuiles",
+      "note": "orientation = sens de la marche"
+    },
+    "vehicle_forklift": {
+      "e": {
+        "file": "vehicle_forklift_e.png",
+        "frame": [
+          35,
+          62
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          29
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "vehicle_forklift_s.png",
+        "frame": [
+          33,
+          64
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          31
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "vehicle_forklift_w.png",
+        "frame": [
+          36,
+          62
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          3,
+          29
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "vehicle_forklift_n.png",
+        "frame": [
+          33,
+          58
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          25
+        ],
+        "face": "bout d'entrée"
+      }
+    },
+    "water": {
+      "file": "water.png",
       "frame": [
         32,
         32
@@ -14,28 +156,36 @@
         1,
         1
       ],
+      "origin": [
+        0,
+        0
+      ],
       "layer": "sol"
     },
     "containers": {
       "file": "containers.png",
       "frame": [
-        256,
+        64,
         40
       ],
+      "frames": 4,
       "footprint": [
         2,
         1
+      ],
+      "origin": [
+        0,
+        8
       ],
       "variants": [
         "rouge",
         "vert",
         "bleu",
         "jaune"
-      ],
-      "note": "4 variantes côte à côte, 64x40 chacune"
+      ]
     },
-    "vehicle_cargo_ship": {
-      "file": "vehicle_cargo_ship.png",
+    "cargo_ship": {
+      "file": "cargo_ship.png",
       "frame": [
         192,
         112
@@ -44,6 +194,10 @@
       "footprint": [
         6,
         3
+      ],
+      "origin": [
+        0,
+        16
       ],
       "layer": "eau"
     },
@@ -57,10 +211,14 @@
       "footprint": [
         3,
         2
+      ],
+      "origin": [
+        0,
+        80
       ]
     },
-    "vehicle_cargo_plane": {
-      "file": "vehicle_cargo_plane.png",
+    "cargo_plane": {
+      "file": "cargo_plane.png",
       "frame": [
         160,
         96
@@ -69,6 +227,10 @@
       "footprint": [
         5,
         2
+      ],
+      "origin": [
+        0,
+        32
       ]
     },
     "building_hq": {
@@ -81,21 +243,14 @@
       "footprint": [
         3,
         2
+      ],
+      "origin": [
+        0,
+        128
       ]
     }
   },
   "tiles": {
-    "quay": {
-      "file": "quay.png",
-      "frame": [
-        32,
-        32
-      ],
-      "tiles": [
-        "quai",
-        "quai_bitte"
-      ]
-    },
     "floor_asphalt": {
       "file": "floor_asphalt.png",
       "frame": [
@@ -108,113 +263,18 @@
         "ligne_jaune",
         "bord_neige"
       ]
-    }
-  },
-  "vehicles": {
-    "truck": {
-      "right": {
-        "file": "vehicle_truck_right.png",
-        "frame": [
-          96,
-          64
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          1
-        ]
-      },
-      "left": {
-        "file": "vehicle_truck_left.png",
-        "frame": [
-          96,
-          64
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          1
-        ]
-      },
-      "down": {
-        "file": "vehicle_truck_down.png",
-        "frame": [
-          64,
-          136
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ]
-      },
-      "up": {
-        "file": "vehicle_truck_up.png",
-        "frame": [
-          64,
-          136
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ]
-      }
     },
-    "forklift": {
-      "right": {
-        "file": "vehicle_forklift_right.png",
-        "frame": [
-          32,
-          32
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "left": {
-        "file": "vehicle_forklift_left.png",
-        "frame": [
-          32,
-          32
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "down": {
-        "file": "vehicle_forklift_down.png",
-        "frame": [
-          32,
-          60
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "up": {
-        "file": "vehicle_forklift_up.png",
-        "frame": [
-          32,
-          60
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      }
+    "quay": {
+      "file": "quay.png",
+      "frame": [
+        32,
+        32
+      ],
+      "tiles": [
+        "quai",
+        "quai_bitte"
+      ]
     }
   },
-  "reuses": [
-    "etape-5",
-    "etape-6",
-    "etape-7"
-  ]
+  "belt": "../tapis/metal.png"
 }

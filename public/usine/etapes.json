@@ -1,15 +1,17 @@
 {
   "tileSize": 32,
-  "projection": "vue 3/4 : un objet de hauteur Z sur une emprise W x H tuiles est dessiné dans une case W*32 x (H*32+Z+marge) ; le bas de la case = le bas de l'emprise. Trier l'affichage par bas d'emprise.",
+  "placement": "Chaque sprite donne 'origin' = position, dans la case, du coin haut-gauche de son emprise. Dessiner la case à (tuile.x*32 - origin.x, tuile.y*32 - origin.y), trier par bas d'emprise.",
   "orientations": {
-    "h": "vue de face : le tapis entre à l'ouest et sort à l'est (rangée du bas de l'emprise)",
-    "v": "vue de côté : le tapis entre au nord et sort au sud (colonne (W-1)//2)"
+    "e": "tapis ouest -> est : on voit la façade",
+    "s": "tapis nord -> sud : on voit le bout de sortie",
+    "w": "tapis est -> ouest : on voit l'arrière",
+    "n": "tapis sud -> nord : on voit le bout d'entrée"
   },
   "families": {
-    "art": "bois et argile, à la main (étapes 1-3)",
-    "vap": "fonte et cuivre, vapeur (étape 4)",
-    "elec": "acier et bandes jaunes, électricité (étapes 5-8)",
-    "robot": "blanc et bleu, robots (étape 6)"
+    "art": "bois et argile (étapes 1-3)",
+    "vap": "fonte et cuivre (étape 4)",
+    "elec": "acier, bandes jaunes (étapes 5-8)",
+    "robot": "blanc et bleu (étape 6)"
   },
   "stages": {
     "1": {

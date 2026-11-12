@@ -1,8 +1,28 @@
 {
   "name": "Complexe industriel",
   "family": "elec",
-  "belt": "../tapis/metal.png",
   "objects": {
+    "pylon": {
+      "file": "pylon.png",
+      "frame": [
+        64,
+        129
+      ],
+      "frames": 1,
+      "footprint": [
+        2,
+        2
+      ],
+      "origin": [
+        0,
+        64
+      ],
+      "wire_anchor": [
+        32,
+        2
+      ],
+      "reach_tiles": 30
+    },
     "building_warehouse": {
       "file": "building_warehouse.png",
       "frame": [
@@ -13,6 +33,10 @@
       "footprint": [
         4,
         3
+      ],
+      "origin": [
+        0,
+        16
       ]
     },
     "loading_dock": {
@@ -25,7 +49,154 @@
       "footprint": [
         3,
         2
+      ],
+      "origin": [
+        0,
+        0
       ]
+    },
+    "vehicle_truck": {
+      "e": {
+        "file": "vehicle_truck_e.png",
+        "frame": [
+          96,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "vehicle_truck_s.png",
+        "frame": [
+          64,
+          138
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ],
+        "origin": [
+          0,
+          41
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "vehicle_truck_w.png",
+        "frame": [
+          96,
+          104
+        ],
+        "frames": 4,
+        "footprint": [
+          3,
+          2
+        ],
+        "origin": [
+          0,
+          39
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "vehicle_truck_n.png",
+        "frame": [
+          64,
+          128
+        ],
+        "frames": 4,
+        "footprint": [
+          2,
+          3
+        ],
+        "origin": [
+          0,
+          31
+        ],
+        "face": "bout d'entrée"
+      },
+      "capacity_stacks": 40,
+      "speed": "30 s pour 10 tuiles",
+      "note": "orientation = sens de la marche"
+    },
+    "vehicle_forklift": {
+      "e": {
+        "file": "vehicle_forklift_e.png",
+        "frame": [
+          35,
+          62
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          29
+        ],
+        "face": "façade (commandes)"
+      },
+      "s": {
+        "file": "vehicle_forklift_s.png",
+        "frame": [
+          33,
+          64
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          31
+        ],
+        "face": "bout de sortie"
+      },
+      "w": {
+        "file": "vehicle_forklift_w.png",
+        "frame": [
+          36,
+          62
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          3,
+          29
+        ],
+        "face": "arrière (service)"
+      },
+      "n": {
+        "file": "vehicle_forklift_n.png",
+        "frame": [
+          33,
+          58
+        ],
+        "frames": 4,
+        "footprint": [
+          1,
+          1
+        ],
+        "origin": [
+          0,
+          25
+        ],
+        "face": "bout d'entrée"
+      }
     }
   },
   "tiles": {
@@ -54,110 +225,5 @@
       ]
     }
   },
-  "vehicles": {
-    "truck": {
-      "right": {
-        "file": "vehicle_truck_right.png",
-        "frame": [
-          96,
-          64
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          1
-        ]
-      },
-      "left": {
-        "file": "vehicle_truck_left.png",
-        "frame": [
-          96,
-          64
-        ],
-        "frames": 4,
-        "footprint": [
-          3,
-          1
-        ]
-      },
-      "down": {
-        "file": "vehicle_truck_down.png",
-        "frame": [
-          64,
-          136
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ]
-      },
-      "up": {
-        "file": "vehicle_truck_up.png",
-        "frame": [
-          64,
-          136
-        ],
-        "frames": 4,
-        "footprint": [
-          2,
-          3
-        ]
-      }
-    },
-    "forklift": {
-      "right": {
-        "file": "vehicle_forklift_right.png",
-        "frame": [
-          32,
-          32
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "left": {
-        "file": "vehicle_forklift_left.png",
-        "frame": [
-          32,
-          32
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "down": {
-        "file": "vehicle_forklift_down.png",
-        "frame": [
-          32,
-          60
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "up": {
-        "file": "vehicle_forklift_up.png",
-        "frame": [
-          32,
-          60
-        ],
-        "frames": 4,
-        "footprint": [
-          1,
-          1
-        ]
-      }
-    }
-  },
-  "reuses": [
-    "etape-5",
-    "etape-6"
-  ]
+  "belt": "../tapis/metal.png"
 }

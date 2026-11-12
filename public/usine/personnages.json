@@ -54,6 +54,5 @@
   "npc": [
     "lutin",
     "lutin-assistant"
-  ],
-  "carry": "objet 16x16 posé au-dessus de la tête : bas de l'objet à y≈8 (≈4 de plus avec un chapeau)"
+  ]
 }
