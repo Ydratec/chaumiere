@@ -1,0 +1,152 @@
+{
+ "contract_alpha=0": {
+  "occ": 688,
+  "reg": 2194,
+  "try_": 3481,
+  "ratio": 1.59,
+  "reg8": 16.7,
+  "skill": 0.8,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "contract_alpha=0.5": {
+  "occ": 1054,
+  "reg": 2203,
+  "try_": 3068,
+  "ratio": 1.39,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "contract_alpha=1.0": {
+  "occ": 1965,
+  "reg": 2226,
+  "try_": 2418,
+  "ratio": 1.09,
+  "reg8": 16.5,
+  "skill": 0.8,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "time_mult=[[12, 1.5], [24, 1.2], [48, 1.0]]": {
+  "occ": 1054,
+  "reg": 2203,
+  "try_": 3068,
+  "ratio": 1.39,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "time_mult=[[24, 1.1], [48, 1.0]]": {
+  "occ": 1052,
+  "reg": 2180,
+  "try_": 2869,
+  "ratio": 1.32,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "time_mult=[[48, 1.0]]": {
+  "occ": 1050,
+  "reg": 2160,
+  "try_": 2784,
+  "ratio": 1.29,
+  "reg8": 16.5,
+  "skill": 0.78,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "rush_power=0.25": {
+  "occ": 1174,
+  "reg": 2244,
+  "try_": 3071,
+  "ratio": 1.37,
+  "reg8": 16.5,
+  "skill": 0.72,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "rush_power=0.5": {
+  "occ": 1054,
+  "reg": 2203,
+  "try_": 3068,
+  "ratio": 1.39,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "rush_power=1.0": {
+  "occ": 916,
+  "reg": 2131,
+  "try_": 3061,
+  "ratio": 1.44,
+  "reg8": 16.5,
+  "skill": 0.78,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "defi_step=1.2": {
+  "occ": 1076,
+  "reg": 2220,
+  "try_": 3070,
+  "ratio": 1.38,
+  "reg8": 16.5,
+  "skill": 0.72,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "defi_step=1.5": {
+  "occ": 1054,
+  "reg": 2203,
+  "try_": 3068,
+  "ratio": 1.39,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "defi_step=2.0": {
+  "occ": 1016,
+  "reg": 2174,
+  "try_": 3063,
+  "ratio": 1.41,
+  "reg8": 16.5,
+  "skill": 0.8,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "long_stars=115": {
+  "occ": 945,
+  "reg": 2084,
+  "try_": 2888,
+  "ratio": 1.39,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "long_stars=230": {
+  "occ": 1054,
+  "reg": 2203,
+  "try_": 3068,
+  "ratio": 1.39,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ },
+ "long_stars=460": {
+  "occ": 1270,
+  "reg": 2440,
+  "try_": 3427,
+  "ratio": 1.4,
+  "reg8": 16.5,
+  "skill": 0.75,
+  "pwin": 1.0,
+  "regrank": 3.0
+ }
+}

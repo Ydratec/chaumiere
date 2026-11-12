@@ -1,0 +1,465 @@
+{
+  "_note": "Réglages d'équilibrage de l'Usine de Noël. Toutes les durées en secondes, débits en objets/s, énergie en kW (vapeur : u/s).",
+  "recipes": {
+    "boule_artisanale": {
+      "in": {
+        "sable": 2
+      },
+      "out": {
+        "boule_transparente": 1
+      },
+      "t": 8,
+      "machine": "four",
+      "stage": 1
+    },
+    "verre": {
+      "in": {
+        "sable": 2
+      },
+      "out": {
+        "verre": 1
+      },
+      "t": 3,
+      "machine": "four",
+      "stage": 3
+    },
+    "soufflage": {
+      "in": {
+        "verre": 1
+      },
+      "out": {
+        "boule_transparente": 1,
+        "eclats": 0.25
+      },
+      "t": 2,
+      "machine": "four",
+      "stage": 3
+    },
+    "perles": {
+      "in": {
+        "verre": 1
+      },
+      "out": {
+        "perles": 8
+      },
+      "t": 2,
+      "machine": "four",
+      "stage": 3
+    },
+    "recyclage_eclats": {
+      "in": {
+        "eclats": 4
+      },
+      "out": {
+        "verre": 1
+      },
+      "t": 2,
+      "machine": "four",
+      "stage": 4
+    },
+    "peinture": {
+      "in": {
+        "pigment": 1
+      },
+      "out": {
+        "peinture": 4
+      },
+      "t": 1,
+      "machine": "peinture",
+      "stage": 1
+    },
+    "boule_peinte": {
+      "in": {
+        "boule_transparente": 1,
+        "peinture": 1
+      },
+      "out": {
+        "boule_peinte": 1
+      },
+      "t": 2,
+      "machine": "peinture",
+      "stage": 1
+    },
+    "crochet": {
+      "in": {
+        "fil": 1
+      },
+      "out": {
+        "crochet": 4
+      },
+      "t": 0.5,
+      "machine": "faconnage",
+      "stage": 3
+    },
+    "boule_finie": {
+      "in": {
+        "boule_peinte": 1,
+        "crochet": 1
+      },
+      "out": {
+        "boule_finie": 1
+      },
+      "t": 1,
+      "machine": "faconnage",
+      "stage": 3
+    },
+    "planche": {
+      "in": {
+        "bois": 2
+      },
+      "out": {
+        "planche": 2,
+        "sciure": 1
+      },
+      "t": 2,
+      "machine": "faconnage",
+      "stage": 2
+    },
+    "etoile_bois": {
+      "in": {
+        "planche": 1
+      },
+      "out": {
+        "etoile_bois": 1
+      },
+      "t": 1.5,
+      "machine": "faconnage",
+      "stage": 2
+    },
+    "etoile_doree": {
+      "in": {
+        "etoile_bois": 1,
+        "peinture": 2
+      },
+      "out": {
+        "etoile_doree": 1
+      },
+      "t": 2,
+      "machine": "peinture",
+      "stage": 3
+    },
+    "ruban": {
+      "in": {
+        "fil": 2,
+        "peinture": 1
+      },
+      "out": {
+        "ruban": 2
+      },
+      "t": 1,
+      "machine": "metier",
+      "stage": 3
+    },
+    "guirlande": {
+      "in": {
+        "fil": 1,
+        "perles": 12
+      },
+      "out": {
+        "guirlande": 1
+      },
+      "t": 3,
+      "machine": "metier",
+      "stage": 3
+    },
+    "couronne": {
+      "in": {
+        "branche": 4,
+        "ruban": 1,
+        "boule_finie": 2
+      },
+      "out": {
+        "couronne": 1
+      },
+      "t": 4,
+      "machine": "couronnes",
+      "stage": 3
+    },
+    "sapin_decore": {
+      "in": {
+        "sapin_brut": 1,
+        "boule_finie": 6,
+        "guirlande": 1,
+        "etoile_doree": 1
+      },
+      "out": {
+        "sapin_decore": 1
+      },
+      "t": 6,
+      "machine": "sapins",
+      "stage": 3
+    },
+    "circuit": {
+      "in": {
+        "fil": 1,
+        "verre": 1,
+        "peinture": 1
+      },
+      "out": {
+        "circuit": 1
+      },
+      "t": 2,
+      "machine": "faconnage",
+      "stage": 6
+    },
+    "module": {
+      "in": {
+        "circuit": 5,
+        "crochet": 2
+      },
+      "out": {
+        "module": 1
+      },
+      "t": 10,
+      "machine": "faconnage",
+      "stage": 7
+    }
+  },
+  "raw": [
+    "sable",
+    "bois",
+    "branche",
+    "fil",
+    "sapin_brut",
+    "pigment"
+  ],
+  "price": {
+    "boule_peinte": 3,
+    "boule_finie": 5,
+    "etoile_doree": 3,
+    "guirlande": 7,
+    "couronne": 15,
+    "sapin_decore": 56
+  },
+  "stages": {
+    "1": {
+      "speed": 0.5,
+      "machine_cost": 180,
+      "belt_cost": 0,
+      "power_kw": 0,
+      "steam": 0,
+      "tiles_per_machine": 6,
+      "build_s": 25
+    },
+    "2": {
+      "speed": 0.75,
+      "machine_cost": 830,
+      "belt_cost": 0,
+      "power_kw": 0,
+      "steam": 0,
+      "tiles_per_machine": 6,
+      "build_s": 25
+    },
+    "3": {
+      "speed": 1.0,
+      "machine_cost": 4700,
+      "belt_cost": 5,
+      "power_kw": 0,
+      "steam": 0,
+      "tiles_per_machine": 7,
+      "build_s": 30
+    },
+    "4": {
+      "speed": 1.5,
+      "machine_cost": 11350,
+      "belt_cost": 20,
+      "power_kw": 0,
+      "steam": 2,
+      "tiles_per_machine": 7,
+      "build_s": 35
+    },
+    "5": {
+      "speed": 2.0,
+      "machine_cost": 23240,
+      "belt_cost": 60,
+      "power_kw": 150,
+      "steam": 0,
+      "tiles_per_machine": 8,
+      "build_s": 40
+    },
+    "6": {
+      "speed": 3.0,
+      "machine_cost": 47960,
+      "belt_cost": 200,
+      "power_kw": 250,
+      "steam": 0,
+      "tiles_per_machine": 8,
+      "build_s": 45
+    },
+    "7": {
+      "speed": 4.5,
+      "machine_cost": 93220,
+      "belt_cost": 200,
+      "power_kw": 420,
+      "steam": 0,
+      "tiles_per_machine": 9,
+      "build_s": 55
+    },
+    "8": {
+      "speed": 5.0,
+      "machine_cost": 119890,
+      "belt_cost": 200,
+      "power_kw": 450,
+      "steam": 0,
+      "tiles_per_machine": 9,
+      "build_s": 60
+    }
+  },
+  "energy": {
+    "boiler_steam": 6,
+    "boiler_cost": 1200,
+    "generator_kw": 900,
+    "generator_steam": 10,
+    "generator_cost": 8000,
+    "bois_steam_units": 60,
+    "sciure_steam_units": 20
+  },
+  "gates": {
+    "2": {
+      "coins": 50,
+      "rate": {}
+    },
+    "3": {
+      "coins": 20610,
+      "rate": {
+        "boule_peinte": 0.0167
+      }
+    },
+    "4": {
+      "coins": 125760,
+      "rate": {
+        "boule_finie": 0.1
+      }
+    },
+    "5": {
+      "coins": 149410,
+      "rate": {
+        "boule_finie": 1.0
+      }
+    },
+    "6": {
+      "coins": 942010,
+      "rate": {
+        "sapin_decore": 0.1667
+      }
+    },
+    "7": {
+      "coins": 3480830,
+      "rate": {
+        "sapin_decore": 0.5,
+        "circuit": 0.0167
+      }
+    },
+    "8": {
+      "coins": 50,
+      "rate": {
+        "sapin_decore": 0.3333
+      }
+    }
+  },
+  "terrain": {
+    "start": [
+      24,
+      16
+    ],
+    "max": [
+      96,
+      64
+    ],
+    "block": 8,
+    "block_cost": 3000,
+    "block_growth": 1.25
+  },
+  "gisement_base": {
+    "sable": 2,
+    "bois": 1,
+    "branche": 1,
+    "fil": 1,
+    "sapin_brut": 0.2,
+    "pigment": 1
+  },
+  "gisement_upgrade": {
+    "cost": 1500,
+    "growth": 1.55,
+    "gain": 1.5
+  },
+  "tuning": {
+    "start_coins": 60,
+    "start_machines": 2,
+    "gis_base": 1.2,
+    "contract_diff": [
+      0.1,
+      0.2,
+      0.35
+    ],
+    "contract_stars": {
+      "0.1": 15,
+      "0.2": 30,
+      "0.35": 55
+    },
+    "long_size": 2.0,
+    "long_stars": 230,
+    "contract_share": 0.4,
+    "contract_pay": 0.5,
+    "time_mult": [
+      [
+        12,
+        1.5
+      ],
+      [
+        24,
+        1.2
+      ],
+      [
+        48,
+        1.0
+      ]
+    ],
+    "research_discount": 0.2,
+    "invest_horizon": 0.5,
+    "defi_noise": 0.04,
+    "defi_max": 20,
+    "defi_step": 1.5,
+    "rush_max": 600,
+    "rush_power": 0.5,
+    "payback_h": {
+      "1": 0.5,
+      "2": 1.5,
+      "3": 3,
+      "4": 5,
+      "5": 8,
+      "6": 11,
+      "7": 14,
+      "8": 16
+    },
+    "research_hours": {
+      "2": 0,
+      "3": 6,
+      "4": 18,
+      "5": 36,
+      "6": 54,
+      "7": 54,
+      "8": 72
+    },
+    "auto_build": {
+      "3": 2,
+      "4": 4,
+      "5": 6,
+      "6": 10,
+      "7": 14,
+      "8": 16
+    },
+    "plan_hours": 12,
+    "tiers": [
+      [
+        0.33,
+        0.3
+      ],
+      [
+        0.66,
+        0.65
+      ]
+    ],
+    "contract_alpha": 0.5
+  }
+}
