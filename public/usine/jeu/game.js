@@ -426,7 +426,7 @@ function updateMachine(m, dt) {
           if (!n) continue;
           if (usesItem(m, o)) m.inb[o] = (m.inb[o] || 0) + n; else m.outb[o] = (m.outb[o] || 0) + n;
         }
-        m.craft = null;
+        m.craft = null; crafted++;
       }
     }
   }
@@ -916,7 +916,12 @@ function rotateEnt(e) {
 let last = performance.now(), powerT = 0, uiT = 0;
 function tick(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (!catching) step(dt);
+  // S.simAt : heure réelle jusqu'à laquelle l'usine a été calculée (les sauvegardes n'y touchent pas : elles continuent
+  // en arrière-plan alors que l'usine, elle, ne tourne pas). Plus de 5 s de retard : on rattrape tout d'un coup.
+  if (!catching) {
+    if (!S.simAt) S.simAt = S.savedAt || Date.now();
+    if (Date.now() - S.simAt > 5000) catchUp(); else { step(dt); S.simAt = Date.now(); }
+  }
   draw(now / 1000);
   uiT -= dt; if (uiT <= 0 || ui.dirty) { uiT = 0.25; renderUI(); ui.dirty = false; }
   requestAnimationFrame(tick);
@@ -1497,7 +1502,7 @@ async function visit(id, name) {
     const r = await fetch(`${API}?u=${encodeURIComponent(id)}`, { cache:"no-store" }), j = r.ok ? await r.json() : {};
     if (!j.state) return toast(`${name} n'a pas encore d'usine.`);
     if (!mine) { save(); mine = S; }
-    S = j.state; S.visit = name; S.savedAt = S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
+    S = j.state; S.visit = name; S.simAt = S.simAt || S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
     $("visitname").textContent = `Usine de ${name}`; $("visitbar").hidden = false; ui.dirty = true;
     catchUp(); // elle a continué de tourner depuis que son propriétaire est parti
   } catch { toast("Visite impossible pour l'instant."); }
@@ -1528,15 +1533,16 @@ async function pick(e) {
   e.picking = false; ui.dirty = true;
 }
 // ---------------------------------------------------------------- l'usine tourne pendant l'absence
-let catching = false;
+let catching = false, crafted = 0; // crafted : fabrications terminées (pour le résumé du rattrapage)
 const fmtAway = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}` : `${Math.floor(sec / 60)} min`);
 /** Fait tourner l'usine pour le temps écoulé depuis la dernière sauvegarde, par paquets (l'écran reste réactif), puis résume. */
 function catchUp() {
-  if (S.demo || catching || !S.savedAt) return;
-  const away = Math.min(OFFLINE_MAX, (Date.now() - S.savedAt) / 1000);
+  if (S.demo || catching) return;
+  if (!S.simAt) S.simAt = S.savedAt || Date.now(); // vieille partie : on part de sa dernière sauvegarde
+  const away = Math.min(OFFLINE_MAX, (Date.now() - S.simAt) / 1000);
   if (away < 30) return;
   catching = true;
-  const box = $("catchup"), coins0 = S.coins, sold0 = S.sales.length, n = Math.round(away / OFF_DT);
+  const box = $("catchup"), coins0 = S.coins, made0 = crafted, sold0 = S.sales.length, n = Math.round(away / OFF_DT);
   box.hidden = false;
   let i = 0;
   const chunk = () => {
@@ -1544,12 +1550,13 @@ function catchUp() {
     for (; i < end; i++) step(OFF_DT);
     $("catchbar").style.width = `${Math.round((100 * i) / n)}%`;
     if (i < n) return setTimeout(chunk, 0);
-    box.hidden = true; catching = false;
+    box.hidden = true; catching = false; S.simAt = Date.now();
     if (S.visit) { toast(`L'usine de ${S.visit} a tourné ${fmtAway(away)} depuis sa dernière visite.`, 5000); ui.dirty = true; return; } // en visite : on montre, on n'enregistre rien
     save(); push();
     const h = fmtAway(away);
-    const earned = S.coins - coins0;
-    toast(earned > 0 ? `Pendant ton absence (${h}) : +${fmt(earned)} pièces.` : `Pendant ton absence (${h}) : l'usine n'a rien vendu. Pense à la vapeur ou à l'électricité !`, 7000);
+    const earned = S.coins - coins0, made = crafted - made0;
+    const done = [made && `${fmt(made)} fabrication${made > 1 ? "s" : ""} terminée${made > 1 ? "s" : ""}`, earned > 0 && `+${fmt(earned)} pièces`].filter(Boolean);
+    toast(done.length ? `Pendant ton absence (${h}) : ${done.join(", ")}.` : `Pendant ton absence (${h}) : rien n'a tourné. Lance des fabrications avant de partir !`, 7000);
     ui.dirty = true;
   };
   chunk();

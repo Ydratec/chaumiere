@@ -84,6 +84,15 @@ S.bag = Array(BAG).fill(null); // tout le sac est vendu
 run(120);
 out.neverBlocked = { queued, left:pt2.queue.length, balls:Object.entries(pt2.outb).filter(([k]) => k.startsWith("boule")).reduce((n, [, v]) => n + v, 0) };
 
+// retour après 1 h d'absence : le four fini les 5 boules demandées (rattrapage par catchUp, comme à l'ouverture)
+newState();
+const kiln = S.ents.find((e) => e.name === "kiln");
+S.bag = Array(BAG).fill(null); bagAdd("sable", 10);
+const rb = recipeOf(kiln, "boule"); kiln.resV = 1; kiln.queue = []; reserve(kiln, rb, 5); for (let i = 0; i < 5; i++) kiln.queue.push("boule");
+S.savedAt = Date.now(); S.simAt = Date.now() - 3600e3; // sauvegardé à l'instant (arrière-plan) mais calculé il y a 1 h
+catchUp();
+globalThis.__away = new Promise((done) => { const wait = () => (catching ? setTimeout(wait, 20) : done({ balls:kiln.outb.boule_transparente || 0, queue:kiln.queue.length })); wait(); });
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -96,6 +105,7 @@ globalThis.__out = out;
 const game = readFileSync(new URL("game.js", root), "utf8"), end = game.lastIndexOf("})();");
 vm.runInContext(game.slice(0, end) + scenarios + game.slice(end), ctx);
 const out = ctx.__out;
+out.away = { ...(await ctx.__away) };
 console.log(JSON.stringify(out, null, 1));
 
 assert.ok(out.steam.powered, "la chaudière alimente le four à vapeur");
@@ -107,5 +117,6 @@ assert.ok(out.elec.inChest >= 20, "l'extracteur remplit le coffre par le tapis e
 assert.deepEqual({ ...out.bed }, { start:3, empty:0, half:2, ready:3 }, "la serre : en fleurs au départ, vide sans plantation, puis plantes et fleurs");
 assert.deepEqual({ ...out.manual }, { pigmentsLeft:2, pigmentInside:0, paintInside:3, balls:1 }, "table de peinture : 1 pigment pris, aucun stocké, 3 peintures gardées, 1 boule");
 assert.deepEqual({ ...out.neverBlocked }, { queued:5, left:0, balls:4 }, "une file demandée se termine toujours, même sac vidé");
+assert.deepEqual(out.away, { balls:5, queue:0 }, "au retour (1 h), les 5 boules demandées sont faites, même si la dernière sauvegarde est récente");
 assert.ok(out.offline.earned > 0, "l'usine gagne des pièces pendant l'absence");
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
