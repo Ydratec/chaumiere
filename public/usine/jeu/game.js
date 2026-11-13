@@ -119,8 +119,8 @@ const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
 };
 const BELT_COST = { bois:5, fonte:20, metal:60 };
 // Serre de l'usine (dessin : tools/usine-pixel/serre.py) : on plante, ça pousse en FLOWER_TIME (même hors ligne), on récolte ;
-// la fleur va dans l'inventaire de la salle (serveur, 8 par jour). Images : 0 vide, 1 pousses, 2 plantes, 3 fleurs.
-const FLOWER_TIME = 2 * 3600;
+// la récolte (3 fleurs, tirées par le serveur) va dans l'inventaire de la salle. Images : 0 vide, 1 pousses, 2 plantes, 3 fleurs.
+const FLOWER_TIME = 2 * 3600, MAX_BEDS = 10; // le serveur n'accepte que 10 serres (numéros 0 à 9)
 const STAGE_OF = { crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
 // Énergie (balance.json) : une chaudière fait 6 u/s de vapeur, une machine à vapeur en prend 2 → 3 machines ; 1 bois = 60 u de vapeur.
 // Un générateur fait 900 kW avec 10 u/s de vapeur, une machine électrique (ou un extracteur) prend 150 kW → 6 appareils.
@@ -626,7 +626,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     if (first) {
       if (!e.planted) { e.planted = true; e.grown = 0; p.work = 0.4; fx(e.x * T + 32, e.y * T, "Planté !", "#6cc46a"); }
       else if (e.grown >= FLOWER_TIME) pick(e);
-      select(e);
+      select(e); loadFlowers();
     }
     return;
   }
@@ -777,6 +777,7 @@ function startMoveBelt(b) {
 }
 const footOf = (q) => (q.key === "belt" ? [1, 1] : sprOf(q.key, q.stage, q.o).footprint || [1, 1]);
 function startNew(key) {
+  if (key === "serre_fleurs" && S.ents.filter((e) => e.kind === "flowerbed").length >= MAX_BEDS) return toast(`${MAX_BEDS} serres au plus.`);
   const stage = stageOf(key), o = hasOri(key) ? ROT[ui.rot] : key.startsWith("extractor") ? "e" : undefined, p = S.player;
   // première place libre autour du joueur, pour n'avoir qu'à faire glisser
   let best = null;
@@ -1048,6 +1049,7 @@ const release = () => {
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", release);
 cv.addEventListener("contextmenu", (ev) => ev.preventDefault());
 cv.addEventListener("pointerdown", (ev) => {
+  if (S.visit) return closePanel(); // en visite : on regarde seulement
   const [x, y] = tileAt(ev); ui.hover = [x, y];
   try { cv.setPointerCapture(ev.pointerId); } catch {}
   if (ui.mode === "build" && ui.build) {
@@ -1093,7 +1095,9 @@ const icon = (name) => `<span class="ic" style="--i:${ICONS.indexOf(name)}"></sp
 // Sans effet sur grand écran, où tout est toujours visible.
 function openPanel() { document.body.classList.add("panel"); }
 function closePanel() { document.body.classList.remove("panel"); }
-function togglePanel(tab) { if (document.body.classList.contains("panel") && ui.tab === tab) closePanel(); else { ui.tab = tab; openPanel(); } ui.dirty = true; }
+function togglePanel(tab) {
+  if (S.visit && tab !== "visiter") return toast("Tu visites une usine : reviens chez toi pour jouer.");
+  if (tab === "visiter") loadMembers(); if (document.body.classList.contains("panel") && ui.tab === tab) closePanel(); else { ui.tab = tab; openPanel(); } ui.dirty = true; }
 function toggleIcons() { const on = !document.body.classList.contains("menu"); document.body.classList.toggle("menu", on); $("menubtn").textContent = on ? "✕" : "☰"; if (!on) closePanel(); }
 function select(e, quiet) { ui.sel = e.id; if (!quiet || ui.tab === "selection") ui.tab = "selection"; if (!quiet) openPanel(); ui.dirty = true; }
 function setMode(m) { ui.mode = m; if (m !== "build") ui.build = null; if (m === "build") { ui.tab = "construire"; openPanel(); } else closePanel(); ui.dirty = true; }
@@ -1165,6 +1169,13 @@ function renderUI() {
       h += `<p class="muted">Débloque : ${UNLOCK_TEXT[S.stage + 1]}</p><button class="btn vert wide" id="advance" ${g.ok ? "" : "disabled"}>Passer à l'étape ${S.stage + 1}</button>`;
     } else h += `<p>${icon("etoile")} Étape 6 : à la prochaine mise à jour !</p>`;
   }
+  if (ui.tab === "visiter") {
+    h += `<h3>${icon("maison")} Visiter une usine</h3>`;
+    if (S.visit) h += `<p>Tu es chez ${S.visit}.</p><button class="btn or wide" id="visitback2">Revenir à mon usine</button>`;
+    const ms = ui.members;
+    h += !ms ? `<p class="muted">Chargement…</p>` : !ms.length ? `<p class="muted">Personne d'autre dans la salle.</p>`
+      : ms.map((m) => `<div class="card"><div class="row"><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">${m.stage ? "étape " + m.stage : "pas d'usine"}</span>${m.stage ? `<button class="btn sm" data-visit="${m.id}" data-name="${m.name.replace(/"/g, "&quot;")}">Visiter</button>` : ""}</div></div>`).join("");
+  }
   if (ui.tab === "construire") {
     h += `<h3>${icon("marteau")} Construire</h3><div class="grid">`;
     for (let s = 1; s <= 5; s++) for (const [key] of BUILD[s]) {
@@ -1225,9 +1236,12 @@ function renderUI() {
       if (!elecPowered(e)) h += `<p class="bad">${icon("eclair")} Pas de courant : il faut un poteau à ${POLE_R} cases et un générateur avec du bois.</p>`;
       h += `<div class="row"><span class="muted">Débit</span><span class="grow"></span>${[0.1, 0.25, 0.5, 1, 2].map((r) => `<button class="btn sm ${e.rate === r ? "on" : ""}" data-rate="${r}">${fmtN(r)}/s</button>`).join("")}</div>`;
     } else if (e.kind === "flowerbed") {
-      h += `<h3>Serre de l'usine</h3><p class="muted">Une fleur toutes les ${FLOWER_TIME / 3600} h (8 par jour).</p>`;
+      h += `<h3>Serre de l'usine</h3><p class="muted">3 fleurs toutes les ${FLOWER_TIME / 3600} h, à replanter.</p>`;
       h += !e.planted ? `<p>Touche la serre pour planter.</p>` : e.grown >= FLOWER_TIME ? `<p>${icon("etoile")} En fleurs : touche-la pour récolter.</p>`
         : `<p class="muted">Prête dans ${fmtTime(FLOWER_TIME - e.grown)}.</p>${gauge(e.grown / FLOWER_TIME, "vert")}`;
+      const have = (ui.flowers || []).filter((f) => f.qty > 0);
+      h += `<h3>Tes fleurs · ${have.reduce((n, f) => n + f.qty, 0)}</h3>`;
+      h += have.length ? `<div class="card">${have.map((f) => `<div class="row"><span>${f.name}</span><span class="grow"></span><b>× ${fmt(f.qty)}</b></div>`).join("")}</div>` : `<p class="muted">Aucune pour l'instant.</p>`;
     } else if (e.kind === "boiler" || e.kind === "generator") {
       const boil = e.kind === "boiler", cap = boil ? BOILER_N : GEN_N, burn = (e.load || 0) * FUEL_RATE[e.kind];
       h += `<h3>${boil ? "Chaudière" : "Générateur"}</h3>`;
@@ -1263,13 +1277,14 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.buy) buy(d.buy, +d.n);
   else if (d.rate && e) e.rate = +d.rate;
   else if (d.order) deliverOrder(+d.order);
+  else if (d.visit) visit(d.visit, d.name);
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
     const r = RECIPES[e.name].find((x) => x.id === d.craft), n = Math.min(+d.n, QUEUE_MAX - (e.queue ||= []).length);
     if (r && n > 0) { loadFor(e, r, n + e.queue.filter((id) => id === r.id).length); for (let k = 0; k < n; k++) e.queue.push(r.id); }
   }
   else ({
-    advance, expand,
+    advance, expand, visitback2:comeBack,
     rotate:() => e && rotateEnt(e), demol:() => e && demolish(e.x, e.y), upgrade:() => e && upgrade(e),
     clearq:() => { if (e) e.queue = []; },
     chute:() => { if (!e) return; if (S.coins < CHUTE_COST) return toast("Pas assez de pièces"); S.coins -= CHUTE_COST; e.chute = true; },
@@ -1283,10 +1298,14 @@ $("panel").addEventListener("change", (ev) => {
   ui.dirty = true;
 });
 for (const b of document.querySelectorAll("[data-mode]")) b.addEventListener("click", () => setMode(b.dataset.mode));
-for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("click", () => { ui.tab = b.dataset.tab; ui.dirty = true; });
+for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("click", () => {
+  if (S.visit && b.dataset.tab !== "visiter") return toast("Tu visites une usine : reviens chez toi pour jouer.");
+  ui.tab = b.dataset.tab; if (ui.tab === "visiter") loadMembers(); ui.dirty = true;
+});
 $("menubtn").addEventListener("click", toggleIcons);
 for (const b of document.querySelectorAll("[data-page]")) b.addEventListener("click", () => togglePanel(b.dataset.page));
 $("menuclose").addEventListener("click", closePanel);
+$("visitback").addEventListener("click", comeBack);
 $("prot").addEventListener("click", rotatePlace);
 $("pok").addEventListener("click", confirmPlace);
 $("pno").addEventListener("click", cancelPlace);
@@ -1311,10 +1330,10 @@ function useCharacter() {
   if (sp && SPECIES.includes(sp)) S.avatar = { species:sp, color:Math.max(0, Math.min(7, +q.get("co") || 0)), santa:true };
 }
 // ---------------------------------------------------------------- sauvegarde
-function save() { if (S.demo || catching) return; S.savedAt = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
+function save() { if (S.demo || S.visit || catching) return; S.savedAt = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
 /** Envoie la partie au serveur (sans effet hors d'une salle ou tant que la table n'existe pas). */
 function push() {
-  if (!API || S.demo || catching) return;
+  if (!API || S.demo || S.visit || catching) return;
   save(); const body = JSON.stringify(S);
   fetch(API, { method:"PUT", body, keepalive:body.length < 60000, headers:{ "content-type":"application/json" } }).catch(() => {});
 }
@@ -1326,6 +1345,31 @@ async function pull() {
   } catch {}
   catchUp();
 }
+// ---- Visiter l'usine d'un membre de la salle : on affiche sa partie (elle tourne), sans rien pouvoir y faire ni enregistrer.
+let mine = null; // sa propre partie, gardée pendant une visite
+async function loadMembers() {
+  if (!API) return;
+  try { const r = await fetch(API + "?list=1", { cache:"no-store" }); if (r.ok) { ui.members = (await r.json()).members; ui.dirty = true; } } catch {}
+}
+async function visit(id, name) {
+  if (!API) return;
+  try {
+    const r = await fetch(`${API}?u=${encodeURIComponent(id)}`, { cache:"no-store" }), j = r.ok ? await r.json() : {};
+    if (!j.state) return toast(`${name} n'a pas encore d'usine.`);
+    if (!mine) { save(); mine = S; }
+    S = j.state; S.visit = name; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
+    $("visitname").textContent = `Usine de ${name}`; $("visitbar").hidden = false; ui.dirty = true;
+  } catch { toast("Visite impossible pour l'instant."); }
+}
+function comeBack() {
+  if (!mine) return;
+  S = mine; mine = null; invalidate(); camReady = false; ui.sel = null; $("visitbar").hidden = true; closePanel(); ui.dirty = true;
+}
+/** Tes fleurs (inventaire de la salle), pour la fiche de la serre. */
+async function loadFlowers() {
+  if (!API) return;
+  try { const r = await fetch(API + "/fleur", { cache:"no-store" }); if (r.ok) { ui.flowers = (await r.json()).flowers; ui.dirty = true; } } catch {}
+}
 /** Image de la serre : 0 vide (à planter), 1 pousses, 2 plantes, 3 fleurs. */
 const bedFrame = (e) => (!e.planted ? 0 : e.grown >= FLOWER_TIME ? 3 : e.grown >= FLOWER_TIME / 2 ? 2 : 1);
 /** Cueille la fleur d'une serre de l'usine : le serveur la tire et l'ajoute à l'inventaire de la salle. */
@@ -1333,8 +1377,9 @@ async function pick(e) {
   if (!API) return toast("Ouvre l'usine depuis ta salle pour cueillir les fleurs.");
   if (e.picking) return; e.picking = true;
   try {
-    const r = await fetch(API + "/fleur", { method:"POST" }), j = await r.json();
-    if (r.ok) { e.planted = false; e.grown = 0; fx(e.x * T + 16, e.y * T, "✿ " + j.name, "#ff9ad5"); toast(`Tu as cueilli : ${j.name} ! (encore ${j.left} aujourd'hui)`); push(); }
+    const bed = S.ents.filter((b) => b.kind === "flowerbed").sort((a, b) => a.id - b.id).indexOf(e);
+    const r = await fetch(API + "/fleur", { method:"POST", body:JSON.stringify({ bed }), headers:{ "content-type":"application/json" } }), j = await r.json();
+    if (r.ok) { e.planted = false; e.grown = 0; ui.flowers = j.flowers; fx(e.x * T + 32, e.y * T, "✿ +" + j.picked.length, "#ff9ad5"); toast(`Récolte : ${j.picked.join(", ")} ! Replante pour la suite.`); push(); }
     else toast(j.error || "Cueillette impossible pour l'instant.");
   } catch { toast("Cueillette impossible pour l'instant."); }
   e.picking = false; ui.dirty = true;
@@ -1343,7 +1388,7 @@ async function pick(e) {
 let catching = false;
 /** Fait tourner l'usine pour le temps écoulé depuis la dernière sauvegarde, par paquets (l'écran reste réactif), puis résume. */
 function catchUp() {
-  if (S.demo || catching || !S.savedAt) return;
+  if (S.demo || S.visit || catching || !S.savedAt) return;
   const away = Math.min(OFFLINE_MAX, (Date.now() - S.savedAt) / 1000);
   if (away < 30) return;
   catching = true;
