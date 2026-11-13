@@ -4,6 +4,7 @@ import { useOptimistic, useState } from "react";
 import { answer } from "@/app/actions";
 import { Avatar } from "@/src/components/avatar";
 import type { ActivityProps } from "../activities/registry";
+import { candidates } from "./formats";
 import { tally } from "./tally";
 import { questionLabel } from "./themes";
 
@@ -22,7 +23,8 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
     vote(String(f.get("content")));
     await answer(f);
   }
-  const members = Object.entries(people).map(([id, p]) => ({ id, name: p.name }));
+  // « avec qui » : on ne peut pas se choisir ; une question qui vise quelqu'un ({x}) ne le propose pas
+  const members = candidates(Object.entries(people).map(([id, p]) => ({ id, name: p.name })), activity.payload.kind === "with" ? "with" : "vote", userId, activity.payload.target);
   const person = (id: string, size: number) => (
     <Avatar url={people[id]?.url} character={people[id]?.character} name={people[id]?.name ?? "?"} size={size} />
   );
@@ -60,7 +62,7 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
   return (
     <>
       <section className="pt-2">
-        <p className="eyebrow">{questionLabel(activity, names)} · vote</p>
+        <p className="eyebrow">{questionLabel(activity, names)} · {activity.payload.kind === "with" ? "avec qui" : "vote"}</p>
         <h2 className="mt-2 text-[1.7rem] font-bold leading-tight tracking-tight">{activity.payload.text}</h2>
       </section>
 

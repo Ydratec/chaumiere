@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { candidates, isKind, validAnswer } from "@/src/modules/questions/formats";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminDb, db } from "@/src/lib/db/server";
@@ -57,14 +58,17 @@ export async function answer(f: FormData) {
   const sb = await db();
   const activityId = String(f.get("activity_id"));
   const content = String(f.get("content")).trim().slice(0, 500);
-  // Question de vote : la réponse doit être un membre de la salle, et si la salle l'a choisi, le vote est définitif.
+  // La réponse doit convenir au format (un membre pour un vote, deux pour un duo, tout le monde pour un classement…) ;
+  // si la salle l'a choisi, la réponse est définitive.
   const { data: a } = await sb.from("daily_activities").select("room_id, payload, rooms(vote_locked)").eq("id", activityId)
-    .maybeSingle<{ room_id: string; payload: { kind?: string; text?: string }; rooms: { vote_locked: boolean } | null }>();
-  if (a?.payload?.kind === "vote") {
-    const { data: m } = await sb.from("room_members").select("user_id").eq("room_id", a.room_id).eq("user_id", content).maybeSingle();
-    if (!m) return;
-  }
+    .maybeSingle<{ room_id: string; payload: { kind?: string; text?: string; options?: string[]; target?: string }; rooms: { vote_locked: boolean } | null }>();
   const me = await getAuthUser();
+  const kind = isKind(a?.payload?.kind) ? a.payload.kind : "open";
+  if (a && kind !== "open") {
+    const { data: ms } = await sb.from("room_members").select("user_id").eq("room_id", a.room_id);
+    const cands = candidates((ms ?? []).map((m) => ({ id: m.user_id as string, name: "" })), kind, me?.id ?? "", a.payload.target).map((c) => c.id);
+    if (!validAnswer(kind, content, cands, a.payload.options)) return;
+  }
   const { data: before } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
   if (before && a?.rooms?.vote_locked) return; // réponses définitives (votes comme questions ouvertes)
   const { error } = await sb.from("answers").upsert({ activity_id: activityId, content });
@@ -75,7 +79,7 @@ export async function answer(f: FormData) {
       const c = await getRoomContext(a.room_id);
       const who = c?.names[me.id] ?? "Quelqu'un";
       await notify(await roomMembers(a.room_id, me.id), "question", {
-        title: a.payload.kind === "vote" ? `${who} a voté` : `${who} a répondu`,
+        title: kind === "open" ? `${who} a répondu` : kind === "rank" ? `${who} a fait son classement` : `${who} a voté`,
         body: a.payload.text ?? "",
         url: `/r/${a.room_id}/question?a=${activityId}`,
         tag: `answers-${activityId}`,

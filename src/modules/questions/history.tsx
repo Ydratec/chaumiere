@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Activity, Answer } from "../activities/registry";
 import type { Person } from "../rooms/context";
+import { candidates, choiceTally, duoTally, rankTally } from "./formats";
 import { tally } from "./tally";
 
 const shift = (day: string, n: number) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
@@ -36,12 +37,26 @@ export async function QuestionHistory({ sb, roomId, today, names, people }: {
             <p className="text-sm font-semibold capitalize text-zinc-500">{label(day, today)}</p>
             {list.map((a) => {
               const answers = answersOf(a.id);
-              const vote = a.payload.kind === "vote";
+              const kind = a.payload.kind ?? "open";
+              const vote = kind === "vote" || kind === "with";
               const t = vote ? tally(answers, members) : null;
+              const podium = (rows: { label: string; value: string }[]) => (
+                <ol className="mt-2 space-y-1 text-sm">
+                  {rows.slice(0, 3).map((r, i) => (
+                    <li key={i} className="flex justify-between gap-3"><span>{["🥇", "🥈", "🥉"][i]} {r.label}</span><span className="tabular-nums text-zinc-500">{r.value}</span></li>
+                  ))}
+                </ol>
+              );
+              const nm = (id: string) => names[id] ?? "?";
+              const summary = !answers.length ? null
+                : kind === "choice" ? podium(choiceTally(answers, a.payload.options?.length ?? 0).rows.sort((x, y) => y.voters.length - x.voters.length).map((r) => ({ label: a.payload.options?.[r.i] ?? "?", value: `${Math.round(r.share * 100)} %` })))
+                : kind === "rank" ? podium(rankTally(answers, candidates(members, "rank", "", a.payload.target)).rows.map((r) => ({ label: r.name, value: r.avg === null ? "" : `${r.avg.toFixed(1).replace(".", ",")}ᵉ` })))
+                : kind === "duo" ? podium(duoTally(answers).rows.map((r) => ({ label: `${nm(r.pair[0])} & ${nm(r.pair[1])}`, value: `${r.voters.length} voix` })))
+                : null;
               return (
                 <article key={a.id} className="rounded-[1.5rem] bg-white p-4 shadow-sm">
                   <h3 className="font-bold leading-snug">{a.payload.text}</h3>
-                  {vote ? (
+                  {summary ?? (vote ? (
                     t!.total ? (
                       <ol className="mt-2 space-y-1 text-sm">
                         {t!.rows.filter((r) => r.voters.length).slice(0, 3).map((r, i) => (
@@ -61,7 +76,7 @@ export async function QuestionHistory({ sb, roomId, today, names, people }: {
                         </p>
                       ))}
                     </div>
-                  ) : <p className="mt-2 text-sm text-zinc-500">Personne n&apos;a répondu.</p>}
+                  ) : <p className="mt-2 text-sm text-zinc-500">Personne n&apos;a répondu.</p>)}
                   <Link href={`/r/${roomId}/question?a=${a.id}`} className="mt-2 inline-block text-sm font-semibold text-indigo-600">Voir la discussion ›</Link>
                 </article>
               );

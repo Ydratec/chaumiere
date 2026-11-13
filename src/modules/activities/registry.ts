@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { Person } from "../rooms/context";
+import type { Kind } from "../questions/formats";
 import { QuestionActivity } from "../questions/question";
 
 export type Activity = {
@@ -9,7 +10,8 @@ export type Activity = {
   day?: string;
   slot?: number; // 0 = question du jour, 1, 2… = questions achetées
   bought_by?: string | null;
-  payload: { text: string; kind?: "open" | "vote"; theme?: string | null; n?: number };
+  // kind : voir src/modules/questions/formats.ts ; options : les choix d'un « tu préfères » ; target : la personne visée ({x})
+  payload: { text: string; kind?: Kind; options?: string[]; target?: string; theme?: string | null; n?: number };
 };
 export type Answer = { user_id: string; content: string };
 export type ActivityProps = {

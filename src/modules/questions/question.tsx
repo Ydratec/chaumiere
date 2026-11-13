@@ -1,10 +1,15 @@
 import type { ActivityProps } from "../activities/registry";
 import { AnswerForm } from "./answer-form";
+import { ChoiceActivity, DuoActivity, RankActivity } from "./formats-ui";
 import { questionLabel } from "./themes";
 import { VoteActivity } from "./vote";
 
 export function QuestionActivity(props: ActivityProps) {
-  if (props.activity.payload.kind === "vote") return <VoteActivity {...props} />;
+  const kind = props.activity.payload.kind;
+  if (kind === "vote" || kind === "with") return <VoteActivity {...props} />;
+  if (kind === "choice") return <ChoiceActivity {...props} />;
+  if (kind === "rank") return <RankActivity {...props} />;
+  if (kind === "duo") return <DuoActivity {...props} />;
   const { activity, userId, names, answers, voteLocked } = props;
   const mine = answers.find((a) => a.user_id === userId);
   const others = answers.filter((a) => a.user_id !== userId);

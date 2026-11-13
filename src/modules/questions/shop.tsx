@@ -3,14 +3,27 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ItemIcon } from "@/src/modules/farm/art";
+import type { Kind } from "./formats";
 import { buyQuestion } from "./shop-actions";
 import { PACK_FACTOR, PACK_SIZE, THEMES, type Theme } from "./themes";
+
+const FORMATS: [Kind, string, string][] = [
+  ["open", "Ouverte", "Ta question, chacun répond librement"],
+  ["vote", "Vote", "Qui de nous… ?"],
+  ["with", "Avec qui", "Avec qui tu voudrais… ?"],
+  ["choice", "Tu préfères", "Tu préfères…"],
+  ["rank", "Classement", "Classe-nous : qui… le plus ?"],
+  ["duo", "Duo", "Quel duo pour… ?"],
+];
 
 /** Acheter une question en plus (ou un pack à thème) avec les pièces de la serre. Toucher choisit, le bouton confirme. */
 export function QuestionShop({ roomId, price, coins }: { roomId: string; price: number; coins: number }) {
   const router = useRouter();
   const [picked, setPicked] = useState<Theme | "extra" | null>(null);
   const [error, setError] = useState("");
+  const [kind, setKind] = useState<Kind>("open");
+  const [text, setText] = useState("");
+  const [opts, setOpts] = useState(["", ""]);
   const [pending, start] = useTransition();
   const cost = (t: Theme | "extra") => (t === "extra" ? price : price * PACK_FACTOR);
   const coin = (n: number, size = 14) => <span className="inline-flex items-center gap-1">{n} <ItemIcon id="coins" size={size} /></span>;
@@ -28,7 +41,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
   );
   const buy = () =>
     picked && start(async () => {
-      const r = await buyQuestion(roomId, picked === "extra" ? null : picked);
+      const r = await buyQuestion(roomId, picked === "extra" ? null : picked, picked === "extra" ? { text, kind, options: opts } : undefined);
       if (r.error) return setError(r.error);
       router.push(`/r/${roomId}/question?a=${r.id}`);
     });
@@ -39,7 +52,27 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
         <h2 className="eyebrow">Ajouter une question</h2>
         <span className="text-sm font-semibold">{coin(coins)}</span>
       </div>
-      {chip("extra", "Question en plus")}
+      {chip("extra", "Question en plus · c'est toi qui l'écris")}
+      {picked === "extra" && (
+        <div className="space-y-2 rounded-2xl bg-white p-3 shadow-sm">
+          <div className="flex flex-wrap gap-1.5">
+            {FORMATS.map(([k, label]) => (
+              <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${kind === k ? "bg-indigo-600 text-white" : "bg-zinc-100"}`}>{label}</button>
+            ))}
+          </div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={200} rows={2} placeholder={FORMATS.find(([k]) => k === kind)![2]}
+            className="w-full rounded-xl bg-zinc-50 p-2.5 text-sm" />
+          {kind === "choice" && (
+            <div className="grid grid-cols-2 gap-2">
+              {opts.map((o, i) => (
+                <input key={i} value={o} maxLength={60} placeholder={`Choix ${i + 1}`} onChange={(e) => setOpts(opts.map((x, j) => (j === i ? e.target.value : x)))}
+                  className="rounded-xl bg-zinc-50 p-2.5 text-sm" />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <p className="eyebrow pt-1">Packs à thème · 1 question par jour pendant {PACK_SIZE} jours</p>
       <div className="grid grid-cols-2 gap-2">{(Object.entries(THEMES) as [Theme, string][]).map(([t, name]) => chip(t, name))}</div>
       {picked && (
