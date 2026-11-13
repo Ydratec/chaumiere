@@ -1073,6 +1073,12 @@ function draw(time) {
       if (pt) { text("entrée", pt.in.outside[0] * T + 16, pt.in.outside[1] * T + 18, "#9ad8ff"); text("sortie", pt.out.outside[0] * T + 16, pt.out.outside[1] * T + 18, "#ffd65a"); }
     }
   }
+  const tuEnt = ui.tuto != null && TUTO[ui.tuto].ent?.();
+  if (tuEnt) { // tutoriel : flèche dorée qui rebondit au-dessus de l'objet montré
+    const sp = spr(tuEnt), f = fp(tuEnt), cx = (tuEnt.x + f.w / 2) * T, top = tuEnt.y * T - ((sp.origin || [0, 0])[1]) - 6 - Math.abs(Math.sin(time * 4)) * 5;
+    ctx.fillStyle = "#1c1820"; ctx.beginPath(); ctx.moveTo(cx - 7, top - 9); ctx.lineTo(cx + 7, top - 9); ctx.lineTo(cx, top + 1); ctx.fill();
+    ctx.fillStyle = "#ffd65a"; ctx.beginPath(); ctx.moveTo(cx - 5, top - 8); ctx.lineTo(cx + 5, top - 8); ctx.lineTo(cx, top - 1); ctx.fill();
+  }
   if (ui.place?.belt) { // fantôme du tapis qu'on déplace
     const q = ui.place, b = S.belts[q.belt], bi = img(`usine/tapis/${b.k || "bois"}.png`), ok = placeOk();
     ctx.globalAlpha = 0.75; if (bi) ctx.drawImage(bi, 0, BELT_ROWS.indexOf(q.o) * 32, 32, 32, q.x * T, q.y * T, 32, 32); ctx.globalAlpha = 1;
@@ -1407,6 +1413,9 @@ $("menubtn").addEventListener("click", toggleIcons);
 for (const b of document.querySelectorAll("[data-page]")) b.addEventListener("click", () => togglePanel(b.dataset.page));
 $("menuclose").addEventListener("click", closePanel);
 $("visitback").addEventListener("click", comeBack);
+$("tutonext").addEventListener("click", () => tutoShow(ui.tuto + 1));
+$("tutoskip").addEventListener("click", () => tutoShow(null));
+$("help").addEventListener("click", () => { if (!S.visit) tutoShow(0); });
 $("prot").addEventListener("click", rotatePlace);
 $("pok").addEventListener("click", confirmPlace);
 $("pno").addEventListener("click", cancelPlace);
@@ -1448,6 +1457,34 @@ async function pull() {
   } catch {}
   catchUp();
 }
+// ---- Tutoriel guidé : une phrase par étape ; il ouvre lui-même les menus (hi = élément à montrer) et montre les objets (ent).
+const firstOf = (kind) => S.ents.find((e) => e.kind === kind);
+const TUTO = [
+  { t:"Bienvenue à l'usine des lutins ! Fabrique des décorations de Noël, vends-les et fais grandir ton usine.", go:() => { closePanel(); setIcons(false); } },
+  { t:"Touche un tas de matières : ton lutin y va et remplit son sac tout seul.", ent:() => firstOf("source"), go:() => { closePanel(); setIcons(false); } },
+  { t:"Touche une machine : sa fiche s'ouvre, choisis ce que tu fabriques (+1, ou plus d'un coup).", ent:() => firstOf("machine"), go:() => { const m = firstOf("machine"); if (m) select(m); } },
+  { t:"La caisse d'expédition : choisis ce que tu vends contre des pièces.", ent:() => firstOf("crate"), go:() => { const c = firstOf("crate"); if (c) select(c); } },
+  { t:"Ta serre : plante, attends 2 h, et récolte 3 fleurs pour la salle.", ent:() => firstOf("flowerbed"), go:() => { const b = firstOf("flowerbed"); if (b) select(b); } },
+  { t:"Appui long sur un objet pour le déplacer et le tourner. Garde le doigt sur le sol pour marcher.", go:() => closePanel() },
+  { t:"Le menu ☰ : le zoom et toutes les pages.", hi:"#menubtn", go:() => { closePanel(); setIcons(true); } },
+  { t:"Commandes du jour : de vraies pièces pour la salle (boosters, questions). Plus bas : passer à l'étape suivante.", hi:'[data-page="commandes"]', go:() => page("commandes") },
+  { t:"Le marché : achète des matières pour aller plus vite.", hi:'[data-page="marche"]', go:() => page("marche") },
+  { t:"Construire : machines, tapis, serres, et agrandir l'atelier.", hi:'[data-page="construire"]', go:() => page("construire") },
+  { t:"Visiter : regarde l'usine des autres joueurs de la salle.", hi:'[data-page="visiter"]', go:() => page("visiter") },
+  { t:"Ton usine tourne même quand tu n'es pas là : passe à la vapeur puis à l'électricité pour qu'elle travaille seule. Joyeux Noël !", hi:"#help", go:() => { closePanel(); setIcons(true); } },
+];
+function setIcons(on) { document.body.classList.toggle("menu", on); $("menubtn").textContent = on ? "✕" : "☰"; }
+function page(tab) { setIcons(true); ui.tab = tab; if (tab === "visiter") loadMembers(); openPanel(); ui.dirty = true; }
+function tutoShow(i) {
+  document.querySelectorAll(".tuto-hi").forEach((el) => el.classList.remove("tuto-hi"));
+  if (i == null || i >= TUTO.length) { ui.tuto = null; $("tuto").hidden = true; S.tutoDone = true; save(); return; }
+  const st = TUTO[i]; ui.tuto = i; st.go?.();
+  $("tutotext").textContent = st.t; $("tutostep").textContent = `${i + 1} / ${TUTO.length}`; $("tutonext").textContent = i === TUTO.length - 1 ? "C'est parti !" : "Suivant";
+  if (st.hi) document.querySelector(st.hi)?.classList.add("tuto-hi");
+  $("tuto").hidden = false; ui.dirty = true;
+}
+/** Première visite : le tutoriel se lance (après le rattrapage hors ligne s'il y en a un). */
+function tutoAuto() { if (S.tutoDone || S.demo || S.visit) return; if (catching) return setTimeout(tutoAuto, 500); tutoShow(0); }
 // ---- Visiter l'usine d'un membre de la salle : on affiche sa partie (elle tourne), sans rien pouvoir y faire ni enregistrer.
 let mine = null; // sa propre partie, gardée pendant une visite
 async function loadMembers() {
@@ -1552,7 +1589,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) push(
 pull();
 new ResizeObserver(() => resize()).observe(cv.parentElement);
 resize(); fitZoom();
-if (S.time < 1) toast("Touche le tas de sable, puis le four.", 6000);
+setTimeout(tutoAuto, 1200); // première visite : le tutoriel
 document.fonts?.load('8px "Chaumiere Pixel"');
 requestAnimationFrame(tick);
 window.__usine = { get S() { return S; }, step, place, advance, sell, interact, buy, byId, entAt, computePower, bagAdd };

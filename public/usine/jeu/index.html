@@ -104,7 +104,12 @@ label { display:flex; justify-content:space-between; align-items:center; gap:8px
 #catchup { position:fixed; left:50%; top:40%; transform:translate(-50%, -50%); width:min(320px, 86%); z-index:10; padding:8px; text-align:center; }
 #catchup[hidden] { display:none; }
 #placebar { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); display:flex; gap:4px; margin:0; z-index:4; }
-#placebar[hidden], #beltdone[hidden], #visitbar[hidden] { display:none; }
+#placebar[hidden], #beltdone[hidden], #visitbar[hidden], #tuto[hidden] { display:none; }
+#tuto { position:absolute; left:8px; right:8px; bottom:64px; z-index:8; padding:4px 6px; max-width:520px; margin:0 auto; }
+body.panel #tuto { bottom:calc(52% + 12px); } /* au-dessus du volet ouvert, sous la rangée d'icônes */
+#tuto p { margin:2px 0 4px; }
+.tuto-hi { outline:3px solid #ffd65a; outline-offset:-2px; animation:tuto-hi .6s ease-in-out infinite alternate; }
+@keyframes tuto-hi { to { outline-color:rgba(255, 214, 90, .25); } }
 #visitbar { position:absolute; left:50%; top:4px; transform:translateX(-50%); display:flex; align-items:center; gap:8px; margin:0; z-index:7; white-space:nowrap; }
 #beltdone { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); z-index:4; }
 #menubtn, #menuclose, #tools .page { display:none; }
@@ -158,10 +163,13 @@ label { display:flex; justify-content:space-between; align-items:center; gap:8px
       <button class="btn icon page" data-page="marche" title="Marché"><span class="ic" style="--i:10"></span></button>
       <button class="btn icon page" data-page="construire" title="Construire"><span class="ic" style="--i:3"></span></button>
       <button class="btn icon page" data-page="visiter" title="Visiter une usine"><span class="ic" style="--i:22"></span></button>
+      <button class="btn icon" id="help" title="Comment jouer"><span class="ic" style="--i:21"></span></button>
     </div>
     <button class="btn shadow" id="menubtn" title="Menu" aria-label="Menu">☰</button>
     <div id="bagwrap" class="card"><span class="ic" style="--i:9"></span><span class="lbl shadow">Sac</span><div id="bag"></div></div>
     <div id="toast"></div>
+    <!-- Tutoriel guidé : une bulle par étape ; il ouvre lui-même les menus et montre les objets. -->
+    <div id="tuto" class="frame" hidden><p id="tutotext" class="shadow"></p><div class="row"><span id="tutostep" class="muted"></span><span class="grow"></span><button class="btn sm" id="tutoskip">Passer</button><button class="btn sm vert" id="tutonext">Suivant</button></div></div>
     <div id="visitbar" class="card" hidden><span id="visitname" class="shadow"></span><button class="btn sm" id="visitback">Revenir</button></div>
     <!-- Pose d'un objet (nouveau ou déplacé) : tourner, valider, annuler. -->
     <div id="placebar" class="card" hidden><button class="btn rouge" id="pdel">Retirer</button><button class="btn" id="prot">↻ Tourner</button><button class="btn rouge" id="pno">✕</button><button class="btn vert" id="pok">✓ Poser</button></div>
