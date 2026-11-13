@@ -788,7 +788,7 @@ function demolish(x, y) {
   toast(`${nameOf(e.name)} démonté : la moitié du prix est rendue.`);
 }
 // Déplacer un objet déjà posé (appui long) : machines, coffres, manivelles, énergie, décorations (pas les tas ni la caisse).
-const MOVABLE = ["machine", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source"];
+const MOVABLE = ["machine", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
 /** L'objet `key` (étape `stage`, orientation `o`) tient-il avec son coin haut-gauche en (x, y) ? `ignore` : l'objet qu'on déplace. */
 function fits(key, stage, o, x, y, ignore) {
   const f = sprOf(key, stage, o).footprint || [1, 1];
@@ -1016,6 +1016,18 @@ function drawEnt(e, time) {
   if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
+// Vitre des fenêtres du mur du fond (rectangle dans la case de 32 × 64, variante « fenêtre ») : la neige y tombe.
+const WINDOW_PANE = { wall_log:[6, 12, 25, 38], wall_brick:[7, 12, 24, 23] };
+function snowIn(X, [x0, y0, x1, y1], time) {
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  for (let k = 0; k < 7; k++) {
+    const r = hash(X + k, k * 7 + 3), sp = 5 + (r % 6), big = r % 5 === 0;
+    const y = (time * sp + (r % 97)) % h, dx = Math.round(Math.sin(time * 1.3 + k) * 1.2);
+    const fx = x0 + (((r >>> 3) % w) + dx + w) % w;
+    ctx.fillStyle = big ? "#ffffff" : "rgba(255,255,255,.75)";
+    ctx.fillRect(X + fx, y0 + Math.floor(y), big ? 2 : 1, big ? 2 : 1);
+  }
+}
 function draw(time) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = "#1b120d"; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -1031,8 +1043,11 @@ function draw(time) {
   ctx.setTransform(s, 0, 0, s, Math.round(-cam.x * s), Math.round(-cam.y * s));
   ctx.imageSmoothingEnabled = false;
   const st = S.stage, wall = stageImg(st, TILESET[st][1] + ".png"), floor = stageImg(st, TILESET[st][0] + ".png");
+  const pane = WINDOW_PANE[TILESET[st][1]];
   for (let x = 0; x < S.area.w; x++) {
-    if (wall) ctx.drawImage(wall, (hash(x, 0) % 7 === 0 ? 1 : hash(x, 1) % 9 === 0 ? 2 : 0) * 32, 0, 32, 64, x * T, 0, 32, 64);
+    const v = hash(x, 0) % 7 === 0 ? 1 : hash(x, 1) % 9 === 0 ? 2 : 0;
+    if (wall) ctx.drawImage(wall, v * 32, 0, 32, 64, x * T, 0, 32, 64);
+    if (pane && v === 1) snowIn(x * T, pane, time);
     for (let y = Y0; y < S.area.h; y++) if (floor) { const h = hash(x, y) % 10, n = floor.width / 32; const v = n === 2 ? (h < 8 ? 0 : 1) : st === 5 ? 0 : (h < 7 ? 0 : h < 9 ? 1 : 2); ctx.drawImage(floor, v * 32, 0, 32, 32, x * T, y * T, 32, 32); }
   }
   // portée du personnage
