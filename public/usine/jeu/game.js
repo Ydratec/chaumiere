@@ -333,7 +333,57 @@ function freeIn(m, key) {
   return n;
 }
 /** Combien de fois on peut encore lancer `r` avec ce qui est libre dans la machine et dans le sac. */
-const possible = (m, r) => Math.max(0, Math.min(...Object.entries(r.in).map(([k, n]) => Math.floor((freeIn(m, k) + bagHas(k)) / n))));
+const possible = (m, r) => manual(m) ? possibleManual(m, r) : possibleAuto(m, r);
+const possibleAuto = (m, r) => Math.max(0, Math.min(...Object.entries(r.in).map(([k, n]) => Math.floor((freeIn(m, k) + bagHas(k)) / n))));
+// ---- Machines manuelles : au moment de demander, les ingrédients de base quittent le sac et sont mis de côté (m.res) ;
+// la machine ne garde que ses intermédiaires (la peinture). Pas de plafond de sortie : une fabrication demandée se termine toujours.
+const isBase = (m, k) => !RECIPES[m.name].some((r) => Object.keys(r.out).some((o) => matches(o, k)));
+const resHas = (m, k) => Object.entries(m.res || {}).reduce((n, [it, q]) => n + (matches(it, k) ? q : 0), 0);
+/** Retire n objets correspondant à `k` d'un stock { objet: quantité } ; renvoie ce qui a été pris. */
+function takeFrom(store, k, n) {
+  const got = {};
+  for (const it of Object.keys(store)) {
+    if (n <= 0 || !matches(it, k)) continue;
+    const t = Math.min(n, store[it]); store[it] -= t; n -= t; got[it] = (got[it] || 0) + t; if (!store[it]) delete store[it];
+  }
+  return got;
+}
+/** Combien de fois on peut encore demander `r` à une machine manuelle (sac + vieux stock pour la base, file pour les intermédiaires). */
+const possibleManual = (m, r) => Math.max(0, Math.min(...Object.entries(r.in).map(([k, n]) =>
+  Math.floor((isBase(m, k) ? count(m, k) + bagHas(k) : freeIn(m, k)) / n))));
+/** Met de côté les ingrédients de base de n fois `r` (vieux stock de la machine d'abord, puis le sac). */
+function reserve(m, r, n) {
+  m.res ||= {};
+  for (const [k, per] of Object.entries(r.in)) {
+    if (!isBase(m, k)) continue;
+    let need = per * n;
+    for (const [it, t] of Object.entries(takeFrom(m.inb, k, need))) { m.res[it] = (m.res[it] || 0) + t; need -= t; }
+    for (let i = 0; i < BAG && need > 0; i++) {
+      const sl = S.bag[i]; if (!sl || !matches(sl.it, k)) continue;
+      const t = Math.min(need, sl.n); sl.n -= t; need -= t; m.res[sl.it] = (m.res[sl.it] || 0) + t; if (!sl.n) S.bag[i] = null;
+    }
+  }
+}
+/** Vieilles parties : la file d'avant les réservations est reprise (ce qui peut se réserver est gardé, le reste retiré). */
+function migrateQueue(m) {
+  const q = m.queue || []; m.queue = []; m.res ||= {};
+  for (const id of q) { const r = recipeOf(m, id); if (r && possibleManual(m, r) >= 1) { reserve(m, r, 1); m.queue.push(id); } }
+  m.resV = 1;
+}
+/** Vider la file : les ingrédients mis de côté reviennent dans le sac. */
+function clearQueue(m) {
+  m.queue = [];
+  for (const it of Object.keys(m.res || {})) { const k = bagAdd(it, m.res[it]); m.res[it] -= k; if (!m.res[it]) delete m.res[it]; }
+  if (Object.keys(m.res || {}).length) toast("Sac plein : le reste attend dans la machine.");
+}
+/** Vend tout ce que le sac contient de `it` (ou de tout ce qui se vend si `it` est absent), à la caisse `c`. */
+function sellBag(c, it) {
+  let v = 0;
+  for (let i = 0; i < BAG; i++) { const sl = S.bag[i]; if (sl && price(sl.it) && (!it || sl.it === it)) { v += price(sl.it) * sl.n; sell(sl.it, sl.n); S.bag[i] = null; } }
+  if (v) { fx(c.x * T + 16, c.y * T, "+" + fmtN(v), "#ffd65a"); S.player.work = 0.3; }
+}
+/** Ce que la machine fabrique elle-même (ses intermédiaires, qu'elle garde) : tout le reste est un ingrédient de base. */
+const madeHere = (m, it) => RECIPES[m.name].some((r) => Object.keys(r.out).includes(it));
 /** Met dans la machine, depuis le sac, ce qui manque pour tout ce qui est dans la file. */
 function loadFor(m) {
   const keys = new Set((m.queue || []).flatMap((id) => Object.keys(recipeOf(m, id)?.in || {})));
@@ -345,19 +395,19 @@ function loadFor(m) {
     }
   }
 }
-/** Retire de la fin de la file ce qui ne pourra jamais être fabriqué (vieilles parties où l'on pouvait trop en demander). */
-function trimQueue(m) {
-  const q = m.queue || [];
-  while (q.length && q.some((id) => Object.keys(recipeOf(m, id)?.in || {}).some((k) => freeIn(m, k) < 0))) q.pop();
-}
 function updateMachine(m, dt) {
   const info = MACH[m.name];
   if (!m.craft) {
     if (manual(m)) {
-      trimQueue(m);
-      // la première recette de la file qui peut partir (une boule peut attendre la peinture demandée juste après)
-      const i = (m.queue ||= []).findIndex((id) => { const r = recipeOf(m, id); return r && canCraft(m, r); });
-      if (i >= 0) { const r = recipeOf(m, m.queue[i]); for (const k in r.in) consume(m, k, r.in[k]); m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; m.queue.splice(i, 1); }
+      if (!m.resV) migrateQueue(m);
+      // la première de la file dont les intermédiaires sont prêts (une boule peut attendre la peinture demandée juste avant)
+      const ok = (r) => Object.entries(r.in).every(([k, n]) => (isBase(m, k) ? resHas(m, k) : count(m, k)) >= n);
+      const i = (m.queue ||= []).findIndex((id) => { const r = recipeOf(m, id); return r && ok(r); });
+      if (i >= 0) {
+        const r = recipeOf(m, m.queue[i]);
+        for (const [k, n] of Object.entries(r.in)) { if (isBase(m, k)) takeFrom(m.res, k, n); else consume(m, k, n); }
+        m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; m.queue.splice(i, 1);
+      }
     } else {
       const r = activeRecipes(m).find((r) => canCraft(m, r));
       if (r) { for (const k in r.in) consume(m, k, r.in[k]); m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; }
@@ -625,13 +675,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
   }
   face(e); p.job = null;
   if (e.kind === "source") { if (first) select(e); return; } // on choisit dans sa fiche combien en prendre
-  if (e.kind === "crate") {
-    let v = 0;
-    for (let i = 0; i < BAG; i++) { const s = S.bag[i]; if (s && price(s.it)) { v += price(s.it) * s.n; sell(s.it, s.n); S.bag[i] = null; } }
-    if (v) { fx(e.x * T + 16, e.y * T, "+" + fmtN(v), "#ffd65a"); p.work = 0.3; }
-    else if (first) toast("La caisse achète les produits finis : rien à vendre dans le sac.");
-    return;
-  }
+  if (e.kind === "crate") { if (first) select(e); return; } // la fiche de la caisse : on choisit quoi vendre (les tapis, eux, vendent tout seuls)
   if (e.kind === "chest") { if (first) select(e); return; } // on choisit dans sa fiche ce qu'on dépose ou reprend
   if (e.kind === "crank") { e.reserve = Math.min(CRANK_MAX, e.reserve + (first ? CRANK_WIND : CRANK_WIND / 4)); p.work = 0.4; return; }
   if (e.kind === "flowerbed") {
@@ -649,7 +693,9 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
   if (e.kind === "extractor" || e.kind === "pole") { if (first) select(e); return; }
   if (e.kind !== "machine") return;
   let moved = 0;
-  for (let i = 0; i < BAG; i++) {                       // déposer ce que la machine accepte
+  if (manual(e)) {                                      // machine manuelle : les ingrédients de base restent dans le sac
+    for (const it of Object.keys(e.inb)) if (!madeHere(e, it)) { const k = bagAdd(it, e.inb[it]); e.inb[it] -= k; moved += k; if (!e.inb[it]) delete e.inb[it]; }
+  } else for (let i = 0; i < BAG; i++) {                // machine automatique : déposer ce qu'elle accepte
     const s = S.bag[i]; if (!s) continue;
     while (s.n > 0 && accepts(e, s.it)) { e.inb[s.it] = (e.inb[s.it] || 0) + 1; s.n--; moved++; }
     if (!s.n) S.bag[i] = null;
@@ -1288,7 +1334,14 @@ function renderUI() {
       if (e.fuel <= 0) h += `<p class="bad">${icon("eclair")} Plus de bois : tout est à l'arrêt.</p>`;
     } else if (e.kind === "pole") {
       h += `<h3>Poteau électrique</h3><p class="muted">Portée : ${POLE_R} cases.</p>`;
-    } else h += `<h3>Caisse d'expédition</h3>`;
+    } else {
+      h += `<h3>Caisse d'expédition</h3>`;
+      const forSale = {}; for (const sl of S.bag) if (sl && price(sl.it)) forSale[sl.it] = (forSale[sl.it] || 0) + sl.n;
+      const items = Object.entries(forSale);
+      h += items.length ? `<div class="card">${items.map(([it, n]) => `<div class="row">${itemHTML(it, n)}<span>${label(it)}</span><span class="grow"></span><span class="muted">${icon("piece")}${fmtN(price(it) * n)}</span><button class="btn sm" data-sell="${it}">Vendre</button></div>`).join("")}</div>
+        <button class="btn vert wide" id="sellall">Tout vendre · ${icon("piece")}${fmtN(items.reduce((v, [it, n]) => v + price(it) * n, 0))}</button>`
+        : `<p class="muted">Rien à vendre dans le sac.</p>`;
+    }
   }
   if (ui.tab === "selection") {
     const e = byId(ui.sel);
@@ -1317,17 +1370,22 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.cput && e && e.kind === "chest") doNear(e, () => chestPut(e, d.cput, +d.n));
   else if (d.rate && e) e.rate = +d.rate;
   else if (d.order) deliverOrder(+d.order);
+  else if (d.sell && e) sellBag(e, d.sell);
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
     const r = recipeOf(e, d.craft), n = r ? Math.min(+d.n, QUEUE_MAX - (e.queue ||= []).length, possible(e, r)) : 0;
-    if (n > 0) { for (let k = 0; k < n; k++) e.queue.push(r.id); loadFor(e); }
+    if (n > 0) {
+      if (manual(e)) { if (!e.resV) migrateQueue(e); reserve(e, r, n); } // les ingrédients de base sont mis de côté : rien ne peut bloquer
+      for (let k = 0; k < n; k++) e.queue.push(r.id);
+      if (!manual(e)) loadFor(e);
+    }
     else if (r) toast("Pas assez de matériaux pour en demander plus.");
   }
   else ({
-    advance, expand, visitback2:comeBack,
+    advance, expand, visitback2:comeBack, sellall:() => e && sellBag(e),
     rotate:() => e && rotateEnt(e), demol:() => e && demolish(e.x, e.y), upgrade:() => e && upgrade(e),
-    clearq:() => { if (e) e.queue = []; },
+    clearq:() => { if (!e) return; if (manual(e)) clearQueue(e); else e.queue = []; },
     cgetall:() => e && doNear(e, () => { for (const it of Object.keys(e.store)) chestTake(e, it, e.store[it]); }),
     cputall:() => e && doNear(e, () => { for (const it of new Set(S.bag.filter(Boolean).map((sl) => sl.it))) chestPut(e, it, bagCount(it)); }),
     chute:() => { if (!e) return; if (S.coins < CHUTE_COST) return toast("Pas assez de pièces"); S.coins -= CHUTE_COST; e.chute = true; },

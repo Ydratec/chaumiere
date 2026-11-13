@@ -64,6 +64,26 @@ bed.planted = false; bed.grown = 0; run(600); out.bed.empty = bedFrame(bed);
 bed.planted = true; run(FLOWER_TIME / 2 + 10); out.bed.half = bedFrame(bed);
 run(FLOWER_TIME); out.bed.ready = bedFrame(bed);
 
+// machine manuelle : les ingrédients de base restent dans le sac, elle les prend en lançant ; elle ne garde que la peinture
+newState();
+const pt = S.ents.find((e) => e.name === "paint_table");
+S.bag = Array(BAG).fill(null); bagAdd("pigment_rouge", 3); bagAdd("boule_transparente", 2);
+pt.queue = ["peinture_rouge", "boule_rouge"];
+run(30);
+out.manual = { pigmentsLeft:bagCount("pigment_rouge"), pigmentInside:pt.inb.pigment_rouge || 0, paintInside:pt.inb.peinture_rouge || 0,
+  balls:Object.entries(pt.outb).filter(([k]) => k.startsWith("boule")).reduce((n, [, v]) => n + v, 0) };
+
+// une fabrication demandée se termine toujours : même si le sac est vidé ensuite (ventes, coffre), les ingrédients sont réservés
+newState();
+const pt2 = S.ents.find((e) => e.name === "paint_table");
+S.bag = Array(BAG).fill(null); bagAdd("pigment_rouge", 1); bagAdd("boule_transparente", 4);
+pt2.resV = 1; pt2.queue = [];
+for (const [id, n] of [["peinture_rouge", 1], ["boule_rouge", 4]]) { const r = recipeOf(pt2, id); const k = Math.min(n, possible(pt2, r)); reserve(pt2, r, k); for (let i = 0; i < k; i++) pt2.queue.push(id); }
+const queued = pt2.queue.length;
+S.bag = Array(BAG).fill(null); // tout le sac est vendu
+run(120);
+out.neverBlocked = { queued, left:pt2.queue.length, balls:Object.entries(pt2.outb).filter(([k]) => k.startsWith("boule")).reduce((n, [, v]) => n + v, 0) };
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -85,5 +105,7 @@ assert.ok(out.steamOff.stalled, "sans bois, le four s'arrête");
 assert.ok(out.elec.powered, "l'extracteur est sur le réseau électrique");
 assert.ok(out.elec.inChest >= 20, "l'extracteur remplit le coffre par le tapis en métal");
 assert.deepEqual({ ...out.bed }, { start:3, empty:0, half:2, ready:3 }, "la serre : en fleurs au départ, vide sans plantation, puis plantes et fleurs");
+assert.deepEqual({ ...out.manual }, { pigmentsLeft:2, pigmentInside:0, paintInside:3, balls:1 }, "table de peinture : 1 pigment pris, aucun stocké, 3 peintures gardées, 1 boule");
+assert.deepEqual({ ...out.neverBlocked }, { queued:5, left:0, balls:4 }, "une file demandée se termine toujours, même sac vidé");
 assert.ok(out.offline.earned > 0, "l'usine gagne des pièces pendant l'absence");
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
