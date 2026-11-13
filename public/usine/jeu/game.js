@@ -317,23 +317,46 @@ function missing(m) {
 const manual = (m) => !MACH[m.name].power;
 const QUEUE_MAX = 20;
 const bagHas = (key) => S.bag.reduce((n, sl) => n + (sl && matches(sl.it, key) ? sl.n : 0), 0);
-const possible = (m, r) => Math.min(...Object.entries(r.in).map(([k, n]) => Math.floor((count(m, k) + bagHas(k)) / n)));
-/** Met dans la machine, depuis le sac, ce qu'il faut pour `n` fois la recette `r` (en plus de ce qu'elle a déjà). */
-function loadFor(m, r, n) {
-  for (const [k, per] of Object.entries(r.in)) {
-    let need = per * n - count(m, k);
+const recipeOf = (m, id) => RECIPES[m.name].find((x) => x.id === id);
+/** Ce qui reste libre dans la machine pour `key` : ce qu'elle contient, plus ce que la fabrication en cours et la file
+ *  vont y remettre (ex. la peinture de la table de peinture), moins ce que la file a déjà réservé. */
+function freeIn(m, key) {
+  let n = count(m, key);
+  const add = (r, sign) => {
+    if (!r) return;
+    if (sign < 0 && r.in[key]) n -= r.in[key];
+    for (const o in r.out) if (r.out[o] >= 1 && matches(o, key) && usesItem(m, o)) n += r.out[o];
+  };
+  if (m.craft) add(recipeOf(m, m.craft.id), 0);
+  for (const id of m.queue || []) add(recipeOf(m, id), -1);
+  return n;
+}
+/** Combien de fois on peut encore lancer `r` avec ce qui est libre dans la machine et dans le sac. */
+const possible = (m, r) => Math.max(0, Math.min(...Object.entries(r.in).map(([k, n]) => Math.floor((freeIn(m, k) + bagHas(k)) / n))));
+/** Met dans la machine, depuis le sac, ce qui manque pour tout ce qui est dans la file. */
+function loadFor(m) {
+  const keys = new Set((m.queue || []).flatMap((id) => Object.keys(recipeOf(m, id)?.in || {})));
+  for (const k of keys) {
+    let need = -freeIn(m, k);
     for (let i = 0; i < BAG && need > 0; i++) {
       const sl = S.bag[i]; if (!sl || !matches(sl.it, k)) continue;
       const t = Math.min(need, sl.n); sl.n -= t; need -= t; m.inb[sl.it] = (m.inb[sl.it] || 0) + t; if (!sl.n) S.bag[i] = null;
     }
   }
 }
+/** Retire de la fin de la file ce qui ne pourra jamais être fabriqué (vieilles parties où l'on pouvait trop en demander). */
+function trimQueue(m) {
+  const q = m.queue || [];
+  while (q.length && q.some((id) => Object.keys(recipeOf(m, id)?.in || {}).some((k) => freeIn(m, k) < 0))) q.pop();
+}
 function updateMachine(m, dt) {
   const info = MACH[m.name];
   if (!m.craft) {
     if (manual(m)) {
-      const r = (m.queue ||= []).length && RECIPES[m.name].find((x) => x.id === m.queue[0]);
-      if (r && canCraft(m, r)) { for (const k in r.in) consume(m, k, r.in[k]); m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; m.queue.shift(); }
+      trimQueue(m);
+      // la première recette de la file qui peut partir (une boule peut attendre la peinture demandée juste après)
+      const i = (m.queue ||= []).findIndex((id) => { const r = recipeOf(m, id); return r && canCraft(m, r); });
+      if (i >= 0) { const r = recipeOf(m, m.queue[i]); for (const k in r.in) consume(m, k, r.in[k]); m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; m.queue.splice(i, 1); }
     } else {
       const r = activeRecipes(m).find((r) => canCraft(m, r));
       if (r) { for (const k in r.in) consume(m, k, r.in[k]); m.craft = { id:r.id, t:0, dur:r.t / SPEED[info.stage] }; }
@@ -1280,8 +1303,9 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
-    const r = RECIPES[e.name].find((x) => x.id === d.craft), n = Math.min(+d.n, QUEUE_MAX - (e.queue ||= []).length);
-    if (r && n > 0) { loadFor(e, r, n + e.queue.filter((id) => id === r.id).length); for (let k = 0; k < n; k++) e.queue.push(r.id); }
+    const r = recipeOf(e, d.craft), n = r ? Math.min(+d.n, QUEUE_MAX - (e.queue ||= []).length, possible(e, r)) : 0;
+    if (n > 0) { for (let k = 0; k < n; k++) e.queue.push(r.id); loadFor(e); }
+    else if (r) toast("Pas assez de matériaux pour en demander plus.");
   }
   else ({
     advance, expand, visitback2:comeBack,
