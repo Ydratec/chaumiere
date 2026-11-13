@@ -623,14 +623,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     return;
   }
   face(e); p.job = null;
-  if (e.kind === "source") {
-    if (S.stage >= 3 && e.chute && first) { select(e); }
-    if (e.stock < 1) { if (first) toast(`Tas de ${label(e.gives).toLowerCase()} vide : il se recharge, ou achète au marché.`); return; }
-    if (!bagRoom(e.gives)) { if (first) toast("Sac plein"); return; }
-    ui.harvest += first ? 1 : 0.25 * HARVEST_PER_S;
-    while (ui.harvest >= 1 && e.stock >= 1 && bagRoom(e.gives)) { ui.harvest -= 1; e.stock -= 1; bagAdd(e.gives, 1); }
-    p.work = 0.3; return;
-  }
+  if (e.kind === "source") { if (first) select(e); return; } // on choisit dans sa fiche combien en prendre
   if (e.kind === "crate") {
     let v = 0;
     for (let i = 0; i < BAG; i++) { const s = S.bag[i]; if (s && price(s.it)) { v += price(s.it) * s.n; sell(s.it, s.n); S.bag[i] = null; } }
@@ -638,12 +631,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     else if (first) toast("La caisse achète les produits finis : rien à vendre dans le sac.");
     return;
   }
-  if (e.kind === "chest") {
-    if (!first) return;
-    if (S.bag.some(Boolean)) { for (let i = 0; i < BAG; i++) { const s = S.bag[i]; if (s) { const k = chestAdd(e, s.it, s.n); s.n -= k; if (!s.n) S.bag[i] = null; } } }
-    else for (const it of Object.keys(e.store)) { const k = bagAdd(it, e.store[it]); e.store[it] -= k; if (!e.store[it]) delete e.store[it]; }
-    p.work = 0.3; select(e, true); return;
-  }
+  if (e.kind === "chest") { if (first) select(e); return; } // on choisit dans sa fiche ce qu'on dépose ou reprend
   if (e.kind === "crank") { e.reserve = Math.min(CRANK_MAX, e.reserve + (first ? CRANK_WIND : CRANK_WIND / 4)); p.work = 0.4; return; }
   if (e.kind === "flowerbed") {
     if (first) {
@@ -697,15 +685,7 @@ function updatePlayer(dt) {
     } else { p.px += dx / d * sp; p.py += dy / d * sp; }
   }
   if (ui.hold) { ui.holdT -= dt; if (ui.holdT <= 0) { ui.holdT = 0.25; const e = byId(ui.hold); if (e) interact(e, false); } }
-  // récolte automatique : tant qu'il est près du tas, que le tas n'est pas vide et que le sac a de la place
-  const hp = S.player;
-  if (hp.harvest) {
-    const e = byId(hp.harvest);
-    if (!e || hp.path.length || !inRange(e) || e.stock < 1 || !bagRoom(e.gives)) {
-      if (e && !hp.path.length && !bagRoom(e.gives)) toast("Sac plein");
-      hp.harvest = null;
-    } else if ((hp.harvestT = (hp.harvestT ?? 0.25) - dt) <= 0) { hp.harvestT = 0.25; interact(e, false); }
-  }
+  S.player.harvest = null; // ancienne récolte automatique (vieilles parties)
 }
 
 // ---------------------------------------------------------------- construction
@@ -781,9 +761,33 @@ function reach(e) {
 }
 function arrive(e) {
   S.player.menu = null;
-  if (e.kind === "source") { S.player.harvest = e.id; interact(e, true); return; } // il récolte tout seul (voir la boucle)
-  if (e.kind !== "deco") interact(e, true);
+  if (e.kind !== "source" && e.kind !== "deco") interact(e, true); // un tas : on choisit dans sa fiche combien en prendre
   select(e);
+  if (ui.pending && ui.pending.id === e.id) { const run = ui.pending.run; ui.pending = null; run(); }
+}
+/** Fait `run` à côté de `e` : tout de suite s'il est à portée, sinon en y allant d'abord. */
+function doNear(e, run) {
+  if (inRange(e)) { face(e); run(); S.player.work = 0.3; ui.dirty = true; return; }
+  ui.pending = { id:e.id, run }; reach(e);
+}
+/** Prendre `n` matières premières sur un tas (pas plus que le tas et la place dans le sac). */
+function takeRaw(e, n) {
+  const k = Math.min(n, Math.floor(e.stock), bagRoom(e.gives));
+  if (k <= 0) return toast(e.stock < 1 ? `Tas de ${label(e.gives).toLowerCase()} vide : il se recharge, ou achète au marché.` : "Sac plein");
+  e.stock -= k; bagAdd(e.gives, k); fx(e.x * T + 16, e.y * T, "+" + k, "#9fe3ff");
+}
+const chestTotal = (c) => Object.values(c.store).reduce((a, b) => a + b, 0);
+/** Reprendre `n` objets `it` du coffre vers le sac (pas plus que la place dans le sac). */
+function chestTake(c, it, n) {
+  const k = Math.min(n, c.store[it] || 0, bagRoom(it));
+  if (k <= 0) { if (c.store[it]) toast("Sac plein"); return 0; }
+  bagAdd(it, k); c.store[it] -= k; if (!c.store[it]) delete c.store[it]; return k;
+}
+/** Déposer `n` objets `it` du sac dans le coffre (pas plus que la place dans le coffre). */
+function chestPut(c, it, n) {
+  const k = chestAdd(c, it, Math.min(n, bagCount(it)));
+  if (k <= 0) { if (bagCount(it)) toast("Coffre plein (200)."); return 0; }
+  bagTake(it, k); return k;
 }
 // ---- pose : un « fantôme » qu'on fait glisser, qu'on tourne, puis ✓ (ou ✕). Pour un nouvel objet comme pour un déplacement.
 function startMove(e) {
@@ -1086,7 +1090,7 @@ cv.addEventListener("pointerdown", (ev) => {
     ui.placeDrag = [x - q.x, y - q.y]; ui.dirty = true; return;
   }
   const e = entAt(x, y), p = S.player;
-  closePanel(); // toucher le jeu referme le volet (téléphone) ; toucher une machine le rouvre sur elle
+  ui.pending = null; closePanel(); // toucher le jeu referme le volet (téléphone) ; toucher une machine le rouvre sur elle
   if (ui.mode === "inspect") { if (e) select(e); return; }
   if (e && MOVABLE.includes(e.kind)) {
     // appui long : on le prend en main pour le déplacer ; appui court (au relâché) : on va à côté, on agit, sa fiche s'ouvre
@@ -1246,13 +1250,23 @@ function renderUI() {
     } else if (e.kind === "source") {
       const r = RAW[e.gives];
       h += `<h3>${itemHTML(e.gives)} Tas de ${label(e.gives).toLowerCase()}</h3><p>${Math.floor(e.stock)} unités · se recharge de ${fmtN(r.refill)}/s jusqu'à ${r.cap}.</p>${gauge(Math.min(1, e.stock / r.cap), "bleu")}`;
+      const room = Math.min(Math.floor(e.stock), bagRoom(e.gives));
+      h += `<div class="row"><span class="muted">Prendre</span><span class="grow"></span>${[1, 5, 20].map((n) => `<button class="btn sm vert" data-take="${n}" ${room < 1 ? "disabled" : ""}>×${n}</button>`).join("")}</div>`;
+      if (Math.floor(e.stock) >= 1 && !bagRoom(e.gives)) h += `<p class="muted">Sac plein : dépose dans un coffre ou une machine.</p>`;
       h += `<div class="row"><span class="muted">Acheter (${fmtN(r.cost)} p l'unité)</span><span class="grow"></span>${[1, 10, 50].map((n) => `<button class="btn sm" data-buy="${e.gives}" data-n="${n}">×${n}</button>`).join("")}</div>`;
       if (S.stage >= 3) h += e.chute ? `<p class="muted">${icon("tapis")} Goulotte posée.</p>`
         : `<button class="btn or wide" id="chute">${icon("tapis")} Poser une goulotte (${CHUTE_COST} p)</button>`;
     } else if (e.kind === "crank") {
       h += `<h3>Manivelle</h3><p>Réserve : ${Math.floor(e.reserve)} / ${CRANK_MAX} s. Touche-la pour la remonter.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}<div class="row"><button class="btn rouge" id="demol">${icon("poubelle")} Démonter</button></div>`;
     } else if (e.kind === "chest") {
-      h += `<h3>Coffre</h3><div class="wrap">${Object.entries(e.store).map(([k, n]) => `<span class="chip">${itemHTML(k, n)}</span>`).join("") || '<span class="muted">vide</span>'}</div>`;
+      const inBag = [...new Set(S.bag.filter(Boolean).map((sl) => sl.it))];
+      h += `<h3>Coffre</h3><p class="muted">${chestTotal(e)} / 200 objets</p>`;
+      h += `<h3>Dans le coffre</h3>`;
+      h += Object.keys(e.store).length ? `<div class="card">${Object.entries(e.store).map(([k, n]) => `<div class="rec">${itemHTML(k, n)}<span>${label(k)}</span><span class="grow"></span>${[1, 10].filter((q) => q < n).map((q) => `<button class="btn sm" data-cget="${k}" data-n="${q}">×${q}</button>`).join("")}<button class="btn sm vert" data-cget="${k}" data-n="${n}">Tout</button></div>`).join("")}</div><button class="btn wide" id="cgetall">Tout prendre</button>`
+        : `<p class="muted">Vide.</p>`;
+      h += `<h3>Dans ton sac</h3>`;
+      h += inBag.length ? `<div class="card">${inBag.map((k) => { const n = bagCount(k); return `<div class="rec">${itemHTML(k, n)}<span>${label(k)}</span><span class="grow"></span>${[1, 10].filter((q) => q < n).map((q) => `<button class="btn sm" data-cput="${k}" data-n="${q}">×${q}</button>`).join("")}<button class="btn sm or" data-cput="${k}" data-n="${n}">Tout</button></div>`; }).join("")}</div><button class="btn wide" id="cputall">Tout déposer</button>`
+        : `<p class="muted">Ton sac est vide.</p>`;
     } else if (e.kind === "extractor") {
       h += `<h3>${itemHTML(e.gives)} Extracteur de ${label(e.gives).toLowerCase()}</h3><p>Pose ${fmtN(e.rate)} objet/s sur le tapis voisin, sur la voie de son côté. Demande un poteau électrique à ${POLE_R} cases.</p>`;
       h += `<div class="row"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((r) => RAW[r].stage <= S.stage).map((r) => `<button class="btn sm ${e.gives === r ? "on" : ""}" data-gives="${r}">${itemHTML(r)}</button>`).join("")}</div>`;
@@ -1298,6 +1312,9 @@ $("panel").addEventListener("click", (ev) => {
     if (d.build.startsWith("belt")) { ui.build = "belt"; ui.beltK = d.build.split("_")[1] || "bois"; ui.mode = "build"; closePanel(); } else startNew(d.build);
   }
   else if (d.buy) buy(d.buy, +d.n);
+  else if (d.take && e && e.kind === "source") doNear(e, () => takeRaw(e, +d.take));
+  else if (d.cget && e && e.kind === "chest") doNear(e, () => chestTake(e, d.cget, +d.n));
+  else if (d.cput && e && e.kind === "chest") doNear(e, () => chestPut(e, d.cput, +d.n));
   else if (d.rate && e) e.rate = +d.rate;
   else if (d.order) deliverOrder(+d.order);
   else if (d.visit) visit(d.visit, d.name);
@@ -1311,6 +1328,8 @@ $("panel").addEventListener("click", (ev) => {
     advance, expand, visitback2:comeBack,
     rotate:() => e && rotateEnt(e), demol:() => e && demolish(e.x, e.y), upgrade:() => e && upgrade(e),
     clearq:() => { if (e) e.queue = []; },
+    cgetall:() => e && doNear(e, () => { for (const it of Object.keys(e.store)) chestTake(e, it, e.store[it]); }),
+    cputall:() => e && doNear(e, () => { for (const it of new Set(S.bag.filter(Boolean).map((sl) => sl.it))) chestPut(e, it, bagCount(it)); }),
     chute:() => { if (!e) return; if (S.coins < CHUTE_COST) return toast("Pas assez de pièces"); S.coins -= CHUTE_COST; e.chute = true; },
   })[b.id]?.();
   ui.dirty = true;
