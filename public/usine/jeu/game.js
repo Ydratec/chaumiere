@@ -984,7 +984,6 @@ function draw(time) {
     for (let y = Y0; y < S.area.h; y++) if (floor) { const h = hash(x, y) % 10, n = floor.width / 32; const v = n === 2 ? (h < 8 ? 0 : 1) : st === 5 ? 0 : (h < 7 ? 0 : h < 9 ? 1 : 2); ctx.drawImage(floor, v * 32, 0, 32, 32, x * T, y * T, 32, 32); }
   }
   // portée du personnage
-  if (ui.mode === "hand") { ctx.fillStyle = "rgba(255,240,160,.05)"; ctx.fillRect((p.x - RANGE) * T, (p.y - RANGE) * T, (2 * RANGE + 1) * T, (2 * RANGE + 1) * T); }
   for (const e of S.ents) if (e.kind === "rug") drawEnt(e, time);
   const belt = img("usine/tapis/bois.png"), held = ui.place?.belt && S.belts[ui.place.belt], bl = Object.values(S.belts).filter((b) => b !== held);
   for (const b of bl) { const bi = img(`usine/tapis/${b.k || "bois"}.png`); if (bi) ctx.drawImage(bi, (b.on ? Math.floor(time * 6 * BELT_SPEED[b.k || "bois"] / 0.5) % 4 : 0) * 32, BELT_ROWS.indexOf(beltRow(b)) * 32, 32, 32, b.x * T, b.y * T, 32, 32); }
