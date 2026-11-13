@@ -13,12 +13,12 @@ export default async function FarmPage({ params }: { params: Promise<{ roomId: s
   // première visite : la serre est vendue, un pop-up l'annonce (voir src/modules/usine/serre.ts)
   const { data: sold } = await adminDb().from("farm_stats").select("key").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("key", "usine:serre-vendue").maybeSingle();
   const closing = !sold;
-  const character = ctx.people[ctx.user.id].character; // le personnage de la salle, avec le bonnet de Noël dans l'usine
+  const character = ctx.people[ctx.user.id].character; // le personnage de la salle avec son accessoire (le bonnet de Noël s'il n'en a pas)
   return (
     <>
     {closing && <SerreClosing roomId={roomId} />}
     <iframe
-      src={`/usine/jeu/index.html?room=${roomId}&sp=${character.species}&co=${character.color}`}
+      src={`/usine/jeu/index.html?room=${roomId}&sp=${character.species}&co=${character.color}${character.accessory ? `&ac=${character.accessory}` : ""}`}
       title="Usine de Noël"
       className="fixed inset-x-0 top-0 z-[9] w-full border-0 bg-[#1b120d]"
       style={{ height: "calc(100dvh - 5.5rem - env(safe-area-inset-bottom))" }}

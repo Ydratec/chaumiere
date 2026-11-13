@@ -147,6 +147,7 @@ const BAG = 8, STACK = 20, OUT_CAP = 12, RANGE = 3;
 const BELT_V = 0.5, GAP = 0.5;                         // 1 objet/s par voie, 2 objets/s par tapis
 const CRANK_MAX = 60, CRANK_WIND = 10, CRANK_R = 4;
 const SPECIES = ["cat","dog","bunny","duck","turtle","fish","fox","frog","penguin","unicorn","dragon","shark","whale","schrodinger"];
+const ACCESSORIES = ["bow", "flower", "glasses", "scarf", "hat", "crown", "witch", "santa"]; // dessinés pour toutes les espèces (public/usine/accessoires)
 const SPECIES_FR = { cat:"Chat", dog:"Chien", bunny:"Lapin", duck:"Canard", turtle:"Tortue", fish:"Poisson", fox:"Renard", frog:"Grenouille",
   penguin:"Pingouin", unicorn:"Licorne", dragon:"Dragon", shark:"Requin", whale:"Baleine", schrodinger:"Schrödinger" };
 const COLORABLE = ["cat","dog","bunny","duck","turtle","fish"];
@@ -159,7 +160,7 @@ const rnd = Math.random;
 function newState() {
   S = { v:2, time:0, stage:1, coins:60, earned:0, stars:0, ids:1, ents:[], belts:{}, bag:Array(BAG).fill(null),
     player:{ x:4, y:6, px:4, py:6, path:[], dir:"up", work:0, job:null },
-    contracts:[], sales:[], stats:{}, test:false, avatar:{ species:"cat", color:0, santa:true }, area:{ ...AREA0 } };
+    contracts:[], sales:[], stats:{}, test:false, avatar:{ species:"cat", color:0, acc:"santa" }, area:{ ...AREA0 } };
   addEnt({ kind:"crate", name:"ship_crate", stage:1, x:8, y:4 });
   addEnt({ kind:"chest", name:"chest_wood", stage:1, x:8, y:5, o:"e", store:{} });
   addEnt({ kind:"flowerbed", name:"serre_fleurs", stage:1, x:7, y:2, planted:true, grown:FLOWER_TIME }); // la serre de l'usine, de base, en fleurs
@@ -927,7 +928,7 @@ function bar(x, y, w, frac, color) {
 function charSheet() {
   const av = S.avatar;
   return { body:COLORABLE.includes(av.species) ? `usine/personnages/${av.species}-${av.color}.png` : `usine/personnages/${av.species}.png`,
-    acc:av.santa ? `usine/accessoires/${av.species}-santa.png` : null };
+    acc:av.acc ? `usine/accessoires/${av.species}-${av.acc}.png` : av.santa ? `usine/accessoires/${av.species}-santa.png` : null };
 }
 function drawPlayer(time) {
   const a = S.player, moving = a.path.length > 0, working = a.work > 0;
@@ -1369,7 +1370,9 @@ function ensureFlowerbed() {
 }
 function useCharacter() {
   const q = new URLSearchParams(location.search), sp = q.get("sp");
-  if (sp && SPECIES.includes(sp)) S.avatar = { species:sp, color:Math.max(0, Math.min(7, +q.get("co") || 0)), santa:true };
+  // l'accessoire choisi dans la salle ; sans accessoire, le bonnet de Noël
+  const ac = q.get("ac"), acc = ACCESSORIES.includes(ac) ? ac : "santa";
+  if (sp && SPECIES.includes(sp)) S.avatar = { species:sp, color:Math.max(0, Math.min(7, +q.get("co") || 0)), acc };
 }
 // ---------------------------------------------------------------- sauvegarde
 function save() { if (S.demo || S.visit || catching) return; S.savedAt = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
