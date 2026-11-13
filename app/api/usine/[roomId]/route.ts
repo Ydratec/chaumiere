@@ -36,6 +36,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ roomId: 
   let state: unknown;
   try { state = JSON.parse(body); } catch { return Response.json({ error: "Partie illisible" }, { status: 400 }); }
   if (!state || typeof state !== "object" || (state as { v?: unknown }).v !== 2) return Response.json({ error: "Partie illisible" }, { status: 400 });
+  // Garde-fou : on n'écrase jamais une partie par une partie moins avancée (téléphone neuf, réseau lent, vieux cache…).
+  // Le jeu reprend alors celle du serveur. 2 min de marge pour les arrondis entre appareils.
+  const { data: old } = await adminDb().from("usine_saves").select("time:state->time").eq("room_id", roomId).eq("user_id", ctx.user.id).maybeSingle();
+  const time = Number((state as { time?: unknown }).time) || 0;
+  if (old && time < (Number(old.time) || 0) - 120) return Response.json({ error: "Partie plus avancée sur le serveur" }, { status: 409 });
   const { error } = await adminDb().from("usine_saves")
     .upsert({ room_id: roomId, user_id: ctx.user.id, state, saved_at: new Date().toISOString() }, { onConflict: "room_id,user_id" });
   if (error) return Response.json({ error: "Indisponible" }, { status: 503 });

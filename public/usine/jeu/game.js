@@ -1462,19 +1462,26 @@ function useCharacter() {
   if (sp && SPECIES.includes(sp)) S.avatar = { species:sp, color:Math.max(0, Math.min(7, +q.get("co") || 0)), acc };
 }
 // ---------------------------------------------------------------- sauvegarde
-function save() { if (S.demo || S.visit || catching) return; S.savedAt = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
+// Tant que la partie du serveur n'est pas chargée, on n'enregistre rien (sinon une partie neuve pourrait écraser la vraie).
+let synced = !API;
+function save() { if (S.demo || S.visit || catching || !synced) return; S.savedAt = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
 /** Envoie la partie au serveur (sans effet hors d'une salle ou tant que la table n'existe pas). */
 function push() {
-  if (!API || S.demo || S.visit || catching) return;
+  if (!API || S.demo || S.visit || catching || !synced) return;
   save(); const body = JSON.stringify(S);
-  fetch(API, { method:"PUT", body, keepalive:body.length < 60000, headers:{ "content-type":"application/json" } }).catch(() => {});
+  fetch(API, { method:"PUT", body, keepalive:body.length < 60000, headers:{ "content-type":"application/json" } })
+    .then((r) => { if (r.status === 409) { synced = false; pull(true); } }) // le serveur a une partie plus avancée : on la reprend
+    .catch(() => {});
 }
 /** Charge la partie du serveur si elle est plus récente que celle de l'appareil, puis rattrape le temps passé. */
-async function pull() {
+async function pull(again) {
   if (API) try {
     const r = await fetch(API, { cache:"no-store" });
-    if (r.ok) { const { state } = await r.json(); if (state && state.v === 2 && state.area && (state.savedAt || 0) > (S.savedAt || 0)) { S = state; useCharacter(); ensureFlowerbed(); invalidate(); camReady = false; ui.sel = null; ui.dirty = true; } }
+    // on garde la partie la plus avancée (temps de jeu), pas la plus récemment enregistrée
+    if (r.ok) { const { state } = await r.json(); if (state && state.v === 2 && state.area && ((state.time || 0) > (S.time || 0) || again)) { S = state; useCharacter(); ensureFlowerbed(); invalidate(); camReady = false; ui.sel = null; ui.dirty = true; } }
   } catch {}
+  synced = true;
+  if (again) toast("Ta partie a été récupérée depuis le serveur.");
   catchUp();
 }
 // ---- Tutoriel guidé : une phrase par étape ; il ouvre lui-même les menus (hi = élément à montrer) et montre les objets (ent).
