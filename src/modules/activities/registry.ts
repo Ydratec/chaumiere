@@ -11,7 +11,7 @@ export type Activity = {
   slot?: number; // 0 = question du jour, 1, 2… = questions achetées
   bought_by?: string | null;
   // kind : voir src/modules/questions/formats.ts ; options : les choix d'un « tu préfères » ; target : la personne visée ({x})
-  payload: { text: string; kind?: Kind; options?: string[]; target?: string; theme?: string | null; n?: number };
+  payload: { text: string; kind?: Kind; options?: string[]; target?: string; theme?: string | null; n?: number; gift?: boolean };
 };
 export type Answer = { user_id: string; content: string };
 export type ActivityProps = {

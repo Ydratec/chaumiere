@@ -14,6 +14,7 @@ export const THEMES = {
   profond: "Au fond",
   debats: "Débats",
   annees2000: "Années 2000",
+  proches: "Ceux qui nous connaissent",
 } as const;
 export type Theme = keyof typeof THEMES;
 export const isTheme = (t: unknown): t is Theme => typeof t === "string" && Object.hasOwn(THEMES, t);
@@ -22,8 +23,8 @@ export const PACK_SIZE = 7;
 export const PACK_FACTOR = 5;
 
 /** Petit titre d'une question : « Question du jour », ou qui l'a achetée (et son thème). */
-export function questionLabel(a: { slot?: number; bought_by?: string | null; payload: { theme?: string | null; n?: number } }, names: Record<string, string>) {
+export function questionLabel(a: { slot?: number; bought_by?: string | null; payload: { theme?: string | null; n?: number; gift?: boolean } }, names: Record<string, string>) {
   if (!a.slot) return "Question du jour";
-  const who = names[a.bought_by ?? ""] ?? "un ancien membre";
-  return `${isTheme(a.payload.theme) ? `Pack ${THEMES[a.payload.theme]} · jour ${a.payload.n ?? 1}/${PACK_SIZE}` : "Question en plus"} · de ${who}`;
+  const who = a.payload.gift ? "offert" : `de ${names[a.bought_by ?? ""] ?? "un ancien membre"}`;
+  return `${isTheme(a.payload.theme) ? `Pack ${THEMES[a.payload.theme]} · jour ${a.payload.n ?? 1}/${PACK_SIZE}` : "Question en plus"} · ${who}`;
 }
