@@ -1497,13 +1497,16 @@ async function visit(id, name) {
     const r = await fetch(`${API}?u=${encodeURIComponent(id)}`, { cache:"no-store" }), j = r.ok ? await r.json() : {};
     if (!j.state) return toast(`${name} n'a pas encore d'usine.`);
     if (!mine) { save(); mine = S; }
-    S = j.state; S.visit = name; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
+    S = j.state; S.visit = name; S.savedAt = S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
     $("visitname").textContent = `Usine de ${name}`; $("visitbar").hidden = false; ui.dirty = true;
+    catchUp(); // elle a continué de tourner depuis que son propriétaire est parti
   } catch { toast("Visite impossible pour l'instant."); }
 }
 function comeBack() {
   if (!mine) return;
+  if (catching) return toast("Un instant, l'usine se met à jour…");
   S = mine; mine = null; invalidate(); camReady = false; ui.sel = null; $("visitbar").hidden = true; closePanel(); ui.dirty = true;
+  catchUp(); // ton usine a tourné pendant la visite
 }
 /** Tes fleurs (inventaire de la salle), pour la fiche de la serre. */
 async function loadFlowers() {
@@ -1526,9 +1529,10 @@ async function pick(e) {
 }
 // ---------------------------------------------------------------- l'usine tourne pendant l'absence
 let catching = false;
+const fmtAway = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}` : `${Math.floor(sec / 60)} min`);
 /** Fait tourner l'usine pour le temps écoulé depuis la dernière sauvegarde, par paquets (l'écran reste réactif), puis résume. */
 function catchUp() {
-  if (S.demo || S.visit || catching || !S.savedAt) return;
+  if (S.demo || catching || !S.savedAt) return;
   const away = Math.min(OFFLINE_MAX, (Date.now() - S.savedAt) / 1000);
   if (away < 30) return;
   catching = true;
@@ -1540,8 +1544,10 @@ function catchUp() {
     for (; i < end; i++) step(OFF_DT);
     $("catchbar").style.width = `${Math.round((100 * i) / n)}%`;
     if (i < n) return setTimeout(chunk, 0);
-    box.hidden = true; catching = false; save(); push();
-    const h = away >= 3600 ? `${Math.floor(away / 3600)} h ${String(Math.floor((away % 3600) / 60)).padStart(2, "0")}` : `${Math.floor(away / 60)} min`;
+    box.hidden = true; catching = false;
+    if (S.visit) { toast(`L'usine de ${S.visit} a tourné ${fmtAway(away)} depuis sa dernière visite.`, 5000); ui.dirty = true; return; } // en visite : on montre, on n'enregistre rien
+    save(); push();
+    const h = fmtAway(away);
     const earned = S.coins - coins0;
     toast(earned > 0 ? `Pendant ton absence (${h}) : +${fmt(earned)} pièces.` : `Pendant ton absence (${h}) : l'usine n'a rien vendu. Pense à la vapeur ou à l'électricité !`, 7000);
     ui.dirty = true;
