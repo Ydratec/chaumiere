@@ -7,6 +7,7 @@ const META = window.USINE_META;
 // Objets sans fiche de sprites dans meta.js : l'aiguilleur (dessin à part), la carrière (le dessin du tas, pour la poser)
 META["3"].objects.aiguilleur ||= { file:"aiguilleur.png", frame:[32, 32], frames:1, footprint:[1, 1], origin:[0, 0] };
 META["3"].objects.quarry ||= META["3"].objects.source_sable;
+META["1"].objects.poubelle ||= { file:"poubelle.png", frame:[32, 32], frames:1, footprint:[1, 1], origin:[0, 0] };
 const T = 32, W = 24, H = 18, Y0 = 2; // W × H : taille maximale de l'atelier ; Y0 : rangées du mur du fond
 // L'atelier commence petit et s'agrandit (page Construire) : S.area = { w, h } est la partie utilisable de la carte.
 const AREA0 = { w:9, h:8 }; // 9 × 6 cases de sol : juste la place des tas, de la caisse, du coffre et des deux premières machines
@@ -130,7 +131,7 @@ const SWITCH_FILTERS = ["sable", "bois", "fil", "branche", "sapin_brut", "pigmen
   "verre", "perles", "planche", "crochet", "boule_transparente", "@peinture", "@boule_peinte", "@boule_finie", "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "sapin_decore"];
 
 const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
-  1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"], ["serre_fleurs", 300, "Serre de l'usine"]],
+  1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"], ["poubelle", 20, "Poubelle"], ["serre_fleurs", 300, "Serre de l'usine"]],
   2:[["wreath_table", 400], ["lathe", 830], ["tree_bench", 830], ["kiln_bellows", 830]],
   3:[["belt", 5, "Tapis en bois"], ["aiguilleur", 60, "Aiguilleur"], ["quarry", QUARRY_COST, "Carrière"], ["crank", 400, "Manivelle"], ["kiln_belt", 4700], ["paint_table_belt", 4700], ["star_press", 4700], ["loom", 4700], ["wreath_table_belt", 4700]],
   4:[["belt_fonte", 20, "Tapis en fonte"], ["boiler", 1200, "Chaudière"], ...["steam_furnace", "steam_sprayer", "steam_press", "steam_loom", "steam_wreath", "steam_tree"].map((k) => [k, 11350])],
@@ -141,7 +142,7 @@ const BELT_COST = { bois:5, fonte:20, metal:60 };
 // Serre de l'usine (dessin : tools/usine-pixel/serre.py) : on plante, ça pousse en FLOWER_TIME (même hors ligne), on récolte ;
 // la récolte (3 fleurs, tirées par le serveur) va dans l'inventaire de la salle. Images : 0 vide, 1 pousses, 2 plantes, 3 fleurs.
 const FLOWER_TIME = 2 * 3600, MAX_BEDS = 10; // le serveur n'accepte que 10 serres (numéros 0 à 9)
-const STAGE_OF = { aiguilleur:3, quarry:3, crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
+const STAGE_OF = { poubelle:1, aiguilleur:3, quarry:3, crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
 // Énergie (balance.json) : une chaudière fait 6 u/s de vapeur, une machine à vapeur en prend 2 → 3 machines ; 1 bois = 60 u de vapeur.
 // Un générateur fait 900 kW avec 10 u/s de vapeur, une machine électrique (ou un extracteur) prend 150 kW → 6 appareils.
 // ponytail: pas de tuyaux, la vapeur porte à BOILER_R cases (comme la manivelle) ; à remplacer par des réseaux de tuyaux si besoin.
@@ -671,6 +672,7 @@ function deliver(b, lane, it, depth = 0) {   // l'objet de tête est au bout du 
   const e = entAt(nx, ny);
   if (!e) return false;
   if (e.kind === "switch") return throughSwitch(e, b.d, lane, it, depth);
+  if (e.kind === "trash") { e.eaten = (e.eaten || 0) + 1; return true; } // la poubelle avale tout ce qu'un tapis lui amène
   if (e.kind === "crate") { if (!price(it)) return false; sell(it, 1, nx, ny); return true; }
   if (e.kind === "chest") return chestAdd(e, it, 1) === 1;
   if (e.kind === "boiler" || e.kind === "generator") { if (it !== "bois" || e.fuel > FUEL_CAP - 1) return false; e.fuel++; return true; }
@@ -853,7 +855,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     if (first) { const n = Math.min(bagCount("bois"), Math.floor(FUEL_CAP - e.fuel)); if (n > 0) { bagTake("bois", n); e.fuel += n; p.work = 0.3; } select(e); }
     return;
   }
-  if (e.kind === "extractor" || e.kind === "pole" || e.kind === "switch") { if (first) select(e); return; }
+  if (e.kind === "extractor" || e.kind === "pole" || e.kind === "switch" || e.kind === "trash") { if (first) select(e); return; }
   if (e.kind !== "machine") return;
   let moved = 0;
   if (manual(e)) {                                      // machine manuelle : les ingrédients de base restent dans le sac
@@ -938,6 +940,7 @@ function place(key, rot, x, y) {
     addEnt({ kind:"source", name:"source_sable", stage:3, gives:"sable", quarry:true, x, y, stock:0, chute:true, acc:0, lane:0 });
     S.coins -= cost; return true;
   }
+  if (key === "poubelle") { addEnt({ kind:"trash", name:"poubelle", stage:1, x, y, eaten:0 }); S.coins -= cost; return true; }
   if (key === "aiguilleur") { addEnt({ kind:"switch", name:"aiguilleur", stage:3, x, y, filter:null, rr:0 }); S.coins -= cost; return true; }
   const kind = MACH[key] ? "machine" : ["crank", "boiler", "generator", "pole"].includes(key) ? key : key.startsWith("extractor") ? "extractor" : key === "serre_fleurs" ? "flowerbed" : "chest";
   addEnt({ kind, name:key, stage:stageOf(key), x, y, o:hasOri(key) ? o : key.startsWith("extractor") ? "e" : undefined, store:kind === "chest" ? {} : undefined,
@@ -978,7 +981,7 @@ function askDemolish(e) {
 const demolBtn = (e) => `<button class="btn rouge" id="demol">${icon("poubelle")} ${confirming(e) ? "Sûr ? Démonter" : "Démonter"}</button>`;
 
 // Déplacer un objet déjà posé (appui long) : machines, coffres, manivelles, énergie, décorations (pas les tas ni la caisse).
-const MOVABLE = ["machine", "switch", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
+const MOVABLE = ["machine", "switch", "trash", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
 /** L'objet `key` (étape `stage`, orientation `o`) tient-il avec son coin haut-gauche en (x, y) ? `ignore` : l'objet qu'on déplace. */
 function fits(key, stage, o, x, y, ignore) {
   const f = sprOf(key, stage, o).footprint || [1, 1];
@@ -1610,6 +1613,16 @@ function renderUI() {
       h += `<h3>Dans ton sac</h3>`;
       h += inBag.length ? `<div class="card">${inBag.map((k) => { const n = bagCount(k); return `<div class="rec">${itemHTML(k, n)}<span>${label(k)}</span><span class="grow"></span>${[1, 10].filter((q) => q < n).map((q) => `<button class="btn sm" data-cput="${k}" data-n="${q}">×${q}</button>`).join("")}<button class="btn sm or" data-cput="${k}" data-n="${n}">Tout</button></div>`; }).join("")}</div><button class="btn wide" id="cputall">Tout déposer</button>`
         : `<p class="muted">Ton sac est vide.</p>`;
+    } else if (e.kind === "trash") {
+      // Poubelle : vider son sac (objet par objet, ou tout d'un coup après confirmation) ; un tapis peut aussi y finir.
+      const kinds = [...new Set(S.bag.filter(Boolean).map((sl) => sl.it))];
+      h += `<h3>${icon("poubelle")} Poubelle</h3><p>Ce que tu y jettes disparaît pour de bon. Un tapis qui arrive dedans s'y vide aussi.</p>`;
+      h += kinds.length
+        ? `<div class="card">${kinds.map((it) => `<div class="row">${itemHTML(it, bagCount(it))}<span>${label(it)}</span><span class="grow"></span><button class="btn sm rouge" data-trash="${it}">Jeter</button></div>`).join("")}</div>`
+          + `<div class="row"><button class="btn rouge" id="trashall">${icon("poubelle")} ${ui.confirmTrash && performance.now() - ui.confirmTrash < 4000 ? "Sûr ? Tout jeter" : "Vider tout le sac"}</button></div>`
+        : `<p class="muted">Ton sac est vide.</p>`;
+      if (e.eaten) h += `<p class="muted">Déjà avalé par les tapis : ${fmtN(e.eaten)} objet${e.eaten > 1 ? "s" : ""}.</p>`;
+      h += `<div class="row">${demolBtn(e)}</div>`;
     } else if (e.kind === "switch") {
       h += `<h3>${icon("tapis")} Aiguilleur</h3><p>Il fait suivre ce qui arrive, sans rien garder. ${e.filter ? `<b>${label(e.filter)}</b> va tout droit, le reste part sur les côtés.` : "Sans filtre, il partage à parts égales entre tout droit, gauche et droite."}</p>`;
       h += `<p class="muted">Pour changer une ligne de recette sans tout refaire : change le filtre.</p>`;
@@ -1677,7 +1690,8 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.rate && e) e.rate = +d.rate;
   else if (d.order) deliverOrder(+d.order);
   else if (d.sell && e) sellBag(e, d.sell);
-  else if (d.trash) { const n = bagTake(d.trash, bagCount(d.trash)); if (n) toast(`${n} × ${label(d.trash).toLowerCase()} jeté${n > 1 ? "s" : ""}.`); }
+  else if (d.trash) { const it = d.trash, go = () => { const n = bagTake(it, bagCount(it)); if (n) toast(`${n} × ${label(it).toLowerCase()} jeté${n > 1 ? "s" : ""}.`); ui.dirty = true; };
+    if (e && e.kind === "trash") doNear(e, go); else go(); } // à la poubelle, le lutin y va d'abord
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gift) offerFlowers(d.gift);
   else if (d.setrecipe && e) e.recipe = d.setrecipe;
@@ -1702,6 +1716,12 @@ $("panel").addEventListener("click", (ev) => {
     clearq:() => { if (!e) return; if (manual(e)) clearQueue(e); else e.queue = []; },
     cgetall:() => e && doNear(e, () => { for (const it of Object.keys(e.store)) chestTake(e, it, e.store[it]); }),
     cputall:() => e && doNear(e, () => { for (const it of new Set(S.bag.filter(Boolean).map((sl) => sl.it))) chestPut(e, it, bagCount(it)); }),
+    trashall:() => {
+      if (!e || e.kind !== "trash") return;
+      if (!(ui.confirmTrash && performance.now() - ui.confirmTrash < 4000)) { ui.confirmTrash = performance.now(); ui.dirty = true; setTimeout(() => { ui.dirty = true; }, 4050); return; }
+      ui.confirmTrash = null;
+      doNear(e, () => { const n = S.bag.reduce((a, sl) => a + (sl ? sl.n : 0), 0); S.bag = S.bag.map(() => null); if (n) toast(`${n} objet${n > 1 ? "s" : ""} jeté${n > 1 ? "s" : ""}.`); ui.dirty = true; });
+    },
     wind:() => e && e.kind === "crank" && doNear(e, () => interact(e, true)),
     chute:() => { if (!e) return; if (S.coins < CHUTE_COST) return toast("Pas assez de pièces"); S.coins -= CHUTE_COST; e.chute = true; },
   })[b.id]?.();
