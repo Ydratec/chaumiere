@@ -93,6 +93,54 @@ S.savedAt = Date.now(); S.simAt = Date.now() - 3600e3; // sauvegardé à l'insta
 catchUp();
 globalThis.__away = new Promise((done) => { const wait = () => (catching ? setTimeout(wait, 20) : done({ balls:kiln.outb.boule_transparente || 0, queue:kiln.queue.length })); wait(); });
 
+// sciure : les planches n'en font plus, et une vieille partie en est nettoyée (sac, coffre, machine, tapis)
+newState();
+const oldChest = S.ents.find((e) => e.kind === "chest");
+S.bag = Array(BAG).fill(null); bagAdd("sciure", 7); bagAdd("sable", 3); oldChest.store = { sciure:12, bois:4 };
+const oldKiln = S.ents.find((e) => e.name === "kiln"); oldKiln.outb = { sciure:2, boule_transparente:1 };
+S.belts["5,7"] = { x:5, y:7, d:"E", k:"bois", lanes:[[{ it:"sciure", p:0.5 }, { it:"sable", p:0.1 }], []], on:true };
+dropGone(S);
+out.sciure = { planche:Object.keys(PLANCHE.out).join(","), bag:bagCount("sciure"), sable:bagCount("sable"), chest:JSON.stringify(oldChest.store),
+  machine:JSON.stringify(oldKiln.outb), belt:S.belts["5,7"].lanes[0].map((o) => o.it).join(",") };
+
+// manivelle : un toucher la remonte à fond ; elle tient 8 h ; tous les tapis en bois à portée tournent
+fresh(3);
+const crank = addEnt({ kind:"crank", name:"crank", stage:3, x:6, y:8 });
+const kb = addEnt({ kind:"machine", name:"kiln_belt", stage:3, x:3, y:8, o:"e" });
+for (let x = 2; x <= 10; x++) S.belts[x + ",11"] = { x, y:11, d:"E", k:"bois", lanes:[[], []], on:false };
+crank.reserve = 0; S.player.x = 6; S.player.y = 10; S.player.px = 6; S.player.py = 10;
+interact(crank, true);
+const wound = crank.reserve;
+kb.inb.sable = 6; run(7 * 3600);
+computePower();
+out.crank = { wound, poweredAfter7h:powered.has("m" + kb.id), belts:[...powered].filter((k) => k.startsWith("b")).length, machines:crank.machines };
+run(3600 + 10); computePower();
+out.crank.after8h = powered.has("m" + kb.id);
+
+// peinture : demander 6 boules rouges suffit (la peinture est faite d'abord, 4 boules par pigment)
+newState();
+const tp = S.ents.find((e) => e.name === "paint_table");
+S.bag = Array(BAG).fill(null); bagAdd("pigment_rouge", 2); bagAdd("boule_transparente", 6);
+tp.resV = 1; tp.queue = [];
+const rr = recipeOf(tp, "boule_rouge"), can6 = possible(tp, rr), plan = planFor(tp, rr, can6).map(([p, t]) => p.id + "×" + t).join(" ");
+for (const [p, t] of planFor(tp, rr, can6)) { reserve(tp, p, t); for (let k = 0; k < t; k++) tp.queue.push(p.id); }
+run(120);
+out.paint = { possible:can6, plan, balls:tp.outb.boule_rouge || 0, queue:tp.queue.length, pigmentsLeft:bagCount("pigment_rouge") };
+
+// peinture à tapis : pleine de boules mais sans peinture, elle prend encore par le tapis (pour laisser passer le pigment)
+fresh(3);
+const pb = addEnt({ kind:"machine", name:"paint_table_belt", stage:3, x:3, y:8, o:"e" });
+pb.inb.boule_transparente = 8;
+out.beltPaint = { byHand:accepts(pb, "boule_transparente"), byBelt:accepts(pb, "boule_transparente", true), pigment:accepts(pb, "pigment_rouge", true) };
+pb.inb.boule_transparente = 24; out.beltPaint.capped = accepts(pb, "boule_transparente", true);
+
+// démonter une machine rend ce qu'elle contenait
+newState();
+const dk = S.ents.find((e) => e.name === "kiln");
+S.bag = Array(BAG).fill(null); dk.inb = { sable:3 }; dk.outb = { boule_transparente:2 }; dk.res = { sable:4 };
+demolish(dk.x, dk.y);
+out.demolish = { sable:bagCount("sable"), boules:bagCount("boule_transparente"), gone:!S.ents.includes(dk) };
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -119,4 +167,12 @@ assert.deepEqual({ ...out.manual }, { pigmentsLeft:2, pigmentInside:0, paintInsi
 assert.deepEqual({ ...out.neverBlocked }, { queued:5, left:0, balls:4 }, "une file demandée se termine toujours, même sac vidé");
 assert.deepEqual(out.away, { balls:5, queue:0 }, "au retour (1 h), les 5 boules demandées sont faites, même si la dernière sauvegarde est récente");
 assert.ok(out.offline.earned > 0, "l'usine gagne des pièces pendant l'absence");
+assert.deepEqual({ ...out.sciure }, { planche:"planche", bag:0, sable:3, chest:'{"bois":4}', machine:'{"boule_transparente":1}', belt:"sable" }, "plus de sciure : ni fabriquée, ni dans les vieilles parties");
+assert.equal(out.crank.wound, 8 * 3600, "un toucher remonte la manivelle à fond (8 h)");
+assert.ok(out.crank.poweredAfter7h, "la manivelle fait encore tourner la machine au bout de 7 h");
+assert.equal(out.crank.belts, 9, "tous les tapis en bois à portée tournent (plus de limite à 8)");
+assert.ok(!out.crank.after8h, "au bout de 8 h, la manivelle est à l'arrêt");
+assert.deepEqual({ ...out.paint }, { possible:6, plan:"peinture_rouge×2 boule_rouge×6", balls:6, queue:0, pigmentsLeft:0 }, "6 boules rouges demandées d'un coup : 2 peintures faites d'abord, puis les 6 boules");
+assert.deepEqual({ ...out.beltPaint }, { byHand:false, byBelt:true, pigment:true, capped:false }, "peinture à tapis : la voie ne se bloque plus derrière des boules sans peinture");
+assert.deepEqual({ ...out.demolish }, { sable:7, boules:2, gone:true }, "démonter une machine rend son contenu");
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
