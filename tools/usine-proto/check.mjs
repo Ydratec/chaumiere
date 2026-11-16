@@ -241,9 +241,24 @@ const laneCount = (b) => b.lanes.map((L) => L.length).join("/");
 for (let k = 0; k < 4; k++) { tank.acc = 1; updateBelts(0); }
 const allSides = { east:laneCount(east), below:laneCount(below) };
 east.lanes = [[], []]; below.lanes = [[], []];
-tank.out = "S"; tank.lanePick = 1; // vers le bas, voie du bas
+tank.outs = { S:1 }; // vers le bas, voie du bas
 for (let k = 0; k < 2; k++) { tank.acc = 1; updateBelts(0); below.lanes.forEach((L) => L.forEach((o) => (o.p = 0.95))); }
 out.chuteOut = { allSides, east:laneCount(east), below:laneCount(below) };
+// plusieurs côtés, chacun sa voie : à droite voie du bas (1), en bas voie du haut (0), servis à tour de rôle
+east.lanes = [[], []]; below.lanes = [[], []]; tank.outs = { E:1, S:0 }; tank.rr = 0;
+const tally = { east:[0, 0], below:[0, 0] };
+for (let k = 0; k < 4; k++) { tank.acc = 1; updateBelts(0); for (const [nm, b] of [["east", east], ["below", below]]) { b.lanes.forEach((L, i) => (tally[nm][i] += L.length)); b.lanes = [[], []]; } }
+const multi = { east:tally.east.join("/"), below:tally.below.join("/") };
+// une vieille partie (un seul côté + une voie) est reprise en réglage côté par côté
+const oldTank = { kind:"source", out:"W", lanePick:0 }; dropGone({ ents:[oldTank], belts:{}, bag:[] });
+// sortie d'une machine : voie choisie
+fresh(3);
+const mk = addEnt({ kind:"machine", name:"kiln_belt", stage:3, x:3, y:9, o:"e" });
+const ob = S.belts["5,9"] = { x:5, y:9, d:"E", k:"fonte", lanes:[[], []], on:true };
+mk.outLane = 1; mk.outb = { boule_transparente:1 }; updateMachine(mk, 0.1);
+const right = laneCount(ob);
+ob.lanes = [[], []]; mk.outLane = "b"; mk.outb = { boule_transparente:2 }; updateMachine(mk, 0.1); ob.lanes.forEach((L) => L.forEach((o) => (o.p = 0.9))); updateMachine(mk, 0.1);
+out.lanes2 = { multi, migrated:JSON.stringify(oldTank.outs) + (oldTank.out === undefined ? "" : "!"), right, both:laneCount(ob) };
 
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
@@ -287,6 +302,7 @@ assert.deepEqual({ ...out.switch }, { filtered:"sable | - | bois", shared:"1,1,1
 assert.deepEqual({ ...out.recipe }, { press:"fam:finie", loom:"guirlande", pressList:"finie_rouge,finie_vert,finie_or,finie_bleu,crochet", choices:"fam:boule,fam:peinture,etoile_doree", kiln:"soufflage" }, "une seule recette par machine automatique");
 
 assert.deepEqual({ ...out.chuteOut.allSides }, { east:"1/1", below:"1/0" }, "avant (tous les côtés) : les deux tapis reçoivent, celui du dessous seulement sur sa voie du haut");
+assert.equal(JSON.stringify(out.lanes2), JSON.stringify({ multi:{ east:"0/2", below:"2/0" }, migrated:'{"W":0}', right:"0/1", both:"1/1" }), "goulotte : plusieurs côtés, chacun sa voie ; ancien réglage repris ; machine : voie de sortie choisie");
 assert.deepEqual(out.chuteOut.east, "0/0", "goulotte tournée vers le bas : rien sur le tapis de droite");
 assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie du bas : le tapis du dessous reçoit sur sa voie d'en face");
 assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite : toutes ses missions sont cochées");
