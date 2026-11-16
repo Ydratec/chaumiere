@@ -41,7 +41,8 @@
       "couronne",
       "sapin_decore",
       "cadeau",
-      "piece"
+      "piece",
+      "couronne_deco"
     ],
     "note": "sur un tapis : 2 voies, à ±5 px du centre de la voie"
   },

@@ -113,7 +113,7 @@ export const ITEMS = [
   "peinture_rouge", "peinture_vert", "peinture_or", "peinture_bleu",
   "boule_transparente", "boule_rouge", "boule_verte", "boule_or", "boule_bleue",
   "boule_finie_rouge", "boule_finie_vert", "boule_finie_or", "boule_finie_bleu",
-  "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "sapin_decore", "cadeau", "piece",
+  "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "sapin_decore", "cadeau", "piece", "couronne_deco",
 ] as const;
 export type Item = (typeof ITEMS)[number];
 export const ITEM_SHEET = "/usine/commun/objets_16x16.png";

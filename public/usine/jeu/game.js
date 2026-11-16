@@ -25,10 +25,10 @@ const BOULE = { rouge:"boule_rouge", vert:"boule_verte", or:"boule_or", bleu:"bo
 const ITEMS = ["sable","bois","branche","fil","sapin_brut","pigment_rouge","pigment_vert","pigment_or","pigment_bleu",
   "verre_fondu","verre","perles","eclats","planche","sciure","crochet","peinture_rouge","peinture_vert","peinture_or","peinture_bleu",
   "boule_transparente","boule_rouge","boule_verte","boule_or","boule_bleue","boule_finie_rouge","boule_finie_vert","boule_finie_or","boule_finie_bleu",
-  "etoile_bois","etoile_doree","ruban","guirlande","couronne","sapin_decore","cadeau","piece"];
+  "etoile_bois","etoile_doree","ruban","guirlande","couronne","sapin_decore","cadeau","piece","couronne_deco"];
 const NAMES = { sable:"Sable", bois:"Bois", branche:"Branches", fil:"Fil", sapin_brut:"Sapin brut", verre:"Verre", perles:"Perles",
   eclats:"Éclats", planche:"Planche", sciure:"Sciure", crochet:"Crochet", boule_transparente:"Boule transparente",
-  etoile_bois:"Étoile en bois", etoile_doree:"Étoile dorée", ruban:"Ruban", guirlande:"Guirlande", couronne:"Couronne", sapin_decore:"Sapin décoré" };
+  etoile_bois:"Étoile en bois", etoile_doree:"Étoile dorée", ruban:"Ruban", guirlande:"Guirlande", couronne:"Couronne", couronne_deco:"Couronne décorée", sapin_decore:"Sapin décoré" };
 const CNAME = { rouge:"rouge", vert:"verte", or:"or", bleu:"bleue", verte:"verte", bleue:"bleue" };
 function label(it) {
   if (it.startsWith("@")) return { boule_peinte:"Boule peinte", boule_finie:"Boule finie", peinture:"Peinture" }[it.slice(1)] || it;
@@ -49,7 +49,7 @@ function cat(it) {
 }
 const iconOf = (k) => k.startsWith("@") ? ({ boule_peinte:"boule_rouge", boule_finie:"boule_finie_rouge", peinture:"peinture_rouge" }[k.slice(1)]) : k;
 const matches = (it, key) => key.startsWith("@") ? cat(it) === key.slice(1) : it === key;
-const PRICE = { boule_transparente:1, boule_peinte:3, etoile_bois:2, boule_finie:5, etoile_doree:3, guirlande:7, couronne:15, sapin_decore:56, ruban:2 };
+const PRICE = { boule_transparente:1, boule_peinte:3, etoile_bois:2, boule_finie:5, etoile_doree:6, guirlande:11, couronne:15, couronne_deco:26, sapin_decore:56, ruban:2 };
 const price = (it) => PRICE[it] ?? PRICE[cat(it)] ?? 0;
 // tas de matières premières : capacité gratuite, recharge par seconde, prix au marché
 const RAW = {
@@ -96,7 +96,7 @@ const RECIPES = {
   star_press:[...COLORS.map((c) => ({ id:"finie_" + c, name:"Boule finie " + CNAME[c], in:{ [BOULE[c]]:1, crochet:1 }, out:{ ["boule_finie_" + c]:1 }, t:1, color:c })),
     { id:"crochet", name:"Crochets", in:{ fil:1 }, out:{ crochet:4 }, t:0.5 }, { ...ETOILE, manual:true }, { ...PLANCHE, manual:true }],
   loom:[{ id:"guirlande", name:"Guirlande", in:{ fil:1, perles:12 }, out:{ guirlande:1 }, t:3 }, { id:"ruban", name:"Ruban", in:{ fil:2, "@peinture":1 }, out:{ ruban:2 }, t:1 }],
-  wreath_table_belt:[{ id:"couronne", name:"Couronne", in:{ branche:4, ruban:1, "@boule_finie":2 }, out:{ couronne:1 }, t:4 }],
+  wreath_table_belt:[{ id:"couronne_deco", name:"Couronne décorée", in:{ branche:4, ruban:1, "@boule_finie":2 }, out:{ couronne_deco:1 }, t:4 }],
 };
 RECIPES.elec_furnace = RECIPES.kiln_belt; RECIPES.paint_booth = RECIPES.paint_table_belt; RECIPES.assembler = RECIPES.star_press;
 RECIPES.elec_loom = RECIPES.loom; RECIPES.elec_wreath = RECIPES.wreath_table_belt;
@@ -128,9 +128,12 @@ const UPGRADE = {
   tree_bench:"steam_tree", steam_tree:"tree_decorator", loom:"steam_loom", steam_loom:"elec_loom",
 };
 const UPGRADED = new Set(Object.values(UPGRADE));
-const QUARRY_COST = 2500;
+const QUARRY_COST = 2500;   // la première ; chaque carrière déjà posée rend la suivante 1,5 fois plus chère
+const quarryCost = () => Math.round(QUARRY_COST * 1.5 ** S.ents.filter((e) => e.quarry).length / 5) * 5;
+/** Une seule carrière à sapins : c'est la matière la plus rentable, en multiplier les tas emballait toute l'économie. */
+const sapinQuarryTaken = (self) => S.ents.some((e) => e.quarry && e !== self && e.gives === "sapin_brut");
 const SWITCH_FILTERS = ["sable", "bois", "fil", "branche", "sapin_brut", "pigment_rouge", "pigment_vert", "pigment_or", "pigment_bleu",
-  "verre", "perles", "planche", "crochet", "boule_transparente", "@peinture", "@boule_peinte", "@boule_finie", "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "sapin_decore"];
+  "verre", "perles", "planche", "crochet", "boule_transparente", "@peinture", "@boule_peinte", "@boule_finie", "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "couronne_deco", "sapin_decore"];
 
 const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
   1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"], ["poubelle", 20, "Poubelle"], ["serre_fleurs", 300, "Serre de l'usine"]],
@@ -772,7 +775,7 @@ function buy(raw, n) {
   const cost = n * RAW[raw].cost; if (S.coins < cost) { toast("Pas assez de pièces"); return; }
   S.coins -= cost; s.stock += n; fx(s.x * T + 16, s.y * T, "+" + n, "#9fe3ff"); ui.dirty = true;
 }
-const SELL = { 1:["boule_rouge", "boule_verte", "boule_or", "boule_bleue", "@boule_peinte"], 2:["couronne", "etoile_bois", "sapin_decore"], 3:["@boule_finie", "etoile_doree", "guirlande"], 4:[], 5:[] };
+const SELL = { 1:["boule_rouge", "boule_verte", "boule_or", "boule_bleue", "@boule_peinte"], 2:["couronne", "etoile_bois", "sapin_decore"], 3:["@boule_finie", "etoile_doree", "guirlande", "couronne_deco"], 4:[], 5:[] };
 const BASE_VALUE = { 1:20, 2:150, 3:1200, 4:4000, 5:9000 };
 // ---- Commandes du jour : payées en pièces de la salle par le serveur (/api/usine/<salle>/commande), 3 par jour.
 // Les mêmes pour toute la salle (tirées de la date et de la salle), à la taille de l'étape de chacun.
@@ -925,6 +928,7 @@ function updatePlayer(dt) {
 
 // ---------------------------------------------------------------- construction
 function costOf(key) {
+  if (key === "quarry") return quarryCost();
   if (key.startsWith("extractor")) key = "extractor_sable"; // un extracteur coûte pareil quelle que soit sa matière
   for (const s in BUILD) for (const b of BUILD[s]) if (b[0] === key) return b[1]; return 0;
 }
@@ -960,7 +964,7 @@ function place(key, rot, x, y) {
   if (S.coins < cost) { toast("Pas assez de pièces"); return false; }
   if (!canPlace(key, o, x, y)) { toast("Place occupée"); return false; }
   if (key === "quarry") { // une carrière : un tas de plus, où l'on veut, avec sa goulotte (sable au départ, à changer dans sa fiche)
-    addEnt({ kind:"source", name:"source_sable", stage:3, gives:"sable", quarry:true, x, y, stock:0, chute:true, acc:0, lane:0 });
+    addEnt({ kind:"source", name:"source_sable", stage:3, gives:"sable", quarry:true, paid:cost, x, y, stock:0, chute:true, acc:0, lane:0 });
     S.coins -= cost; return true;
   }
   if (key === "poubelle") { addEnt({ kind:"trash", name:"poubelle", stage:1, x, y, eaten:0 }); S.coins -= cost; return true; }
@@ -982,7 +986,7 @@ function demolish(x, y) {
   if (e.kind === "machine") for (const box of [e.inb, e.outb, e.res]) for (const [it, n] of Object.entries(box || {})) lost += n - bagAdd(it, n);
   if (lost) toast(`Sac plein : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.`);
   S.ents = S.ents.filter((z) => z !== e); invalidate();
-  S.coins += Math.round((e.quarry ? QUARRY_COST : costOf(e.name)) / 2);
+  S.coins += Math.round((e.quarry ? e.paid || QUARRY_COST : costOf(e.name)) / 2);
   if (ui.sel === e.id) ui.sel = null;
   toast(`${e.quarry ? "Carrière" : nameOf(e.name)} démonté${e.quarry ? "e" : ""} : la moitié du prix est rendue.`);
 }
@@ -1616,7 +1620,8 @@ function renderUI() {
       const r = RAW[e.gives];
       h += `<h3>${itemHTML(e.gives)} ${e.quarry ? "Carrière" : "Tas"} de ${label(e.gives).toLowerCase()}</h3><p>${Math.floor(e.stock)} unités · se recharge de ${fmtN(r.refill)}/s jusqu'à ${r.cap}.</p>${gauge(Math.min(1, e.stock / r.cap), "bleu")}`;
       if (e.quarry) h += `<p class="muted">Un tas de plus, avec sa goulotte : il verse sur les tapis qui partent de lui. Le marché, lui, remplit le tas d'origine.</p>`
-        + `<div class="row" style="flex-wrap:wrap;gap:4px"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((k) => RAW[k].stage <= S.stage).map((k) => `<button class="btn sm ${e.gives === k ? "on" : ""}" data-qgives="${k}">${itemHTML(k)}</button>`).join("")}</div>`;
+        + `<div class="row" style="flex-wrap:wrap;gap:4px"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((k) => RAW[k].stage <= S.stage).map((k) => `<button class="btn sm ${e.gives === k ? "on" : ""}" data-qgives="${k}" ${k === "sapin_brut" && sapinQuarryTaken(e) ? "disabled" : ""}>${itemHTML(k)}</button>`).join("")}</div>`
+        + (sapinQuarryTaken(e) ? `<p class="muted">Une seule carrière peut donner des sapins.</p>` : "");
       const room = Math.min(Math.floor(e.stock), bagRoom(e.gives));
       h += `<div class="row"><span class="muted">Prendre</span><span class="grow"></span>${[1, 5, 20].map((n) => `<button class="btn sm vert" data-take="${n}" ${room < 1 ? "disabled" : ""}>×${n}</button>`).join("")}</div>`;
       if (Math.floor(e.stock) >= 1 && !bagRoom(e.gives)) h += `<p class="muted">Sac plein : dépose dans un coffre ou une machine.</p>`;
@@ -1727,7 +1732,7 @@ $("panel").addEventListener("click", (ev) => {
   }
   else if (d.mlane != null && e && e.kind === "machine") e.outLane = d.mlane === "b" ? "b" : +d.mlane; // la fabrication en cours se termine, la suivante suit la nouvelle recette
   else if (d.filter != null && e && e.kind === "switch") e.filter = d.filter || null;
-  else if (d.qgives && e && e.quarry) { if (e.gives !== d.qgives) { e.gives = d.qgives; e.name = SRC_FILE[d.qgives] || "source_" + d.qgives; e.stock = 0; } }
+  else if (d.qgives && e && e.quarry) { if (d.qgives === "sapin_brut" && sapinQuarryTaken(e)) toast("Une seule carrière peut donner des sapins."); else if (e.gives !== d.qgives) { e.gives = d.qgives; e.name = SRC_FILE[d.qgives] || "source_" + d.qgives; e.stock = 0; } }
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
     const r = recipeOf(e, d.craft);
@@ -1774,7 +1779,7 @@ $("visitback").addEventListener("click", comeBack);
 $("visitgift").addEventListener("click", () => S.visitId && offerFlowers(S.visitId));
 $("tutonext").addEventListener("click", () => ui.tour && tourShow(ui.tour.key, ui.tour.i + 1));
 $("tutoskip").addEventListener("click", () => (ui.tour ? tourShow(ui.tour.key, Infinity) : tourShow(null)));
-$("tuto").addEventListener("click", (ev) => { const k = ev.target.closest("[data-tour]")?.dataset.tour; if (k) tourShow(k === "start" || k === "news" ? k : +k); });
+$("tuto").addEventListener("click", (ev) => { const k = ev.target.closest("[data-tour]")?.dataset.tour; if (k) { ui.newsFrom = 0; tourShow(k === "start" || k === "news" ? k : +k); } });
 $("help").addEventListener("click", () => { if (!S.visit) tourPick(); });
 $("prot").addEventListener("click", rotatePlace);
 $("pok").addEventListener("click", confirmPlace);
@@ -1874,7 +1879,7 @@ const STAGE_TOURS = {
     { t:"À toi : relie la sortie du four à la caisse d'expédition par un tapis. Les boules s'y vendent toutes seules.", need:() => beltMachines(true).some((m) => m.name === "kiln_belt" && !unlinked(m).includes("sortie")), ent:() => firstOf("crate"), go:() => closePanel() },
     { t:"Une machine à tapis fabrique une seule recette : dans sa fiche, « Elle fabrique », touche celle que tu veux (ou « toutes couleurs »). Elle se fait seule ses intermédiaires.", ent:() => named("kiln_belt"), go:() => { const m = named("kiln_belt"); if (m) select(m); } },
     { t:"Deux ingrédients ? Un tapis pour chacun, par deux côtés : le métier à tisser prend le fil d'un côté et les perles de l'autre. (Pour des rubans, règle une table de peinture sur « Peinture ».)", go:() => page("construire") },
-    { t:"Plus de sable ? Construis une carrière : un tas de plus, posé où tu veux, avec sa goulotte (matière et côté au choix dans sa fiche). Une carrière par ligne, et le sable ne manque plus.", go:() => page("construire") },
+    { t:"Plus de sable ? Construis une carrière : un tas de plus, posé où tu veux, avec sa goulotte (matière et côté au choix dans sa fiche). Une carrière par ligne, et le sable ne manque plus. Chacune coûte 1,5 fois plus que la précédente, et une seule peut donner des sapins.", go:() => page("construire") },
     { t:"Un aiguilleur partage un tapis entre plusieurs lignes. Avec un filtre, il trie : l'objet choisi va tout droit, le reste part sur les côtés. Collé à la sortie d'une machine, il prend ce qu'elle fait. Pour changer une ligne, change juste le filtre.", go:() => page("construire") },
     { t:"Une ligne déborde ? Un tapis qui finit dans une poubelle s'y vide.", go:() => page("construire") },
     { t:"Ensuite, ajoute des machines à la chaîne (peinture, presse…). Si une machine s'arrête, sa fiche dit pourquoi (ingrédient qui manque, énergie, tapis non relié).", go:() => closePanel() },
@@ -1897,10 +1902,11 @@ const STAGE_TOURS = {
   ],
 };
 // Nouveautés, montrées une fois à ceux qui avaient déjà fait la visite du début (min : étape à partir de laquelle ça compte).
-// Pour annoncer une prochaine mise à jour : changer NEWS_V et la liste.
-const NEWS_V = 1;
+// Pour annoncer une prochaine mise à jour : augmenter NEWS_V et ajouter ses bulles avec v:NEWS_V.
+// Au lancement, un joueur ne voit que les bulles plus récentes que sa dernière visite ; le menu les montre toutes.
+const NEWS_V = 2;
 const NEWS = [
-  { t:"Du nouveau à l'usine ! Voici ce qui a changé, en quelques bulles.", go:() => closePanel() },
+  { v:0, t:"Du nouveau à l'usine ! Voici ce qui a changé, en quelques bulles.", go:() => closePanel() },
   { t:"La vue bouge : glisse à deux doigts, pince pour zoomer (molette et clic droit sur ordinateur). Le bouton − montre toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
   { t:"Une poubelle (Construire) vide ton sac. Un tapis qui y finit s'y vide aussi.", go:() => page("construire") },
   { t:"Les fleurs s'offrent de nouveau : page Visiter, « Offrir », ou pendant une visite. Les cadeaux reçus s'ouvrent à ton arrivée.", hi:'[data-page="visiter"]', go:() => page("visiter") },
@@ -1910,10 +1916,13 @@ const NEWS = [
   { min:3, t:"Une goulotte ne verse plus partout : dans la fiche du tas, choisis le côté et la voie (même celle d'en face).", ent:() => pileOf("sable"), go:() => closePanel() },
   { min:3, t:"Les machines à tapis prennent leurs ingrédients par n'importe quel côté (sauf la sortie), et fabriquent UNE recette, que tu choisis dans leur fiche.", go:() => closePanel() },
   { min:3, t:"Nouveau dans Construire : la carrière (un tas de plus, où tu veux) et l'aiguilleur (il partage un tapis, ou trie avec un filtre).", go:() => page("construire") },
+  { v:2, min:3, t:"Une carrière peut verser de plusieurs côtés, chacun sur la voie de ton choix. Et une machine à tapis pose ce qu'elle fait sur la voie choisie dans sa fiche.", go:() => closePanel() },
+  { v:2, min:3, t:"Nouveaux prix : la guirlande se vend 11, l'étoile dorée 6. La machine à couronnes à tapis fait la couronne décorée (même recette), vendue 26 ; la couronne simple reste à 15.", go:() => closePanel() },
+  { v:2, min:3, t:"Chaque carrière coûte 1,5 fois plus que la précédente, et une seule peut donner des sapins.", go:() => page("construire") },
 ];
 const TOURS = { start:TUTO, ...STAGE_TOURS };
 /** Les bulles d'une visite (les nouveautés : seulement celles des étapes atteintes). */
-const tourList = (key) => (key === "news" ? NEWS.filter((x) => (x.min || 1) <= S.stage) : TOURS[key]);
+const tourList = (key) => (key === "news" ? NEWS.filter((x) => (x.min || 1) <= S.stage && (x.v === 0 || (x.v || 1) > (ui.newsFrom || 0))) : TOURS[key]);
 const curStep = () => ui.tour && tourList(ui.tour.key)?.[ui.tour.i];
 /** Montre l'étape i de la visite `key` ; au-delà de la dernière (ou key null), la visite se ferme et compte comme vue. */
 function tourShow(key, i = 0) {
@@ -1958,7 +1967,7 @@ function tutoAuto() {
   if (S.demo || S.visit) return;
   if (catching) return setTimeout(tutoAuto, 500);
   if (!S.tutoDone) return tourShow("start");
-  if ((S.newsSeen || 0) < NEWS_V) return tourShow("news"); // déjà joueur : d'abord ce qui a changé
+  if ((S.newsSeen || 0) < NEWS_V) { ui.newsFrom = S.newsSeen || 0; return tourShow("news"); } // déjà joueur : d'abord ce qui a changé
   if (STAGE_TOURS[S.stage] && !S.toursDone?.[S.stage]) tourShow(S.stage);
 }
 // ---- Visiter l'usine d'un membre de la salle : on affiche sa partie (elle tourne), sans rien pouvoir y faire ni enregistrer.
