@@ -220,6 +220,20 @@ S.belts["7,9"] = { x:7, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
 const c3 = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); c3.reserve = CRANK_MAX; computePower();
 out.tour3done = STAGE_TOURS[3].map((x) => (x.need ? (x.need() ? "✓" : "○") : "·")).join("");
 
+// sortie d'une goulotte : un seul côté, et la voie au choix (même celle d'en face)
+fresh(3); // tapis en fonte : ils tournent sans manivelle
+const tank = addEnt({ kind:"source", name:"source_pigment_rouge", gives:"pigment_rouge", stage:1, x:5, y:8, stock:20, chute:true, acc:0, lane:0 });
+const east = S.belts["6,8"] = { x:6, y:8, d:"E", k:"fonte", lanes:[[], []], on:true };    // part du tas vers la droite (ligne qu'on ne veut pas)
+const below = S.belts["5,9"] = { x:5, y:9, d:"E", k:"fonte", lanes:[[], []], on:true };   // passe sous le tas, vers la droite
+const laneCount = (b) => b.lanes.map((L) => L.length).join("/");
+// avant (tous les côtés) : les deux tapis reçoivent, et celui du dessous seulement sur sa voie du haut (0)
+for (let k = 0; k < 4; k++) { tank.acc = 1; updateBelts(0); }
+const allSides = { east:laneCount(east), below:laneCount(below) };
+east.lanes = [[], []]; below.lanes = [[], []];
+tank.out = "S"; tank.lanePick = 1; // vers le bas, voie du bas
+for (let k = 0; k < 2; k++) { tank.acc = 1; updateBelts(0); below.lanes.forEach((L) => L.forEach((o) => (o.p = 0.95))); }
+out.chuteOut = { allSides, east:laneCount(east), below:laneCount(below) };
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -260,6 +274,9 @@ assert.deepEqual({ ...out.quarry }, { placed:true, cost:2500, chute:true, sandOn
 assert.deepEqual({ ...out.switch }, { filtered:"sable | - | bois", shared:"1,1,1", fromMachine:"boule_transparente", unlinked:"entrée" }, "aiguilleur : filtre tout droit / côtés, partage égal, et prend la sortie d'une machine");
 assert.deepEqual({ ...out.recipe }, { press:"fam:finie", loom:"guirlande", pressList:"finie_rouge,finie_vert,finie_or,finie_bleu,crochet", choices:"fam:boule,fam:peinture,etoile_doree", kiln:"soufflage" }, "une seule recette par machine automatique");
 
+assert.deepEqual({ ...out.chuteOut.allSides }, { east:"1/1", below:"1/0" }, "avant (tous les côtés) : les deux tapis reçoivent, celui du dessous seulement sur sa voie du haut");
+assert.deepEqual(out.chuteOut.east, "0/0", "goulotte tournée vers le bas : rien sur le tapis de droite");
+assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie du bas : le tapis du dessous reçoit sur sa voie d'en face");
 assert.equal(out.tour3done, "·✓✓✓✓✓····", "étape 3 faite : toutes ses missions sont cochées");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
