@@ -62,7 +62,18 @@ const paint = (c) => [
   { id:"boule_" + c, name:"Boule " + CNAME[c], in:{ boule_transparente:1, ["peinture_" + c]:1 }, out:{ [BOULE[c]]:1 }, t:2, color:c },
   { id:"peinture_" + c, name:"Peinture " + c, in:{ ["pigment_" + c]:1 }, out:{ ["peinture_" + c]:4 }, t:1, color:c },
 ];
-const PLANCHE = { id:"planche", name:"Planches", in:{ bois:2 }, out:{ planche:2, sciure:1 }, t:2 };
+// Les planches ne donnent plus de sciure : ce déchet ne se vendait pas et ne servait à rien, il remplissait le sac et bloquait les tapis.
+// (« sciure » reste dans ITEMS : la liste donne aussi la place de chaque icône dans objets_16x16.png.)
+const PLANCHE = { id:"planche", name:"Planches", in:{ bois:2 }, out:{ planche:2 }, t:2 };
+/** Objets qui n'existent plus (la sciure) : retirés des vieilles parties, partout où ils traînent. */
+const GONE = ["sciure"];
+function dropGone(st) {
+  if (!st) return;
+  const clean = (box) => { if (box) for (const it of GONE) delete box[it]; };
+  st.bag = (st.bag || []).map((sl) => (sl && GONE.includes(sl.it) ? null : sl));
+  for (const e of st.ents || []) { clean(e.inb); clean(e.outb); clean(e.res); clean(e.store); }
+  for (const b of Object.values(st.belts || {})) b.lanes = (b.lanes || [[], []]).map((L) => L.filter((o) => !GONE.includes(o.it)));
+}
 const ETOILE = { id:"etoile_bois", name:"Étoile en bois", in:{ planche:1 }, out:{ etoile_bois:1 }, t:1.5 };
 const BOULE_ART = { id:"boule", name:"Boule transparente", in:{ sable:2 }, out:{ boule_transparente:1 }, t:8 };
 const RECIPES = {
@@ -135,7 +146,7 @@ const TILESET = { 1:["floor_wood", "wall_log"], 2:["floor_wood", "wall_log"], 3:
 const BELT_SPEED = { bois:0.5, fonte:1, metal:2 };      // cases/s : 1, 2 et 4 objets/s par voie
 const POLE_R = 4;
 const UNLOCK_TEXT = { 2:"Bois, fil et sapins ; table à couronnes, tour à bois, établi à sapins, four à soufflet.",
-  3:"Tapis à deux voies, goulottes sur les tas, manivelles et machines à tapis.",
+  3:"Tapis à deux voies, goulottes sur les tas, manivelles (remontées en un geste, elles tiennent 8 h) et machines à tapis.",
   4:"Chaudières (au bois) et machines à vapeur : elles tournent même quand tu n'es pas là. Tapis en fonte, deux fois plus rapides.",
   5:"Générateur, poteaux et extracteurs : l'usine s'alimente toute seule. Machines électriques et tapis en métal." };
 const DIRS = { E:[1,0], S:[0,1], W:[-1,0], N:[0,-1] };
@@ -145,7 +156,10 @@ const OPP = { E:"W", W:"E", N:"S", S:"N" };
 const BELT_ROWS = ["E","W","S","N","W>S","S>W","E>S","S>E","W>N","N>W","E>N","N>E"];
 const BAG = 8, STACK = 20, OUT_CAP = 12, RANGE = 3;
 const BELT_V = 0.5, GAP = 0.5;                         // 1 objet/s par voie, 2 objets/s par tapis
-const CRANK_MAX = 60, CRANK_WIND = 10, CRANK_R = 4;
+// Manivelle : un coup suffit à la remonter à fond, et elle tient CRANK_MAX (8 h, même quand on n'est pas là).
+// Avant : 60 s de réserve, +10 s par toucher, 8 tapis au plus. L'étape 3 ne tournait que si l'on restait à tourner la manivelle,
+// alors que les portes de l'étape 4 sont calées sur une production continue (tools/usine-sim : « Production runs 24/7 »).
+const CRANK_MAX = 8 * 3600, CRANK_R = 4, CRANK_M = 4; // CRANK_M : machines par manivelle ; les tapis en bois à portée tournent tous
 const SPECIES = ["cat","dog","bunny","duck","turtle","fish","fox","frog","penguin","unicorn","dragon","shark","whale","schrodinger"];
 const ACCESSORIES = ["bow", "flower", "glasses", "scarf", "hat", "crown", "witch", "santa"]; // dessinés pour toutes les espèces (public/usine/accessoires)
 const SPECIES_FR = { cat:"Chat", dog:"Chien", bunny:"Lapin", duck:"Canard", turtle:"Tortue", fish:"Poisson", fox:"Renard", frog:"Grenouille",
@@ -183,7 +197,7 @@ function addSources(stage) {
 function addEnt(e) {
   e.id = S.ids++;
   if (e.kind === "machine") Object.assign(e, { inb:{}, outb:{}, craft:null, boost:0, recipe:e.recipe || "auto", color:e.color || null, lane:0, queue:[] });
-  if (e.kind === "crank") e.reserve = CRANK_MAX / 2;
+  if (e.kind === "crank") e.reserve = CRANK_MAX;
   S.ents.push(e); invalidate(); return e;
 }
 const byId = (id) => S.ents.find((e) => e.id === id);
@@ -284,11 +298,17 @@ function count(m, key) {
   let n = 0; for (const it in m.inb) if (matches(it, key)) n += m.inb[it]; return n;
 }
 function capFor(m, key) { let need = 1; for (const r of activeRecipes(m)) if (r.in[key]) need = Math.max(need, r.in[key]); return Math.max(8, need * 3); }
-function inputKey(m, it) {
+function inputKey(m, it, belt = false) {
   for (const r of activeRecipes(m)) for (const k in r.in) if (matches(it, k) && count(m, k) < capFor(m, k)) return k;
+  // Par le tapis, une machine à l'arrêt faute d'un autre ingrédient prend quand même (jusqu'à 3 fois le plein) : la voie avance
+  // et l'ingrédient qui manque, coincé derrière, finit par arriver. Avant, une table de peinture pleine de boules sans peinture
+  // refusait la boule de tête, et le pigment placé derrière n'arrivait jamais : la voie restait bloquée pour toujours.
+  if (belt && starved(m)) for (const r of activeRecipes(m)) for (const k in r.in) if (matches(it, k) && count(m, k) < capFor(m, k) * 3) return k;
   return null;
 }
-const accepts = (m, it) => m.kind === "machine" && inputKey(m, it) !== null;
+/** Aucune recette n'a tous ses ingrédients (et rien n'est en cours). */
+const starved = (m) => !m.craft && !activeRecipes(m).some((r) => Object.keys(r.in).every((k) => count(m, k) >= r.in[k]));
+const accepts = (m, it, belt = false) => m.kind === "machine" && inputKey(m, it, belt) !== null;
 const usesItem = (m, it) => activeRecipes(m).some((r) => Object.keys(r.in).some((k) => matches(it, k)));
 const outTotal = (m) => Object.values(m.outb).reduce((a, b) => a + b, 0);
 function canCraft(m, r) {
@@ -316,7 +336,7 @@ function missing(m) {
 // Machines manuelles (sans énergie, étapes 1-2) : elles ne fabriquent que ce qu'on leur demande, dans l'ordre (m.queue).
 // Les machines à tapis et électriques restent automatiques.
 const manual = (m) => !MACH[m.name].power;
-const QUEUE_MAX = 20;
+const QUEUE_MAX = 30; // assez pour 24 boules et les 6 peintures qui vont avec
 const bagHas = (key) => S.bag.reduce((n, sl) => n + (sl && matches(sl.it, key) ? sl.n : 0), 0);
 const recipeOf = (m, id) => RECIPES[m.name].find((x) => x.id === id);
 /** Ce qui reste libre dans la machine pour `key` : ce qu'elle contient, plus ce que la fabrication en cours et la file
@@ -348,9 +368,44 @@ function takeFrom(store, k, n) {
   }
   return got;
 }
-/** Combien de fois on peut encore demander `r` à une machine manuelle (sac + vieux stock pour la base, file pour les intermédiaires). */
-const possibleManual = (m, r) => Math.max(0, Math.min(...Object.entries(r.in).map(([k, n]) =>
+/** Sans fabriquer d'intermédiaire : combien de fois `r` avec ce qui est déjà là (reprise des vieilles files). */
+const possibleDirect = (m, r) => Math.max(0, Math.min(...Object.entries(r.in).map(([k, n]) =>
   Math.floor((isBase(m, k) ? count(m, k) + bagHas(k) : freeIn(m, k)) / n))));
+/**
+ * Ce qu'il faut demander pour n fois `r` : d'abord les intermédiaires qui manquent, fabriqués par la machine elle-même
+ * (la peinture pour une boule, les planches pour une étoile), puis `r`. null si l'un d'eux ne peut pas se fabriquer ici.
+ * Avant, il fallait demander soi-même « peinture rouge » puis les boules, dans le bon ordre et à raison de 4 boules par peinture.
+ */
+function planFor(m, r, n) {
+  const steps = [];
+  for (const [k, per] of Object.entries(r.in)) {
+    if (isBase(m, k)) continue;
+    const short = per * n - freeIn(m, k);
+    if (short <= 0) continue;
+    const p = RECIPES[m.name].find((x) => Object.keys(x.out).some((o) => matches(o, k)) && Object.keys(x.in).every((b) => isBase(m, b)));
+    if (!p) return null;
+    steps.push([p, Math.ceil(short / Object.entries(p.out).find(([o]) => matches(o, k))[1])]);
+  }
+  steps.push([r, n]);
+  return steps;
+}
+/** Le sac (et le vieux stock de la machine) suffit-il pour tous les ingrédients de base de ces étapes ? */
+function planOk(m, steps) {
+  const need = {};
+  for (const [p, t] of steps) for (const [k, per] of Object.entries(p.in)) if (isBase(m, k)) need[k] = (need[k] || 0) + per * t;
+  return Object.entries(need).every(([k, q]) => count(m, k) + bagHas(k) >= q);
+}
+/** Combien de fois on peut encore demander `r` à une machine manuelle, intermédiaires compris, sans dépasser la file. */
+function possibleManual(m, r) {
+  const room = QUEUE_MAX - (m.queue || []).length;
+  let best = 0;
+  for (let n = 1; n <= QUEUE_MAX; n++) {
+    const steps = planFor(m, r, n);
+    if (!steps || !planOk(m, steps) || steps.reduce((a, [, t]) => a + t, 0) > room) break;
+    best = n;
+  }
+  return best;
+}
 /** Met de côté les ingrédients de base de n fois `r` (vieux stock de la machine d'abord, puis le sac). */
 function reserve(m, r, n) {
   m.res ||= {};
@@ -367,7 +422,7 @@ function reserve(m, r, n) {
 /** Vieilles parties : la file d'avant les réservations est reprise (ce qui peut se réserver est gardé, le reste retiré). */
 function migrateQueue(m) {
   const q = m.queue || []; m.queue = []; m.res ||= {};
-  for (const id of q) { const r = recipeOf(m, id); if (r && possibleManual(m, r) >= 1) { reserve(m, r, 1); m.queue.push(id); } }
+  for (const id of q) { const r = recipeOf(m, id); if (r && possibleDirect(m, r) >= 1) { reserve(m, r, 1); m.queue.push(id); } }
   m.resV = 1;
 }
 /** Vider la file : les ingrédients mis de côté reviennent dans le sac. */
@@ -440,6 +495,17 @@ function updateMachine(m, dt) {
   }
 }
 
+/** Pourquoi une machine est sans énergie (phrase à afficher). */
+function whyNoPower(m) {
+  const pw = MACH[m.name].power;
+  if (pw === "steam") return "il faut une chaudière avec du bois à 4 cases.";
+  if (pw === "elec") return `il faut un poteau à ${POLE_R} cases et un générateur avec du bois.`;
+  const near = S.ents.filter((c) => c.kind === "crank" && distTo(m, c.x, c.y) <= CRANK_R);
+  if (!near.length) return `pose une manivelle à ${CRANK_R} cases au plus.`;
+  if (near.every((c) => c.reserve <= 0)) return "remonte la manivelle à côté.";
+  return `les manivelles à côté font déjà tourner ${CRANK_M} machines chacune : ajoutes-en une.`;
+}
+
 // ---------------------------------------------------------------- tapis à deux voies
 // voie 0 = à gauche du sens de marche, voie 1 = à droite. Un tapis qui arrive par le flanc d'un autre dépose sur la voie de ce côté.
 const laneRoom = (b, lane, at) => b.lanes[lane].every((o) => Math.abs(o.p - at) >= GAP);
@@ -453,12 +519,12 @@ function computePower() {
     c.load = 0;
     if (c.reserve <= 0) continue;
     const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === true && !powered.has("m" + m.id))
-      .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, 4);
+      .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, CRANK_M);
     const bs = Object.values(S.belts).filter((b) => (b.k || "bois") === "bois" && !powered.has("b" + b.x + "," + b.y))
-      .map((b) => [Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)), b]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, 8);
+      .filter((b) => Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)) <= CRANK_R);
     for (const [, m] of ms) powered.add("m" + m.id);
-    for (const [, b] of bs) powered.add("b" + b.x + "," + b.y);
-    c.load = ms.length + bs.length;
+    for (const b of bs) powered.add("b" + b.x + "," + b.y);
+    c.load = ms.length + bs.length; c.machines = ms.length;
   }
   // vapeur : chaque chaudière qui a du bois alimente les BOILER_N machines à vapeur les plus proches (à BOILER_R cases)
   for (const c of S.ents) {
@@ -518,7 +584,7 @@ function deliver(b, lane, it) {   // l'objet de tête est au bout du tapis : où
   if (e.kind === "machine") {
     const pt = portsOf(e); if (!pt) return false;
     const okPort = ["in", "in2"].some((k) => pt[k] && pt[k].inside[0] === nx && pt[k].inside[1] === ny && pt[k].side === OPP[b.d]);
-    if (!okPort || !accepts(e, it)) return false;   // ingrédient en trop : la voie se bloque
+    if (!okPort || !accepts(e, it, true)) return false;   // ingrédient en trop : la voie se bloque
     e.inb[it] = (e.inb[it] || 0) + 1; return true;
   }
   return false;
@@ -677,7 +743,10 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
   if (e.kind === "source") { if (first) select(e); return; } // on choisit dans sa fiche combien en prendre
   if (e.kind === "crate") { if (first) select(e); return; } // la fiche de la caisse : on choisit quoi vendre (les tapis, eux, vendent tout seuls)
   if (e.kind === "chest") { if (first) select(e); return; } // on choisit dans sa fiche ce qu'on dépose ou reprend
-  if (e.kind === "crank") { e.reserve = Math.min(CRANK_MAX, e.reserve + (first ? CRANK_WIND : CRANK_WIND / 4)); p.work = 0.4; return; }
+  if (e.kind === "crank") {
+    if (first) { e.reserve = CRANK_MAX; p.work = 0.6; fx(e.x * T + 16, e.y * T, "Remontée : 8 h", "#9ad8ff"); computePower(); select(e); }
+    return;
+  }
   if (e.kind === "flowerbed") {
     if (first) {
       if (!e.planted) { e.planted = true; e.grown = 0; p.work = 0.4; fx(e.x * T + 32, e.y * T, "Planté !", "#6cc46a"); }
@@ -705,7 +774,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
   else if (moved) p.work = 0.3;
   if (first) {
     select(e, true);
-    if (!moved && !e.craft && !manual(e)) toast(e.stalled ? "Pas d'énergie : remonte une manivelle à côté." : `${MACH[e.name].name} : il manque ${missing(e).join(", ") || "de la place en sortie"}.`);
+    if (!moved && !e.craft && !manual(e)) toast(e.stalled ? `Pas d'énergie : ${whyNoPower(e)}` : `${MACH[e.name].name} : il manque ${missing(e).join(", ") || "de la place en sortie"}.`);
   }
 }
 function updatePlayer(dt) {
@@ -782,6 +851,11 @@ function demolish(x, y) {
   const e = entAt(x, y);
   if (!e || ["source", "crate", "deco", "rug"].includes(e.kind)) return;
   if (e.kind === "chest" && S.ents.filter((c) => c.kind === "chest").length === 1) { toast("Garde au moins un coffre."); return; }
+  if (e.kind === "chest" && chestTotal(e) > 0) { toast("Vide le coffre avant de le démonter."); return; } // avant : son contenu disparaissait
+  // Ce que la machine contenait (ingrédients mis de côté compris) revient dans le sac, autant qu'il en tient.
+  let lost = 0;
+  if (e.kind === "machine") for (const box of [e.inb, e.outb, e.res]) for (const [it, n] of Object.entries(box || {})) lost += n - bagAdd(it, n);
+  if (lost) toast(`Sac plein : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.`);
   S.ents = S.ents.filter((z) => z !== e); invalidate();
   S.coins += Math.round(costOf(e.name) / 2);
   if (ui.sel === e.id) ui.sel = null;
@@ -1012,7 +1086,7 @@ function drawEnt(e, time) {
     if (e.stock > r.cap) text("+" + Math.floor(e.stock - r.cap), e.x * T + 16, e.y * T - 7, "#9ad8ff");
     if (e.chute) drawIcon("tapis", e.x * T + 8, e.y * T + 20);
   }
-  if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > 10 ? "#9ad8ff" : "#d8382f");
+  if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > CRANK_MAX * 0.1 ? "#9ad8ff" : "#d8382f");
   if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
@@ -1296,7 +1370,7 @@ function renderUI() {
     else if (e.kind === "machine") {
       const info = MACH[e.name], recs = RECIPES[e.name];
       h += `<h3>${info.name}</h3><p class="muted">Étape ${info.stage} · vitesse ×${String(SPEED[info.stage]).replace(".", ",")}</p>`;
-      if (e.stalled) h += `<p class="bad">${icon("eclair")} Sans énergie</p>`;
+      if (e.stalled) h += `<p class="bad">${icon("eclair")} Sans énergie : ${whyNoPower(e)}</p>`;
       if (unlinked(e).length) h += `<p class="bad">${icon("non")} Pas de tapis relié : ${unlinked(e).join(", ")}</p>`;
       if (manual(e)) {
         // D'abord ce qu'on peut fabriquer maintenant (avec la machine et le sac), puis, plus bas, toutes les recettes.
@@ -1304,6 +1378,7 @@ function renderUI() {
         const line = (r) => `${Object.entries(r.in).map(([k, n]) => itemHTML(k, n)).join("")}<span class="arrow">→</span>${Object.entries(r.out).map(([k, n]) => itemHTML(k, n < 1 ? "~" : n)).join("")}`;
         const can = recs.map((r) => [r, possible(e, r)]).filter(([, n]) => n > 0);
         h += `<h3>${icon("marteau")} Fabriquer</h3>`;
+        if (recs.some((r) => Object.keys(r.in).some((k) => !isBase(e, k)))) h += `<p class="muted">S'il manque ${recs.some((r) => r.in.planche) ? "des planches" : "de la peinture"}, la machine en fait d'abord.</p>`;
         h += can.length ? `<div class="card">${can.map(([r, n]) => `<div class="rec ${e.craft && e.craft.id === r.id ? "on" : ""}">${line(r)}<span class="grow"></span><button class="btn sm" data-craft="${r.id}" data-n="1" ${room < 1 ? "disabled" : ""}>+1</button>${n > 1 ? `<button class="btn sm" data-craft="${r.id}" data-n="${Math.min(n, room)}" ${room < 1 ? "disabled" : ""}>×${Math.min(n, room)}</button>` : ""}</div>`).join("")}</div>`
           : `<p class="muted">Rien à fabriquer pour l'instant.</p>`;
         if (q.length) h += `<div class="row"><span class="muted">À faire (${q.length})</span>${q.slice(0, 8).map((id) => { const r = RECIPES[e.name].find((x) => x.id === id); return r ? itemHTML(Object.keys(r.out)[0]) : ""; }).join("")}${q.length > 8 ? "…" : ""}<span class="grow"></span><button class="btn sm rouge" id="clearq">Vider</button></div>`;
@@ -1329,7 +1404,9 @@ function renderUI() {
       if (S.stage >= 3) h += e.chute ? `<p class="muted">${icon("tapis")} Goulotte posée.</p>`
         : `<button class="btn or wide" id="chute">${icon("tapis")} Poser une goulotte (${CHUTE_COST} p)</button>`;
     } else if (e.kind === "crank") {
-      h += `<h3>Manivelle</h3><p>Réserve : ${Math.floor(e.reserve)} / ${CRANK_MAX} s. Touche-la pour la remonter.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}<div class="row"><button class="btn rouge" id="demol">${icon("poubelle")} Démonter</button></div>`;
+      h += `<h3>Manivelle</h3><p>${e.reserve > 0 ? `Encore ${fmtAway(e.reserve)} de marche (8 h une fois remontée).` : "À l'arrêt."} Touche-la pour la remonter à fond.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}`;
+      h += `<p class="muted">Fait tourner les ${CRANK_M} machines à tapis les plus proches (à ${CRANK_R} cases) et tous les tapis en bois autour. En ce moment : ${e.machines || 0} / ${CRANK_M} machine${(e.machines || 0) > 1 ? "s" : ""}.</p>`;
+      h += `<div class="row"><button class="btn vert" id="wind">${icon("tourner")} Remonter</button><button class="btn rouge" id="demol">${icon("poubelle")} Démonter</button></div>`;
     } else if (e.kind === "chest") {
       const inBag = [...new Set(S.bag.filter(Boolean).map((sl) => sl.it))];
       h += `<h3>Coffre</h3><p class="muted">${chestTotal(e)} / 200 objets</p>`;
@@ -1367,6 +1444,8 @@ function renderUI() {
       h += items.length ? `<div class="card">${items.map(([it, n]) => `<div class="row">${itemHTML(it, n)}<span>${label(it)}</span><span class="grow"></span><span class="muted">${icon("piece")}${fmtN(price(it) * n)}</span><button class="btn sm" data-sell="${it}">Vendre</button></div>`).join("")}</div>
         <button class="btn vert wide" id="sellall">Tout vendre · ${icon("piece")}${fmtN(items.reduce((v, [it, n]) => v + price(it) * n, 0))}</button>`
         : `<p class="muted">Rien à vendre dans le sac.</p>`;
+      const junk = [...new Set(S.bag.filter((sl) => sl && !price(sl.it)).map((sl) => sl.it))];
+      if (junk.length) h += `<h3>${icon("poubelle")} Ne se vend pas</h3><div class="card">${junk.map((it) => `<div class="row">${itemHTML(it, bagCount(it))}<span>${label(it)}</span><span class="grow"></span><button class="btn sm rouge" data-trash="${it}">Jeter</button></div>`).join("")}</div>`;
     }
   }
   if (ui.tab === "selection") {
@@ -1397,15 +1476,17 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.rate && e) e.rate = +d.rate;
   else if (d.order) deliverOrder(+d.order);
   else if (d.sell && e) sellBag(e, d.sell);
+  else if (d.trash) { const n = bagTake(d.trash, bagCount(d.trash)); if (n) toast(`${n} × ${label(d.trash).toLowerCase()} jeté${n > 1 ? "s" : ""}.`); }
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
-    const r = recipeOf(e, d.craft), n = r ? Math.min(+d.n, QUEUE_MAX - (e.queue ||= []).length, possible(e, r)) : 0;
-    if (n > 0) {
-      if (manual(e)) { if (!e.resV) migrateQueue(e); reserve(e, r, n); } // les ingrédients de base sont mis de côté : rien ne peut bloquer
-      for (let k = 0; k < n; k++) e.queue.push(r.id);
-      if (!manual(e)) loadFor(e);
-    }
+    const r = recipeOf(e, d.craft);
+    if (r && manual(e) && !e.resV) migrateQueue(e);
+    const n = r ? Math.min(+d.n, QUEUE_MAX - (e.queue ||= []).length, possible(e, r)) : 0;
+    if (n > 0 && manual(e)) {
+      // les intermédiaires qui manquent passent d'abord ; les ingrédients de base sont mis de côté : rien ne peut bloquer
+      for (const [p, t] of planFor(e, r, n)) { reserve(e, p, t); for (let k = 0; k < t; k++) e.queue.push(p.id); }
+    } else if (n > 0) { for (let k = 0; k < n; k++) e.queue.push(r.id); loadFor(e); }
     else if (r) toast("Pas assez de matériaux pour en demander plus.");
   }
   else ({
@@ -1414,6 +1495,7 @@ $("panel").addEventListener("click", (ev) => {
     clearq:() => { if (!e) return; if (manual(e)) clearQueue(e); else e.queue = []; },
     cgetall:() => e && doNear(e, () => { for (const it of Object.keys(e.store)) chestTake(e, it, e.store[it]); }),
     cputall:() => e && doNear(e, () => { for (const it of new Set(S.bag.filter(Boolean).map((sl) => sl.it))) chestPut(e, it, bagCount(it)); }),
+    wind:() => e && e.kind === "crank" && doNear(e, () => interact(e, true)),
     chute:() => { if (!e) return; if (S.coins < CHUTE_COST) return toast("Pas assez de pièces"); S.coins -= CHUTE_COST; e.chute = true; },
   })[b.id]?.();
   ui.dirty = true;
@@ -1478,7 +1560,7 @@ async function pull(again) {
   if (API) try {
     const r = await fetch(API, { cache:"no-store" });
     // on garde la partie la plus avancée (temps de jeu), pas la plus récemment enregistrée
-    if (r.ok) { const { state } = await r.json(); if (state && state.v === 2 && state.area && ((state.time || 0) > (S.time || 0) || again)) { S = state; useCharacter(); ensureFlowerbed(); invalidate(); camReady = false; ui.sel = null; ui.dirty = true; } }
+    if (r.ok) { const { state } = await r.json(); if (state && state.v === 2 && state.area && ((state.time || 0) > (S.time || 0) || again)) { S = state; dropGone(S); useCharacter(); ensureFlowerbed(); invalidate(); camReady = false; ui.sel = null; ui.dirty = true; } }
   } catch {}
   synced = true;
   if (again) toast("Ta partie a été récupérée depuis le serveur.");
@@ -1524,7 +1606,7 @@ async function visit(id, name) {
     const r = await fetch(`${API}?u=${encodeURIComponent(id)}`, { cache:"no-store" }), j = r.ok ? await r.json() : {};
     if (!j.state) return toast(`${name} n'a pas encore d'usine.`);
     if (!mine) { save(); mine = S; }
-    S = j.state; S.visit = name; S.simAt = S.simAt || S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
+    S = j.state; dropGone(S); S.visit = name; S.simAt = S.simAt || S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
     $("visitname").textContent = `Usine de ${name}`; $("visitbar").hidden = false; ui.dirty = true;
     catchUp(); // elle a continué de tourner depuis que son propriétaire est parti
   } catch { toast("Visite impossible pour l'instant."); }
@@ -1616,7 +1698,7 @@ function load() {
     if (s.v === 2) setTimeout(() => toast("Nouvelle version : l'atelier commence petit, la partie recommence.", 6000), 500); } } catch {}
   newState();
 }
-load(); useCharacter(); ensureFlowerbed();
+load(); dropGone(S); useCharacter(); ensureFlowerbed();
 setInterval(save, 4000); setInterval(() => { if (!document.hidden) push(); }, 20000); // onglet caché : l'usine ne tourne pas, rien de neuf à envoyer
 window.addEventListener("beforeunload", push);
 // onglet caché : on enregistre ; de retour : l'usine rattrape le temps passé
