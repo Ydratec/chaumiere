@@ -134,6 +134,14 @@ pb.inb.boule_transparente = 8;
 out.beltPaint = { byHand:accepts(pb, "boule_transparente"), byBelt:accepts(pb, "boule_transparente", true), pigment:accepts(pb, "pigment_rouge", true) };
 pb.inb.boule_transparente = 24; out.beltPaint.capped = accepts(pb, "boule_transparente", true);
 
+// poubelle : on la pose dès l'étape 1 ; un tapis qui y arrive s'y vide
+fresh(1); S.coins = 100; // atelier vide (fresh ne garde que la caisse)
+const placedT = place("poubelle", 0, 6, 9);
+const bin = S.ents.find((e) => e.kind === "trash");
+const toBin = S.belts["5,9"] = { x:5, y:9, d:"E", k:"fonte", lanes:[[], []], on:true };
+const ate = deliver(toBin, 0, "sable") && deliver(toBin, 1, "pigment_rouge");
+out.trash = { placed:placedT, cost:100 - S.coins, ate, eaten:bin.eaten, movable:MOVABLE.includes("trash") };
+
 // démonter une machine rend ce qu'elle contenait
 newState();
 const dk = S.ents.find((e) => e.name === "kiln");
@@ -254,6 +262,7 @@ assert.ok(!out.crank.after8h, "au bout de 8 h, la manivelle est à l'arrêt");
 assert.deepEqual({ ...out.paint }, { possible:6, plan:"peinture_rouge×2 boule_rouge×6", balls:6, queue:0, pigmentsLeft:0 }, "6 boules rouges demandées d'un coup : 2 peintures faites d'abord, puis les 6 boules");
 assert.deepEqual({ ...out.beltPaint }, { byHand:false, byBelt:true, pigment:true, capped:false }, "peinture à tapis : la voie ne se bloque plus derrière des boules sans peinture");
 assert.deepEqual({ ...out.demolish }, { sable:7, boules:2, gone:true }, "démonter une machine rend son contenu");
+assert.deepEqual({ ...out.trash }, { placed:true, cost:20, ate:true, eaten:2, movable:true }, "poubelle : posée pour 20 p, elle avale ce que les tapis lui amènent");
 assert.deepEqual({ ...out.loom }, { unlinked:"", fil:true, perles:true, viaSortie:false, guirlandes:1 }, "métier à tisser : fil par l'entrée, perles par le haut, une guirlande ; rien n'entre par la sortie");
 assert.deepEqual({ ...out.confirm }, { afterOne:true, afterTwo:false, belt:false }, "démonter un bâtiment demande un second toucher ; un tapis part d'un coup");
 assert.deepEqual({ ...out.quarry }, { placed:true, cost:2500, chute:true, sandOnBelt:true, gone:true, refund:1250 }, "carrière : posée, elle verse du sable sur son tapis, se démonte (moitié rendue)");
