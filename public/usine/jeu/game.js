@@ -80,6 +80,12 @@ function dropGone(st) {
   // et les machines automatiques restées en « automatique » prennent leur recette par défaut (c'est ce qu'elles faisaient)
   for (const e of st.ents || []) if (e.kind === "machine" && MACH[e.name]?.power && (e.recipe === "auto" || !e.recipe)) e.recipe = defaultRecipe(e.name);
   // et l'ancien réglage de sortie d'une goulotte (un seul côté, une voie) devient le nouveau (côté par côté)
+  // la machine à couronnes à tapis fait maintenant la couronne décorée : son ancienne recette (et ce qu'elle fabriquait) change de nom
+  for (const e of st.ents || []) if (e.kind === "machine" && RECIPES[e.name] === RECIPES.wreath_table_belt) {
+    if (e.recipe === "couronne") e.recipe = "couronne_deco";
+    if (e.craft?.id === "couronne") e.craft.id = "couronne_deco";
+    if (e.queue) e.queue = e.queue.map((id) => (id === "couronne" ? "couronne_deco" : id));
+  }
   for (const e of st.ents || []) if (e.out) { e.outs = { [e.out]:e.lanePick == null ? "b" : e.lanePick }; delete e.out; delete e.lanePick; }
 }
 const ETOILE = { id:"etoile_bois", name:"Étoile en bois", in:{ planche:1 }, out:{ etoile_bois:1 }, t:1.5 };
@@ -528,7 +534,7 @@ function updateMachine(m, dt) {
       m.boost = Math.max(0, m.boost - dt);
       if (m.craft.t >= m.craft.dur) {
         const r = RECIPES[m.name].find((x) => x.id === m.craft.id);
-        for (const o in r.out) {
+        if (r) for (const o in r.out) { // (une recette disparue depuis : la fabrication se perd sans tout bloquer)
           const n = r.out[o] < 1 ? (rnd() < r.out[o] ? 1 : 0) : r.out[o];
           if (!n) continue;
           if (usesItem(m, o)) m.inb[o] = (m.inb[o] || 0) + n; else m.outb[o] = (m.outb[o] || 0) + n;
@@ -2038,7 +2044,8 @@ function catchUp() {
   let i = 0;
   const chunk = () => {
     const end = Math.min(n, i + 4000);
-    for (; i < end; i++) step(OFF_DT);
+    try { for (; i < end; i++) step(OFF_DT); }
+    catch (err) { console.error(err); i = n; } // une erreur ne doit pas laisser l'écran de rattrapage bloqué : on reprend le jeu
     $("catchbar").style.width = `${Math.round((100 * i) / n)}%`;
     if (i < n) return setTimeout(chunk, 0);
     box.hidden = true; catching = false; S.simAt = Date.now();

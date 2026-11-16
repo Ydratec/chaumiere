@@ -190,6 +190,13 @@ const c1 = S.coins; askDemolish(qs[2]); askDemolish(qs[2]);
 const refund3 = S.coins - c1;
 qs[0].gives = "sapin_brut";
 out.quarry2 = { qCosts, refund3, next:costOf("quarry"), sapinOther:sapinQuarryTaken(qs[1]), sapinSelf:sapinQuarryTaken(qs[0]) };
+// vieille partie : une machine à couronnes à tapis en pleine « couronne » (ancien nom de recette) reprend sans planter
+fresh(3); S.coins = 0;
+const ow = addEnt({ kind:"machine", name:"wreath_table_belt", stage:3, x:5, y:9, o:"e" });
+ow.recipe = "couronne"; ow.craft = { id:"couronne", t:0, dur:1 }; ow.queue = ["couronne"];
+dropGone(S); const cw = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); cw.reserve = CRANK_MAX; computePower();
+run(3);
+out.oldWreath = { recipe:ow.recipe, made:ow.outb.couronne_deco || 0 };
 // couronnes : la table simple fait la couronne (15), la machine à tapis la couronne décorée (26), même recette qu'avant
 out.wreath = { simple:RECIPES.wreath_table[0].out, belt:{ ...RECIPES.wreath_table_belt[0].out }, beltIn:{ ...RECIPES.wreath_table_belt[0].in }, steam:RECIPES.steam_wreath[0].out.couronne_deco, elec:RECIPES.elec_wreath[0].out.couronne_deco,
   price:[PRICE.couronne, PRICE.couronne_deco, PRICE.guirlande, PRICE.etoile_doree], sold3:SELL[3].includes("couronne_deco"), icon:ITEMS.indexOf("couronne_deco"), name:NAMES.couronne_deco };
@@ -320,6 +327,7 @@ assert.deepEqual(out.chuteOut.east, "0/0", "goulotte tournée vers le bas : rien
 assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie du bas : le tapis du dessous reçoit sur sa voie d'en face");
 assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite : toutes ses missions sont cochées");
 assert.deepEqual(JSON.parse(JSON.stringify(out.quarry2)), { qCosts:[2500, 3750, 5625], refund3:2813, next:5625, sapinOther:true, sapinSelf:false }, "carrières : prix qui monte, remboursement de la moitié payée, une seule à sapins");
+assert.deepEqual({ ...out.oldWreath }, { recipe:"couronne_deco", made:1 }, "ancienne recette de couronne reprise");
 assert.equal(JSON.stringify(out.wreath), JSON.stringify({ simple:{ couronne:1 }, belt:{ couronne_deco:1 }, beltIn:{ branche:4, ruban:1, "@boule_finie":2 }, steam:1, elec:1, price:[15, 26, 11, 6], sold3:true, icon:37, name:"Couronne décorée" }), "couronnes séparées");
 assert.deepEqual({ ...out.news }, { news1:6, news3:13, newsSince1:4, total:13 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
