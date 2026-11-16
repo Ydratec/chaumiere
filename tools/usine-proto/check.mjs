@@ -227,6 +227,9 @@ S.belts["4,9"] = { x:4, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
 S.belts["7,9"] = { x:7, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
 const c3 = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); c3.reserve = CRANK_MAX; computePower();
 out.tour3done = STAGE_TOURS[3].map((x) => (x.need ? (x.need() ? "✓" : "○") : "·")).join("");
+// nouveautés : à l'étape 1, seulement celles qui la concernent ; à l'étape 3, toutes
+S.stage = 1; const news1 = tourList("news").length; S.stage = 3; const news3 = tourList("news").length;
+out.news = { news1, news3, total:NEWS.length };
 
 // sortie d'une goulotte : un seul côté, et la voie au choix (même celle d'en face)
 fresh(3); // tapis en fonte : ils tournent sans manivelle
@@ -286,6 +289,7 @@ assert.deepEqual({ ...out.recipe }, { press:"fam:finie", loom:"guirlande", press
 assert.deepEqual({ ...out.chuteOut.allSides }, { east:"1/1", below:"1/0" }, "avant (tous les côtés) : les deux tapis reçoivent, celui du dessous seulement sur sa voie du haut");
 assert.deepEqual(out.chuteOut.east, "0/0", "goulotte tournée vers le bas : rien sur le tapis de droite");
 assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie du bas : le tapis du dessous reçoit sur sa voie d'en face");
-assert.equal(out.tour3done, "·✓✓✓✓✓····", "étape 3 faite : toutes ses missions sont cochées");
+assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite : toutes ses missions sont cochées");
+assert.deepEqual({ ...out.news }, { news1:6, news3:10, total:10 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
