@@ -1617,11 +1617,19 @@ function load() {
   newState();
 }
 load(); useCharacter(); ensureFlowerbed();
-setInterval(save, 4000); setInterval(push, 20000);
+setInterval(save, 4000); setInterval(() => { if (!document.hidden) push(); }, 20000); // onglet caché : l'usine ne tourne pas, rien de neuf à envoyer
 window.addEventListener("beforeunload", push);
 // onglet caché : on enregistre ; de retour : l'usine rattrape le temps passé
 document.addEventListener("visibilitychange", () => { if (document.hidden) push(); else catchUp(); });
-pull();
+// Ouverte depuis l'accueil sur un membre (?visit=<id>) : une fois sa propre partie chargée et à jour, on visite son usine.
+const VISIT = new URLSearchParams(location.search).get("visit");
+pull().then(async () => {
+  if (!VISIT) return;
+  while (catching) await new Promise((r) => setTimeout(r, 300));
+  await loadMembers();
+  const m = (ui.members || []).find((x) => x.id === VISIT);
+  if (m) visit(m.id, m.name);
+});
 new ResizeObserver(() => resize()).observe(cv.parentElement);
 resize(); fitZoom();
 setTimeout(tutoAuto, 1200); // première visite : le tutoriel

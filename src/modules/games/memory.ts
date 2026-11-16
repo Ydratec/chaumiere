@@ -30,7 +30,7 @@ export function newGame(a: string, b: string, rand = Math.random) {
 
 /** Retourne le nouvel état, ou null si le coup est illégal. */
 export function flip(state: MemoryState, deck: string[], i: number, player: string): MemoryState | null {
-  if (state.winner || state.turn !== player || !(i >= 0 && i < deck.length) || state.matched[i]) return null;
+  if (state.winner || state.turn !== player || !(Number.isInteger(i) && i >= 0 && i < deck.length) || state.matched[i]) return null;
   const s: MemoryState = { ...state, cards: [...state.cards], matched: [...state.matched], flipped: [...state.flipped], scores: { ...state.scores } };
   if (s.flipped.length === 2) {
     s.flipped.forEach((j) => (s.cards[j] = null)); // la paire ratée est masquée

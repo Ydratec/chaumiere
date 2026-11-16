@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -21,7 +21,12 @@ export async function db() {
   });
 }
 
-/** Client service-role : contourne la RLS, serveur uniquement. */
+let admin: SupabaseClient | undefined;
+/**
+ * Client service-role : contourne la RLS, serveur uniquement.
+ * Un seul pour tout le serveur (il n'a ni session ni cookies : rien n'est propre à une requête), au lieu d'un nouveau à chaque appel.
+ * Ne jamais y connecter quelqu'un (auth.signIn…) : il servirait ensuite toutes les requêtes au nom de cette personne.
+ */
 export function adminDb() {
-  return createClient(url, process.env.SUPABASE_SECRET_KEY!);
+  return (admin ??= createClient(url, process.env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false, autoRefreshToken: false } }));
 }

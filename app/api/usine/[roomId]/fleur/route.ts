@@ -31,16 +31,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
   const { bed } = (await req.json().catch(() => ({}))) as { bed?: unknown };
   if (!Number.isInteger(bed) || (bed as number) < 0 || (bed as number) >= MAX_BEDS) return Response.json({ error: "Serre inconnue" }, { status: 400 });
   const admin = adminDb(), uid = ctx.user.id, key = `usine:serre:${bed}`, now = Math.floor(Date.now() / 60000); // minutes
+  // On prend d'abord la récolte, de façon atomique : la ligne n'est mise à l'heure que si la pousse est finie (ou créée si
+  // c'est la première : la clé primaire refuse un doublon). Deux demandes envoyées en même temps : une seule passe.
   const { data: last } = await admin.from("farm_stats").select("count").eq("room_id", roomId).eq("user_id", uid).eq("key", key).maybeSingle();
   if (last && now - last.count < GROW_MIN) return Response.json({ error: "Ces fleurs n'ont pas fini de pousser." }, { status: 429 });
+  const taken = last
+    ? !!(await admin.from("farm_stats").update({ count: now }).eq("room_id", roomId).eq("user_id", uid).eq("key", key).eq("count", last.count).select("key")).data?.length
+    : !(await admin.from("farm_stats").insert({ room_id: roomId, user_id: uid, key, count: now })).error;
+  if (!taken) return Response.json({ error: "Ces fleurs n'ont pas fini de pousser." }, { status: 429 });
   const picked = Array.from({ length: PER_HARVEST }, () => pickFlower());
   const delta: Record<string, number> = {};
   for (const f of picked) delta[f] = (delta[f] ?? 0) + 1;
   const [{ error }] = await Promise.all([
     admin.rpc("farm_add_items", { r: roomId, u: uid, delta }),
-    admin.from("farm_stats").upsert({ room_id: roomId, user_id: uid, key, count: now }, { onConflict: "room_id,user_id,key" }), // heure de la récolte
     ...Object.entries(delta).map(([f, n]) => admin.rpc("farm_stat_add", { r: roomId, u: uid, k: `bloom:${f}`, n })), // comme la serre : compte pour l'histoire
   ]);
-  if (error) return Response.json({ error: "Récolte impossible pour l'instant." }, { status: 503 });
+  if (error) {
+    // les fleurs n'ont pas été données : on rend la récolte (l'heure d'avant, ou plus de ligne)
+    if (last) await admin.from("farm_stats").update({ count: last.count }).eq("room_id", roomId).eq("user_id", uid).eq("key", key);
+    else await admin.from("farm_stats").delete().eq("room_id", roomId).eq("user_id", uid).eq("key", key);
+    return Response.json({ error: "Récolte impossible pour l'instant." }, { status: 503 });
+  }
   return Response.json({ picked: picked.map((f) => ITEMS[f].name), flowers: await owned(roomId, uid) });
 }
