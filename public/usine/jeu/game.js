@@ -545,6 +545,25 @@ function updateMachine(m, dt) {
   }
 }
 
+// Sortie d'une goulotte ou d'un extracteur : avant, ils versaient sur tous les tapis qui les touchaient, et la voie
+// dépendait de leur place (un tas au-dessus d'un tapis ne remplissait que la voie du haut). On choisit maintenant
+// le côté où ils versent, puis la voie de ce tapis (y compris celle d'en face), ou les deux à tour de rôle.
+const SIDE_NAME = { N:"Haut", E:"Droite", S:"Bas", W:"Gauche" };
+const LANE_NAME = { N:"du haut", E:"de droite", S:"du bas", W:"de gauche" };
+function outControls(e) {
+  let h = `<h3>${icon("tapis")} Elle verse vers</h3><div class="row" style="flex-wrap:wrap;gap:4px">`
+    + `<button class="btn sm ${e.out ? "" : "on"}" data-cout="">Tous les côtés</button>`
+    + ["N", "E", "S", "W"].map((d) => `<button class="btn sm ${e.out === d ? "on" : ""}" data-cout="${d}">${SIDE_NAME[d]}</button>`).join("") + `</div>`;
+  if (!e.out) return h + `<p class="muted">Tous les tapis qui touchent ${e.kind === "source" ? "le tas" : "l'extracteur"} reçoivent. Choisis un côté pour ne remplir qu'une ligne.</p>`;
+  const [dx, dy] = DIRS[e.out], b = S.belts[(e.x + dx) + "," + (e.y + dy)];
+  if (!b || b.d === OPP[e.out]) return h + `<p class="muted">Pose un tapis côté « ${SIDE_NAME[e.out].toLowerCase()} », qui ne vienne pas vers ${e.kind === "source" ? "le tas" : "l'extracteur"}.</p>`;
+  const l0 = LANE_NAME[LEFT[b.d]], l1 = LANE_NAME[OPP[LEFT[b.d]]]; // voie 0 = gauche dans le sens du tapis
+  return h + `<div class="row" style="flex-wrap:wrap;gap:4px"><span class="muted">Voie</span><span class="grow"></span>`
+    + `<button class="btn sm ${e.lanePick == null ? "on" : ""}" data-clane="">Les deux</button>`
+    + `<button class="btn sm ${e.lanePick === 0 ? "on" : ""}" data-clane="0">Voie ${l0}</button>`
+    + `<button class="btn sm ${e.lanePick === 1 ? "on" : ""}" data-clane="1">Voie ${l1}</button></div>`;
+}
+
 /** Pourquoi une machine est sans énergie (phrase à afficher). */
 function whyNoPower(m) {
   const pw = MACH[m.name].power;
@@ -554,6 +573,13 @@ function whyNoPower(m) {
   if (!near.length) return `pose une manivelle à ${CRANK_R} cases au plus.`;
   if (near.every((c) => c.reserve <= 0)) return "remonte la manivelle à côté.";
   return `les manivelles à côté font déjà tourner ${CRANK_M} machines chacune : ajoutes-en une.`;
+}
+
+/** Petite flèche dorée sur le bord d'une goulotte ou d'un extracteur, du côté où il verse. */
+function drawOutArrow(e) {
+  const [dx, dy] = DIRS[e.out], cx = e.x * T + 16 + dx * 13, cy = e.y * T + 16 + dy * 13, px = -dy, py = dx; // pointe, puis perpendiculaire
+  ctx.fillStyle = "#f6c445"; ctx.strokeStyle = "#1c1820"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx + dx * 4, cy + dy * 4); ctx.lineTo(cx + px * 4, cy + py * 4); ctx.lineTo(cx - px * 4, cy - py * 4); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
 
 // ---------------------------------------------------------------- tapis à deux voies
@@ -682,11 +708,12 @@ function updateBelts(dt) {
     // jusqu'à deux objets par pas (un par voie) : avec le pas d'une seconde du rattrapage hors ligne, 2 objets/s passent encore
     s.acc = Math.min(2, (s.acc || 0) + dt * (ext ? s.rate : CHUTE_RATE));
     for (let put = 0; put < 2 && s.acc >= 1 && !(chute && s.stock < 1); put++)
-    for (const [side, [dx, dy]] of Object.entries(DIRS)) {
+    for (const [side, [dx, dy]] of s.out ? [[s.out, DIRS[s.out]]] : Object.entries(DIRS)) { // sortie choisie : ce côté seulement
       const b = S.belts[(s.x + dx) + "," + (s.y + dy)];
       if (!b || !b.on || b.d === OPP[side]) continue;
       const from = OPP[side];                          // côté du tapis où se trouve la source
-      const lane = from === b.d || from === OPP[b.d] ? (s.lane || 0) : from === LEFT[b.d] ? 0 : 1;
+      const lane = s.out && s.lanePick != null ? s.lanePick // voie choisie (même celle d'en face)
+        : from === b.d || from === OPP[b.d] ? (s.lane || 0) : from === LEFT[b.d] ? 0 : 1;
       const at = from === OPP[b.d] ? 0 : 0.5;
       if (!laneRoom(b, lane, at)) continue;
       b.lanes[lane].push({ it:s.gives, p:at }); if (chute) s.stock--; s.acc -= 1; s.lane = 1 - (s.lane || 0); break;
@@ -1192,10 +1219,12 @@ function drawEnt(e, time) {
     bar(e.x * T + 4, e.y * T - 4, 24, e.stock / r.cap, e.stock >= 1 ? "#3d8be0" : "#d8382f");
     if (e.stock > r.cap) text("+" + Math.floor(e.stock - r.cap), e.x * T + 16, e.y * T - 7, "#9ad8ff");
     if (e.chute) drawIcon("tapis", e.x * T + 8, e.y * T + 20);
+    if (e.chute && e.out) drawOutArrow(e);
   }
   if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > CRANK_MAX * 0.1 ? "#9ad8ff" : "#d8382f");
   if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
   if (e.kind === "switch" && e.filter) drawItem(iconOf(e.filter), e.x * T + 8, e.y * T - 4);
+  if (e.kind === "extractor" && e.out) drawOutArrow(e);
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
 // Vitre des fenêtres du mur du fond (rectangle dans la case de 32 × 64, variante « fenêtre ») : la neige y tombe.
@@ -1565,8 +1594,8 @@ function renderUI() {
       h += `<div class="row"><span class="muted">Prendre</span><span class="grow"></span>${[1, 5, 20].map((n) => `<button class="btn sm vert" data-take="${n}" ${room < 1 ? "disabled" : ""}>×${n}</button>`).join("")}</div>`;
       if (Math.floor(e.stock) >= 1 && !bagRoom(e.gives)) h += `<p class="muted">Sac plein : dépose dans un coffre ou une machine.</p>`;
       if (!e.quarry) h += `<div class="row"><span class="muted">Acheter (${fmtN(r.cost)} p l'unité)</span><span class="grow"></span>${[1, 10, 50].map((n) => `<button class="btn sm" data-buy="${e.gives}" data-n="${n}">×${n}</button>`).join("")}</div>`;
-      if (e.quarry) h += `<div class="row">${demolBtn(e)}</div>`;
-      else if (S.stage >= 3) h += e.chute ? `<p class="muted">${icon("tapis")} Goulotte posée.</p>`
+      if (e.quarry) h += outControls(e) + `<div class="row">${demolBtn(e)}</div>`;
+      else if (S.stage >= 3) h += e.chute ? outControls(e)
         : `<button class="btn or wide" id="chute">${icon("tapis")} Poser une goulotte (${CHUTE_COST} p)</button>`;
     } else if (e.kind === "crank") {
       h += `<h3>Manivelle</h3><p>${e.reserve > 0 ? `Encore ${fmtAway(e.reserve)} de marche (8 h une fois remontée).` : "À l'arrêt."} Touche-la pour la remonter à fond.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}`;
@@ -1588,10 +1617,11 @@ function renderUI() {
       if (e.seen) h += `<p class="muted">Dernier passé : ${label(e.seen)}.</p>`;
       h += `<div class="row">${demolBtn(e)}</div>`;
     } else if (e.kind === "extractor") {
-      h += `<h3>${itemHTML(e.gives)} Extracteur de ${label(e.gives).toLowerCase()}</h3><p>Pose ${fmtN(e.rate)} objet/s sur le tapis voisin, sur la voie de son côté. Demande un poteau électrique à ${POLE_R} cases.</p>`;
+      h += `<h3>${itemHTML(e.gives)} Extracteur de ${label(e.gives).toLowerCase()}</h3><p>Pose ${fmtN(e.rate)} objet/s sur le tapis voisin. Demande un poteau électrique à ${POLE_R} cases.</p>`;
       h += `<div class="row"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((r) => RAW[r].stage <= S.stage).map((r) => `<button class="btn sm ${e.gives === r ? "on" : ""}" data-gives="${r}">${itemHTML(r)}</button>`).join("")}</div>`;
       if (!elecPowered(e)) h += `<p class="bad">${icon("eclair")} Pas de courant : il faut un poteau à ${POLE_R} cases et un générateur avec du bois.</p>`;
       h += `<div class="row"><span class="muted">Débit</span><span class="grow"></span>${[0.1, 0.25, 0.5, 1, 2].map((r) => `<button class="btn sm ${e.rate === r ? "on" : ""}" data-rate="${r}">${fmtN(r)}/s</button>`).join("")}</div>`;
+      h += outControls(e);
     } else if (e.kind === "flowerbed") {
       h += `<h3>Serre de l'usine</h3><p class="muted">3 fleurs toutes les ${FLOWER_TIME / 3600} h, à replanter.</p>`;
       h += !e.planted ? `<p>Touche la serre pour planter.</p>` : e.grown >= FLOWER_TIME ? `<p>${icon("etoile")} En fleurs : touche-la pour récolter.</p>`
@@ -1650,7 +1680,9 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.trash) { const n = bagTake(d.trash, bagCount(d.trash)); if (n) toast(`${n} × ${label(d.trash).toLowerCase()} jeté${n > 1 ? "s" : ""}.`); }
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gift) offerFlowers(d.gift);
-  else if (d.setrecipe && e) e.recipe = d.setrecipe; // la fabrication en cours se termine, la suivante suit la nouvelle recette
+  else if (d.setrecipe && e) e.recipe = d.setrecipe;
+  else if (d.cout != null && e) { e.out = d.cout || null; e.lanePick = null; }
+  else if (d.clane != null && e) e.lanePick = d.clane === "" ? null : +d.clane; // la fabrication en cours se termine, la suivante suit la nouvelle recette
   else if (d.filter != null && e && e.kind === "switch") e.filter = d.filter || null;
   else if (d.qgives && e && e.quarry) { if (e.gives !== d.qgives) { e.gives = d.qgives; e.name = SRC_FILE[d.qgives] || "source_" + d.qgives; e.stock = 0; } }
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
