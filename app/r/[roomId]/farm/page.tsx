@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { adminDb } from "@/src/lib/db/server";
+import type { Gift } from "@/src/modules/farm/data";
+import { FlowerGifts } from "@/src/modules/usine/flower-gifts";
 import { SerreClosing } from "@/src/modules/usine/serre-closing";
 
 // Usine de Noël : le jeu remplace la serre. C'est une page autonome (public/usine/jeu), affichée dans un cadre
@@ -11,7 +13,11 @@ export default async function FarmPage({ params, searchParams }: { params: Promi
   const ctx = await getRoomContext(roomId);
   if (!ctx) redirect("/");
   // première visite : la serre est vendue, un pop-up l'annonce (voir src/modules/usine/serre.ts)
-  const { data: sold } = await adminDb().from("farm_stats").select("key").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("key", "usine:serre-vendue").maybeSingle();
+  // et les cadeaux de fleurs qui attendent d'être ouverts (voir src/modules/usine/flower-gifts.tsx)
+  const [{ data: sold }, { data: gifts }] = await Promise.all([
+    adminDb().from("farm_stats").select("key").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("key", "usine:serre-vendue").maybeSingle(),
+    adminDb().from("farm_gifts").select("id, giver, item, contents, message, day").eq("room_id", roomId).eq("receiver", ctx.user.id).eq("opened", false).order("id"),
+  ]);
   const closing = !sold;
   const character = ctx.people[ctx.user.id].character; // le personnage de la salle avec son accessoire (le bonnet de Noël s'il n'en a pas)
   // ?u=<membre> (depuis l'accueil) : le jeu ouvre directement l'usine de ce membre, en visite.
@@ -19,6 +25,7 @@ export default async function FarmPage({ params, searchParams }: { params: Promi
   return (
     <>
     {closing && <SerreClosing roomId={roomId} />}
+    <FlowerGifts roomId={roomId} gifts={(gifts ?? []) as Gift[]} names={ctx.names} />
     <iframe
       src={`/usine/jeu/index.html?room=${roomId}&sp=${character.species}&co=${character.color}${character.accessory ? `&ac=${character.accessory}` : ""}${visit}`}
       title="Usine de Noël"
