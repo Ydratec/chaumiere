@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
+import { SERRE_OPEN } from "./closed";
 import { isFlower, giftError, MESSAGE_MAX, pickFlower, rarityOf } from "./flowers";
 import { BUILDINGS, GRID_W, ITEMS, isBuilding, isItem, type Inventory } from "./catalog";
 import { loadFarm, loadProjects, loadUnlocks, reloadFarmParts, touchActivity, type Farm, type Gift } from "./data";
@@ -206,7 +207,7 @@ export async function giveGift(roomId: string, receiver: string, items: Inventor
   const bouquet = Object.values(items).reduce((n, v) => n + (v ?? 0), 0) > 1;
   after(() => notify([receiver], "farm", {
     title: "Un cadeau t'attend",
-    body: `${c.names[c.user.id]} t'a laissé ${bouquet ? "un bouquet" : "une fleur"} dans ta serre.`,
+    body: `${c.names[c.user.id]} t'a laissé ${bouquet ? "un bouquet" : "une fleur"} ${SERRE_OPEN ? "dans ta serre" : "à l'usine"}.`,
     url: `/r/${roomId}/farm`,
     tag: `gift-${roomId}`,
   }));

@@ -1023,16 +1023,33 @@ const imgs = {};
 function img(path) { let i = imgs[path]; if (!i) { i = imgs[path] = new Image(); i.src = path; } return i.complete && i.naturalWidth ? i : null; }
 const stageImg = (stage, file) => img(`usine/etape-${stage}/${file}`);
 let zoom = 1, cam = { x:0, y:0 }, cssW = 0, cssH = 0, dpr = 1, camReady = false;
+// Vue déplacée à la main (deux doigts, clic droit, molette ; un doigt en visite) : la caméra ne suit plus le lutin
+// jusqu'à ce qu'on touche le sol pour marcher, ou que le lutin sorte de l'écran en marchant. camEase : elle y revient en douceur.
+let camFree = false, camEase = false;
 // Zone morte de la caméra (fraction de la vue, centrée) : le personnage s'y déplace sans que la caméra bouge.
 const DEAD_W = 0.4, DEAD_H = 0.35;
-const ZOOMS = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4]; // paliers fins pour bien ajuster
+const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4]; // paliers fins ; sous 1 : voir toute l'usine
+const ZMIN = ZOOMS[0], ZMAX = ZOOMS[ZOOMS.length - 1];
+/** Change le zoom en gardant fixe le point de l'écran (cx, cy), en pixels du canevas ; par défaut le centre. */
+function setZoom(z, cx = cssW / 2, cy = cssH / 2) {
+  z = Math.max(ZMIN, Math.min(ZMAX, z));
+  const wx = cam.x + cx / zoom, wy = cam.y + cy / zoom;
+  zoom = z; cam.x = wx - cx / z; cam.y = wy - cy / z;
+}
+/** Palier de zoom suivant (dir = 1) ou précédent (dir = -1), même si le zoom actuel est entre deux paliers (pincement). */
+function zoomStep(dir, cx, cy) {
+  const next = dir > 0 ? ZOOMS.find((z) => z > zoom + 1e-6) : [...ZOOMS].reverse().find((z) => z < zoom - 1e-6);
+  if (next) setZoom(next, cx, cy);
+}
+/** Le plus grand palier où tout l'atelier tient à l'écran (pour une visite). */
+const fitAll = () => [...ZOOMS].reverse().find((z) => S.area.w * T * z <= cssW && S.area.h * T * z <= cssH + 60 * z) || ZMIN;
 function resize() {
   const r = cv.parentElement.getBoundingClientRect();
   dpr = Math.max(1, Math.round(window.devicePixelRatio || 1)); cssW = r.width; cssH = r.height;
   cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
   cv.style.width = cssW + "px"; cv.style.height = cssH + "px";
 }
-function fitZoom() { let z = 1; for (const c of ZOOMS) if (S.area.w * T * c <= cssW * 1.05) z = c; zoom = z; }
+function fitZoom() { let z = 1; for (const c of ZOOMS) if (c >= 1 && S.area.w * T * c <= cssW * 1.05) z = c; zoom = z; } // à l'ouverture : comme avant (jamais sous 1)
 let fxs = [];
 function fx(x, y, text, color) { fxs.push({ x, y, text, color, t:0 }); }
 const hash = (x, y) => ((x * 73856093) ^ (y * 19349663)) >>> 0;
@@ -1108,9 +1125,17 @@ function draw(time) {
   const s = zoom * dpr, vw = cssW / zoom, vh = cssH / zoom, p = S.player;
   const fx = p.px * T + 16, fy = p.py * T + 16;
   if (!camReady) { cam.x = fx - vw / 2; cam.y = fy - vh / 2; camReady = true; }
-  const l = cam.x + vw * (0.5 - DEAD_W / 2), r = cam.x + vw * (0.5 + DEAD_W / 2), t = cam.y + vh * (0.5 - DEAD_H / 2), b = cam.y + vh * (0.5 + DEAD_H / 2);
-  if (fx < l) cam.x -= l - fx; else if (fx > r) cam.x += fx - r;
-  if (fy < t) cam.y -= t - fy; else if (fy > b) cam.y += fy - b;
+  // vue libre : le lutin qui marche et sort de l'écran la fait revenir sur lui
+  if (camFree && !S.visit && p.path.length && (fx < cam.x || fx > cam.x + vw || fy < cam.y || fy > cam.y + vh)) { camFree = false; camEase = true; }
+  if (!camFree) {
+    let tx = cam.x, ty = cam.y;
+    const l = tx + vw * (0.5 - DEAD_W / 2), r = tx + vw * (0.5 + DEAD_W / 2), t = ty + vh * (0.5 - DEAD_H / 2), b = ty + vh * (0.5 + DEAD_H / 2);
+    if (fx < l) tx -= l - fx; else if (fx > r) tx += fx - r;
+    if (fy < t) ty -= t - fy; else if (fy > b) ty += fy - b;
+    const k = camEase ? 0.18 : 1;
+    cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
+    if (camEase && Math.abs(tx - cam.x) < 0.5 && Math.abs(ty - cam.y) < 0.5) camEase = false;
+  }
   const AW = S.area.w * T, AH = S.area.h * T;
   cam.x = AW <= vw ? (AW - vw) / 2 : Math.max(0, Math.min(AW - vw, cam.x));
   cam.y = AH <= vh ? (AH - vh) / 2 : Math.max(0, Math.min(AH - vh + 60, cam.y));
@@ -1195,7 +1220,34 @@ function tileAt(ev) {
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / zoom + cam.x, y = (ev.clientY - r.top) / zoom + cam.y;
   return [Math.floor(x / T), Math.floor(y / T)];
 }
+// ---- Déplacer la vue : deux doigts (glisser, pincer pour zoomer), clic droit ou du milieu, molette ; un doigt en visite.
+const ptrs = new Map(); let pinch = null, pan = null;
+const canvasXY = (x, y) => { const r = cv.getBoundingClientRect(); return [x - r.left, y - r.top]; };
+function startPinch() {
+  const [a, b] = [...ptrs.values()];
+  const [mx, my] = canvasXY((a.x + b.x) / 2, (a.y + b.y) / 2);
+  pinch = { d:Math.hypot(a.x - b.x, a.y - b.y) || 1, wx:cam.x + mx / zoom, wy:cam.y + my / zoom, z:zoom };
+  // le geste à un doigt commencé juste avant (marcher, appui long, tracé de tapis) s'arrête
+  if (ui.press) clearTimeout(ui.press.timer);
+  ui.press = null; ui.follow = null; ui.hold = null; ui.drag = null; ui.placeDrag = null;
+  camFree = true;
+}
+function movePinch() {
+  const [a, b] = [...ptrs.values()];
+  const [mx, my] = canvasXY((a.x + b.x) / 2, (a.y + b.y) / 2);
+  zoom = Math.max(ZMIN, Math.min(ZMAX, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d));
+  cam.x = pinch.wx - mx / zoom; cam.y = pinch.wy - my / zoom;
+}
+cv.addEventListener("wheel", (ev) => {
+  ev.preventDefault();
+  const [cx, cy] = canvasXY(ev.clientX, ev.clientY);
+  zoomStep(ev.deltaY < 0 ? 1 : -1, cx, cy); camFree = true;
+}, { passive:false });
 cv.addEventListener("pointermove", (ev) => {
+  if (ptrs.has(ev.pointerId)) ptrs.set(ev.pointerId, { x:ev.clientX, y:ev.clientY });
+  if (pinch && ptrs.size >= 2) { movePinch(); return; }
+  if (pan) { cam.x = pan.cx - (ev.clientX - pan.x) / zoom; cam.y = pan.cy - (ev.clientY - pan.y) / zoom; camFree = true; return; }
+  if (pinch) return; // un doigt reste après un pincement : il ne fait rien de plus
   const [x, y] = tileAt(ev); ui.hover = [x, y];
   // appui long : un mouvement l'annule (c'était un glissé)
   if (ui.press && !ui.press.fired && Math.hypot(ev.clientX - ui.press.x, ev.clientY - ui.press.y) > 8) { clearTimeout(ui.press.timer); ui.press = null; }
@@ -1213,7 +1265,14 @@ cv.addEventListener("pointermove", (ev) => {
   }
 });
 cv.addEventListener("pointerleave", () => { ui.hover = null; });
-const release = () => {
+const release = (ev) => {
+  ptrs.delete(ev.pointerId);
+  if (pinch) { // fin du pincement : on se cale sur le palier de zoom le plus proche (pixels nets)
+    if (ptrs.size < 2) { const near = ZOOMS.reduce((a, z) => (Math.abs(z - zoom) < Math.abs(a - zoom) ? z : a)); setZoom(near); }
+    if (!ptrs.size) pinch = null;
+    return;
+  }
+  if (pan) { if (!ptrs.size) pan = null; return; }
   ui.drag = null; ui.hold = null; ui.placeDrag = null; ui.follow = null;
   // appui court sur un objet déplaçable : son menu s'ouvre au relâché (un appui long l'a pris en main à la place)
   const p = ui.press; ui.press = null;
@@ -1222,9 +1281,13 @@ const release = () => {
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", release);
 cv.addEventListener("contextmenu", (ev) => ev.preventDefault());
 cv.addEventListener("pointerdown", (ev) => {
-  if (S.visit) return closePanel(); // en visite : on regarde seulement
-  const [x, y] = tileAt(ev); ui.hover = [x, y];
+  ptrs.set(ev.pointerId, { x:ev.clientX, y:ev.clientY });
   try { cv.setPointerCapture(ev.pointerId); } catch {}
+  if (ptrs.size === 2) { pan = null; startPinch(); return; }
+  if (ptrs.size > 2 || pinch) return;
+  // en visite (on regarde seulement), ou au clic droit / du milieu : on fait glisser la vue
+  if (S.visit || ev.button === 1 || ev.button === 2) { if (S.visit) closePanel(); pan = { x:ev.clientX, y:ev.clientY, cx:cam.x, cy:cam.y }; return; }
+  const [x, y] = tileAt(ev); ui.hover = [x, y];
   if (ui.mode === "build" && ui.build) {
     if (place(ui.build, ui.rot, x, y) && ui.build === "belt") ui.drag = [x, y];
     ui.dirty = true; return;
@@ -1243,6 +1306,7 @@ cv.addEventListener("pointerdown", (ev) => {
     ui.press = { id:e.id, x:ev.clientX, y:ev.clientY, fired:false, timer:setTimeout(() => { if (ui.press) { ui.press.fired = true; startMove(e); } }, 420) };
   } else if (e) { ui.hold = e.id; ui.holdT = 0.35; ui.harvest = 0; ui.target = null; interact(e, true); select(e, e.kind === "source"); }
   else { const path = bfs(p.x, p.y, (a, b) => a === x && b === y); if (path) { p.path = path; p.job = null; p.menu = null; p.harvest = null; ui.target = [x, y]; } ui.follow = { cx:ev.clientX, cy:ev.clientY, t:0.15 };
+    if (camFree) { camFree = false; camEase = true; } // toucher le sol pour marcher : la caméra revient sur le lutin
     const b = S.belts[x + "," + y];
     if (b) ui.press = { x:ev.clientX, y:ev.clientY, fired:false, timer:setTimeout(() => { if (ui.press) { ui.press.fired = true; startMoveBelt(b); } }, 420) };
   }
@@ -1347,7 +1411,7 @@ function renderUI() {
     if (S.visit) h += `<p>Tu es chez ${S.visit}.</p><button class="btn or wide" id="visitback2">Revenir à mon usine</button>`;
     const ms = ui.members;
     h += !ms ? `<p class="muted">Chargement…</p>` : !ms.length ? `<p class="muted">Personne d'autre dans la salle.</p>`
-      : ms.map((m) => `<div class="card"><div class="row"><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">${m.stage ? "étape " + m.stage : "pas d'usine"}</span>${m.stage ? `<button class="btn sm" data-visit="${m.id}" data-name="${m.name.replace(/"/g, "&quot;")}">Visiter</button>` : ""}</div></div>`).join("");
+      : ms.map((m) => `<div class="card"><div class="row"><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">${m.stage ? "étape " + m.stage : "pas d'usine"}</span>${m.stage ? `<button class="btn sm" data-visit="${m.id}" data-name="${m.name.replace(/"/g, "&quot;")}">Visiter</button>` : ""}<button class="btn sm or" data-gift="${m.id}">Offrir</button></div></div>`).join("");
   }
   if (ui.tab === "construire") {
     h += `<h3>${icon("marteau")} Construire</h3><div class="grid">`;
@@ -1478,6 +1542,7 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.sell && e) sellBag(e, d.sell);
   else if (d.trash) { const n = bagTake(d.trash, bagCount(d.trash)); if (n) toast(`${n} × ${label(d.trash).toLowerCase()} jeté${n > 1 ? "s" : ""}.`); }
   else if (d.visit) visit(d.visit, d.name);
+  else if (d.gift) offerFlowers(d.gift);
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
     const r = recipeOf(e, d.craft);
@@ -1515,6 +1580,7 @@ $("menubtn").addEventListener("click", toggleIcons);
 for (const b of document.querySelectorAll("[data-page]")) b.addEventListener("click", () => togglePanel(b.dataset.page));
 $("menuclose").addEventListener("click", closePanel);
 $("visitback").addEventListener("click", comeBack);
+$("visitgift").addEventListener("click", () => S.visitId && offerFlowers(S.visitId));
 $("tutonext").addEventListener("click", () => tutoShow(ui.tuto + 1));
 $("tutoskip").addEventListener("click", () => tutoShow(null));
 $("help").addEventListener("click", () => { if (!S.visit) tutoShow(0); });
@@ -1523,8 +1589,8 @@ $("pok").addEventListener("click", confirmPlace);
 $("pno").addEventListener("click", cancelPlace);
 $("pdel").addEventListener("click", removePlace);
 $("beltdone").addEventListener("click", () => setMode("hand"));
-$("zin").addEventListener("click", () => { zoom = ZOOMS[Math.min(ZOOMS.length - 1, ZOOMS.indexOf(zoom) + 1)]; });
-$("zout").addEventListener("click", () => { zoom = ZOOMS[Math.max(0, ZOOMS.indexOf(zoom) - 1)]; });
+$("zin").addEventListener("click", () => zoomStep(1));
+$("zout").addEventListener("click", () => zoomStep(-1)); // jusqu'à 0,5 : toute l'usine à l'écran
 
 /** Chacun a sa serre de l'usine (elle remplace la serre fermée) : on en offre une, fleur prête, si la partie n'en a pas. */
 function ensureFlowerbed() {
@@ -1574,7 +1640,7 @@ const TUTO = [
   { t:"Touche une machine : sa fiche s'ouvre, choisis ce que tu fabriques (+1, ou plus d'un coup).", ent:() => firstOf("machine"), go:() => { const m = firstOf("machine"); if (m) select(m); } },
   { t:"La caisse d'expédition : choisis ce que tu vends contre des pièces.", ent:() => firstOf("crate"), go:() => { const c = firstOf("crate"); if (c) select(c); } },
   { t:"Ta serre : plante, attends 2 h, et récolte 3 fleurs pour la salle.", ent:() => firstOf("flowerbed"), go:() => { const b = firstOf("flowerbed"); if (b) select(b); } },
-  { t:"Appui long sur un objet pour le déplacer et le tourner. Garde le doigt sur le sol pour marcher.", go:() => closePanel() },
+  { t:"Appui long sur un objet pour le déplacer et le tourner. Garde le doigt sur le sol pour marcher ; glisse à deux doigts pour regarder ailleurs, pince pour zoomer.", go:() => closePanel() },
   { t:"Le menu ☰ : le zoom et toutes les pages.", hi:"#menubtn", go:() => { closePanel(); setIcons(true); } },
   { t:"Commandes du jour : de vraies pièces pour la salle (boosters, questions). Plus bas : passer à l'étape suivante.", hi:'[data-page="commandes"]', go:() => page("commandes") },
   { t:"Le marché : achète des matières pour aller plus vite.", hi:'[data-page="marche"]', go:() => page("marche") },
@@ -1606,15 +1672,26 @@ async function visit(id, name) {
     const r = await fetch(`${API}?u=${encodeURIComponent(id)}`, { cache:"no-store" }), j = r.ok ? await r.json() : {};
     if (!j.state) return toast(`${name} n'a pas encore d'usine.`);
     if (!mine) { save(); mine = S; }
-    S = j.state; dropGone(S); S.visit = name; S.simAt = S.simAt || S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
+    S = j.state; dropGone(S); S.visit = name; S.visitId = id; S.simAt = S.simAt || S.savedAt || j.savedAt; invalidate(); camReady = false; ui.sel = null; ui.place = null; closePanel();
+    // toute son usine à l'écran (on la fait glisser d'un doigt, on zoome en pinçant) ; on retrouvera son zoom en rentrant
+    if (ui.zoomBack == null) ui.zoomBack = zoom;
+    zoom = fitAll(); cam.x = S.area.w * T / 2 - cssW / zoom / 2; cam.y = S.area.h * T / 2 - cssH / zoom / 2; camReady = true; camFree = true;
     $("visitname").textContent = `Usine de ${name}`; $("visitbar").hidden = false; ui.dirty = true;
     catchUp(); // elle a continué de tourner depuis que son propriétaire est parti
   } catch { toast("Visite impossible pour l'instant."); }
 }
+/** Offrir des fleurs à un membre : c'est l'app autour du jeu qui ouvre la fenêtre (comme dans l'ancienne serre). */
+function offerFlowers(id) {
+  if (!API || window.parent === window) return toast("Ouvre l'usine depuis ta salle pour offrir des fleurs.");
+  window.parent.postMessage({ type:"usine:gift", to:id }, location.origin);
+}
+// l'app prévient quand un cadeau est parti (ses fleurs ont quitté l'inventaire) : la fiche de la serre se met à jour
+window.addEventListener("message", (ev) => { if (ev.origin === location.origin && ev.source === window.parent && ev.data?.type === "usine:flowers") loadFlowers(); });
 function comeBack() {
   if (!mine) return;
   if (catching) return toast("Un instant, l'usine se met à jour…");
-  S = mine; mine = null; invalidate(); camReady = false; ui.sel = null; $("visitbar").hidden = true; closePanel(); ui.dirty = true;
+  S = mine; mine = null; invalidate(); camReady = false; camFree = false; camEase = false; ui.sel = null; $("visitbar").hidden = true; closePanel(); ui.dirty = true;
+  if (ui.zoomBack != null) { zoom = ui.zoomBack; ui.zoomBack = null; }
   catchUp(); // ton usine a tourné pendant la visite
 }
 /** Tes fleurs (inventaire de la salle), pour la fiche de la serre. */
@@ -1717,5 +1794,5 @@ resize(); fitZoom();
 setTimeout(tutoAuto, 1200); // première visite : le tutoriel
 document.fonts?.load('8px "Chaumiere Pixel"');
 requestAnimationFrame(tick);
-window.__usine = { get S() { return S; }, step, place, advance, sell, interact, buy, byId, entAt, computePower, bagAdd };
+window.__usine = { get S() { return S; }, get zoom() { return zoom; }, get cam() { return { ...cam, free:camFree }; }, step, place, advance, sell, interact, buy, byId, entAt, computePower, bagAdd };
 })();
