@@ -39,10 +39,31 @@ export async function kindFor(roomId: string, day = challengeDay()) {
 
 type Row = { user_id: string; log: DailyEntry[]; misses: number; solved_at: string | null; score: number | null; reward: number | null };
 
-export async function loadAttempt(roomId: string, uid: string, day = challengeDay()): Promise<DailyAttempt> {
-  const { data } = await adminDb().from("daily_challenges").select("log, misses, solved_at")
+/** Marqueur de la ligne telle qu'on l'a lue (son updated_at), ou null si elle n'existe pas encore. */
+export type Stamp = string | null;
+
+/**
+ * Enregistre un essai seulement si la ligne n'a pas changé depuis sa lecture (verrou optimiste).
+ * Renvoie false si un autre envoi est passé entre-temps : sans ça, des essais envoyés en même temps
+ * partaient tous du même état, et un seul comptait (toutes les réponses testées pour le prix d'une).
+ */
+export async function writeAttempt(roomId: string, uid: string, day: string, kind: ChallengeKind, stamp: Stamp, values: Record<string, unknown>) {
+  const admin = adminDb();
+  const updated_at = new Date().toISOString();
+  if (stamp === null) {
+    // Première écriture : la clé primaire refuse un second envoi simultané.
+    const { error } = await admin.from("daily_challenges").insert({ room_id: roomId, user_id: uid, day, kind, ...values, updated_at });
+    return !error;
+  }
+  const { data } = await admin.from("daily_challenges").update({ ...values, updated_at })
+    .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind).eq("updated_at", stamp).select("kind");
+  return !!data?.length;
+}
+
+export async function loadAttempt(roomId: string, uid: string, day = challengeDay()): Promise<DailyAttempt & { stamp: Stamp }> {
+  const { data } = await adminDb().from("daily_challenges").select("log, misses, solved_at, updated_at")
     .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", "orapa").maybeSingle();
-  return { log: (data?.log as DailyEntry[]) ?? [], misses: data?.misses ?? 0, solved: !!data?.solved_at };
+  return { log: (data?.log as DailyEntry[]) ?? [], misses: data?.misses ?? 0, solved: !!data?.solved_at, stamp: data?.updated_at ?? null };
 }
 
 export type Ranking = { user: string; solved: boolean; failed: boolean; score: number; waves: number; misses: number; at: string | null }[];
@@ -101,10 +122,10 @@ export type SimpleView<E> = {
   yesterdayKind: ChallengeKind;
 };
 
-export async function loadSimple<E>(roomId: string, uid: string, kind: "code" | "mot", day = challengeDay()): Promise<SimpleAttempt<E>> {
-  const { data } = await adminDb().from("daily_challenges").select("log, solved_at")
+export async function loadSimple<E>(roomId: string, uid: string, kind: "code" | "mot", day = challengeDay()): Promise<SimpleAttempt<E> & { stamp: Stamp }> {
+  const { data } = await adminDb().from("daily_challenges").select("log, solved_at, updated_at")
     .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind).maybeSingle();
-  return { log: (data?.log as E[]) ?? [], solved: !!data?.solved_at };
+  return { log: (data?.log as E[]) ?? [], solved: !!data?.solved_at, stamp: data?.updated_at ?? null };
 }
 
 export async function loadSimpleView(roomId: string, uid: string, kind: "code" | "mot", orapa: boolean): Promise<SimpleView<CodeEntry | MotEntry>> {
@@ -158,23 +179,26 @@ export function puzzleFor(roomId: string, day: string, kind: PuzzleKind): Puzzle
   return data;
 }
 
-type PuzzleRow = { log: { start?: string }[]; misses: number; solved_at: string | null; score: number | null; reward: number | null };
-export type PuzzleAttempt = { startedAt: string; misses: number; solved: boolean; score: number | null; reward: number | null };
+type PuzzleRow = { log: { start?: string }[]; misses: number; solved_at: string | null; score: number | null; reward: number | null; updated_at: string };
+/** stamp : marqueur de la ligne lue (voir writeAttempt). */
+export type PuzzleAttempt = { startedAt: string; misses: number; solved: boolean; score: number | null; reward: number | null; stamp: Stamp };
 
 /** L'essai du joueur ; le chronomètre part à la première ouverture du défi. */
 export async function loadPuzzleAttempt(roomId: string, uid: string, kind: PuzzleKind, day = challengeDay(), start = false): Promise<PuzzleAttempt> {
   const admin = adminDb();
-  const { data } = await admin.from("daily_challenges").select("log, misses, solved_at, score, reward")
+  const read = () => admin.from("daily_challenges").select("log, misses, solved_at, score, reward, updated_at")
     .eq("room_id", roomId).eq("user_id", uid).eq("day", day).eq("kind", kind).maybeSingle<PuzzleRow>();
-  let row = data;
+  let row = (await read()).data;
   if (!row && start) {
     const startedAt = new Date().toISOString();
     await admin.from("daily_challenges").upsert({ room_id: roomId, user_id: uid, day, kind, log: [{ start: startedAt }], misses: 0 }, { ignoreDuplicates: true });
-    row = { log: [{ start: startedAt }], misses: 0, solved_at: null, score: null, reward: null };
+    // On relit la ligne (une seule fois par jour, à la première ouverture) : c'est elle qui fait foi, avec son marqueur.
+    row = (await read()).data ?? { log: [{ start: startedAt }], misses: 0, solved_at: null, score: null, reward: null, updated_at: startedAt };
   }
   return {
     startedAt: row?.log?.[0]?.start ?? new Date().toISOString(),
     misses: row?.misses ?? 0, solved: !!row?.solved_at, score: row?.score ?? null, reward: row?.reward ?? null,
+    stamp: row?.updated_at ?? null,
   };
 }
 

@@ -30,22 +30,23 @@ export async function login(_prev: string, f: FormData) {
   const { data: tries } = await admin.from("login_attempts").select("failures, locked_until").eq("username", username).maybeSingle();
   if (tries?.locked_until && Date.parse(tries.locked_until) > Date.now()) return "Trop d'essais : réessaie dans quelques minutes.";
 
+  // L'essai est compté AVANT de vérifier le PIN, et seulement si le compteur n'a pas bougé depuis sa lecture :
+  // des essais envoyés tous en même temps ne passent plus sous le blocage (un seul est accepté à la fois).
+  const failures = (tries?.locked_until ? 0 : (tries?.failures ?? 0)) + 1; // le compteur repart après un blocage
+  const row = { failures, locked_until: failures >= 5 ? new Date(Date.now() + 15 * 60_000).toISOString() : null };
+  const counted = tries
+    ? !!(await admin.from("login_attempts").update(row).eq("username", username).eq("failures", tries.failures).select("username")).data?.length
+    : !(await admin.from("login_attempts").insert({ username, ...row })).error;
+  if (!counted) return "Connexion impossible, réessaie.";
+
   let { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-    if (created.error) {
-      const failures = (tries?.locked_until ? 0 : (tries?.failures ?? 0)) + 1; // le compteur repart après un blocage
-      await admin.from("login_attempts").upsert({
-        username,
-        failures,
-        locked_until: failures >= 5 ? new Date(Date.now() + 15 * 60_000).toISOString() : null,
-      });
-      return failures >= 5 ? "Trop d'essais : réessaie dans quelques minutes." : "PIN incorrect.";
-    }
+    if (created.error) return failures >= 5 ? "Trop d'essais : réessaie dans quelques minutes." : "PIN incorrect.";
     ({ error } = await sb.auth.signInWithPassword({ email, password }));
     if (error) return "Connexion impossible.";
   }
-  if (tries) await admin.from("login_attempts").delete().eq("username", username);
+  await admin.from("login_attempts").delete().eq("username", username); // connecté : le compteur repart de zéro
   redirect("/");
 }
 
@@ -64,17 +65,20 @@ export async function answer(f: FormData) {
     .maybeSingle<{ room_id: string; payload: { kind?: string; text?: string; options?: string[]; target?: string }; rooms: { vote_locked: boolean } | null }>();
   const me = await getAuthUser();
   const kind = isKind(a?.payload?.kind) ? a.payload.kind : "open";
-  if (a && kind !== "open") {
+  if (a && me && kind !== "open") {
     const { data: ms } = await sb.from("room_members").select("user_id").eq("room_id", a.room_id);
-    const cands = candidates((ms ?? []).map((m) => ({ id: m.user_id as string, name: "" })), kind, me?.id ?? "", a.payload.target).map((c) => c.id);
+    const cands = candidates((ms ?? []).map((m) => ({ id: m.user_id as string, name: "" })), kind, me.id, a.payload.target).map((c) => c.id);
     if (!validAnswer(kind, content, cands, a.payload.options)) return;
   }
-  const { data: before } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me?.id ?? "").maybeSingle();
-  if (before && a?.rooms?.vote_locked) return; // réponses définitives (votes comme questions ouvertes)
-  const { error } = await sb.from("answers").upsert({ activity_id: activityId, content });
-  if (!a) return revalidatePath("/", "layout");
+  if (!a || !me) return revalidatePath("/", "layout"); // question inconnue ou d'une autre salle (la lecture ci-dessus passe par la RLS), ou plus connecté
+  const { data: before } = await sb.from("answers").select("user_id").eq("activity_id", activityId).eq("user_id", me.id).maybeSingle();
+  if (before && a.rooms?.vote_locked) return; // réponses définitives (votes comme questions ouvertes)
+  // Écrit par le serveur, une fois la réponse vérifiée : les membres n'écrivent plus directement dans la table (migration 0031).
+  // Réponses définitives : on n'ajoute que s'il n'y en a pas encore (deux envois simultanés : le premier reste).
+  const { error } = await adminDb().from("answers")
+    .upsert({ activity_id: activityId, user_id: me.id, content }, { onConflict: "activity_id,user_id", ignoreDuplicates: !!a.rooms?.vote_locked });
   // Première réponse : on prévient les autres membres (« Léa a voté »), une notification par question qui se remplace.
-  if (!error && !before && me) {
+  if (!error && !before) {
     after(async () => {
       const c = await getRoomContext(a.room_id);
       const who = c?.names[me.id] ?? "Quelqu'un";

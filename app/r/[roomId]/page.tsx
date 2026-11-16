@@ -5,6 +5,7 @@ import { Cat } from "@/src/components/cat";
 import { Icon } from "@/src/components/icons";
 import type { Activity } from "@/src/modules/activities/registry";
 import { ItemIcon } from "@/src/modules/farm/art";
+import { SERRE_OPEN } from "@/src/modules/farm/closed";
 import { readyCount } from "@/src/modules/farm/data";
 import { adminDb } from "@/src/lib/db/server";
 import { isSuperAdmin } from "@/src/modules/admin/guard";
@@ -22,18 +23,21 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
   const { roomId } = await params;
   const ctx = await getRoomContext(roomId);
   if (!ctx) redirect("/");
-  const { data: activity } = await ctx.sb.rpc("today_activity", { r: roomId }).single<Activity>();
-
-  const { count } = await ctx.sb
+  // Tout ce qui ne dépend pas de la question du jour part en même temps qu'elle (au lieu d'une requête après l'autre).
+  const todo = ctx.sb
     .from("games").select("id", { count: "exact", head: true })
     .eq("room_id", roomId).eq("status", "open").neq("creator", ctx.user.id)
     .or(`target.is.null,target.eq.${ctx.user.id}`);
-  const inbox = isSuperAdmin(ctx.user) ? await loadInbox() : [];
-  const [ready, extras, price, { data: wallet }, flight] = await Promise.all([
-    readyCount(roomId, ctx.user.id),
-    todayExtras(ctx.sb, activity),
+  const [{ data: activity }, { count }, inbox, ready, price, { data: wallet }] = await Promise.all([
+    ctx.sb.rpc("today_activity", { r: roomId }).single<Activity>(),
+    todo,
+    isSuperAdmin(ctx.user) ? loadInbox() : [],
+    SERRE_OPEN ? readyCount(roomId, ctx.user.id) : 0, // serre fermée : plus de « récoltes prêtes » (on ne peut plus les ramasser)
     questionPrice(roomId),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("item", "coins").maybeSingle(),
+  ]);
+  const [extras, flight] = await Promise.all([
+    todayExtras(ctx.sb, activity),
     activity?.day ? loadFlight(ctx.sb, roomId, ctx.members.map((m) => m.user_id), activity.day) : null,
   ]);
 
@@ -80,7 +84,7 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
         <Link href={`/r/${roomId}/farm`} className="group flex items-center gap-4">
           <span className="flex size-12 items-center justify-center rounded-2xl bg-white shadow-sm"><ItemIcon id="wheat" size={30} /></span>
           <span className="flex-1">
-            <span className="block font-semibold">Serre</span>
+            <span className="block font-semibold">{SERRE_OPEN ? "Serre" : "Usine"}</span>
             {!!ready && <span className="block text-sm text-zinc-500">{ready} récolte{ready > 1 ? "s" : ""} prête{ready > 1 ? "s" : ""}</span>}
           </span>
           {!!ready && <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-sm font-semibold text-white">{ready}</span>}
@@ -97,7 +101,7 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
             <Link
               key={m.user_id}
               href={m.user_id === ctx.user.id ? `/r/${roomId}/farm` : `/r/${roomId}/farm?u=${m.user_id}`}
-              aria-label={`Serre de ${m.username}`}
+              aria-label={`${SERRE_OPEN ? "Serre" : "Usine"} de ${m.username}`}
               className="flex w-14 flex-col items-center gap-1.5 text-center transition active:scale-95"
             >
               <Avatar url={m.avatar_url} character={m.character} name={m.username} size={48} />

@@ -1,5 +1,6 @@
 "use server";
 
+import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminDb } from "@/src/lib/db/server";
@@ -44,7 +45,8 @@ export async function createRoom(_prev: string, f: FormData) {
   if (!PSEUDO.test(username)) return "Pseudo : 2 à 20 caractères.";
 
   const admin = adminDb();
-  const code = Math.random().toString(36).slice(2, 8);
+  // Le code d'invitation vaut un mot de passe de salle : tiré avec un vrai hasard (6 caractères, lettres et chiffres).
+  const code = Array.from({ length: 6 }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[randomInt(36)]).join("");
   const { data: room, error } = await admin.from("rooms").insert({ name, code }).select("id").single();
   if (error) return "Création impossible, réessaie.";
   await admin.from("room_members").insert({ room_id: room.id, user_id: uid, username, role: "admin" });
@@ -56,7 +58,7 @@ export async function setAvatar(f: FormData) {
   const target = f.get("target") === "room" ? "room" : "user";
   const c = await ctx(f, target === "room");
   const file = f.get("file");
-  if (!(file instanceof File) || !file.type.startsWith("image/") || file.size > 2_000_000) return;
+  if (!(file instanceof File) || !file.type.startsWith("image/") || file.type === "image/svg+xml" || file.size > 2_000_000) return; // pas de SVG : il peut contenir du script
 
   const path = target === "room" ? `room/${c.roomId}` : `user/${c.roomId}-${c.user.id}`;
   const { error } = await c.admin.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });

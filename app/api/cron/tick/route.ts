@@ -2,6 +2,7 @@
 // envoie les notifications programmées (question du jour à l'heure de chaque salle, récoltes prêtes).
 import { adminDb } from "@/src/lib/db/server";
 import { ITEMS, isItem } from "@/src/modules/farm/catalog";
+import { SERRE_OPEN } from "@/src/modules/farm/closed";
 import { producedOf, type Tile } from "@/src/modules/farm/rules";
 import { chapterOf } from "@/src/modules/farm/story";
 import { activeEvents } from "@/src/modules/farm/story/events";
@@ -14,7 +15,8 @@ import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 export async function POST(req: Request) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`)
     return new Response("Non autorisé", { status: 401 });
-  const [farm, question, story, news] = await Promise.all([harvests(), dailyQuestion(), storyNews(), newsPush()]);
+  // Serre fermée : plus de notifications de récolte ni d'histoire (leur code reste en dessous).
+  const [farm, question, story, news] = await Promise.all([SERRE_OPEN ? harvests() : 0, dailyQuestion(), SERRE_OPEN ? storyNews() : 0, newsPush()]);
   return Response.json({ farm, question, story, news });
 }
 
