@@ -4,6 +4,9 @@
 (() => {
 "use strict";
 const META = window.USINE_META;
+// Objets sans fiche de sprites dans meta.js : l'aiguilleur (dessin à part), la carrière (le dessin du tas, pour la poser)
+META["3"].objects.aiguilleur ||= { file:"aiguilleur.png", frame:[32, 32], frames:1, footprint:[1, 1], origin:[0, 0] };
+META["3"].objects.quarry ||= META["3"].objects.source_sable;
 const T = 32, W = 24, H = 18, Y0 = 2; // W × H : taille maximale de l'atelier ; Y0 : rangées du mur du fond
 // L'atelier commence petit et s'agrandit (page Construire) : S.area = { w, h } est la partie utilisable de la carte.
 const AREA0 = { w:9, h:8 }; // 9 × 6 cases de sol : juste la place des tas, de la caisse, du coffre et des deux premières machines
@@ -73,6 +76,8 @@ function dropGone(st) {
   st.bag = (st.bag || []).map((sl) => (sl && GONE.includes(sl.it) ? null : sl));
   for (const e of st.ents || []) { clean(e.inb); clean(e.outb); clean(e.res); clean(e.store); }
   for (const b of Object.values(st.belts || {})) b.lanes = (b.lanes || [[], []]).map((L) => L.filter((o) => !GONE.includes(o.it)));
+  // et les machines automatiques restées en « automatique » prennent leur recette par défaut (c'est ce qu'elles faisaient)
+  for (const e of st.ents || []) if (e.kind === "machine" && MACH[e.name]?.power && (e.recipe === "auto" || !e.recipe)) e.recipe = defaultRecipe(e.name);
 }
 const ETOILE = { id:"etoile_bois", name:"Étoile en bois", in:{ planche:1 }, out:{ etoile_bois:1 }, t:1.5 };
 const BOULE_ART = { id:"boule", name:"Boule transparente", in:{ sable:2 }, out:{ boule_transparente:1 }, t:8 };
@@ -120,10 +125,14 @@ const UPGRADE = {
   tree_bench:"steam_tree", steam_tree:"tree_decorator", loom:"steam_loom", steam_loom:"elec_loom",
 };
 const UPGRADED = new Set(Object.values(UPGRADE));
+const QUARRY_COST = 2500;
+const SWITCH_FILTERS = ["sable", "bois", "fil", "branche", "sapin_brut", "pigment_rouge", "pigment_vert", "pigment_or", "pigment_bleu",
+  "verre", "perles", "planche", "crochet", "boule_transparente", "@peinture", "@boule_peinte", "@boule_finie", "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "sapin_decore"];
+
 const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
   1:[["kiln", 180], ["paint_table", 180], ["chest_wood", 60, "Coffre"], ["serre_fleurs", 300, "Serre de l'usine"]],
   2:[["wreath_table", 400], ["lathe", 830], ["tree_bench", 830], ["kiln_bellows", 830]],
-  3:[["belt", 5, "Tapis en bois"], ["crank", 400, "Manivelle"], ["kiln_belt", 4700], ["paint_table_belt", 4700], ["star_press", 4700], ["loom", 4700], ["wreath_table_belt", 4700]],
+  3:[["belt", 5, "Tapis en bois"], ["aiguilleur", 60, "Aiguilleur"], ["quarry", QUARRY_COST, "Carrière"], ["crank", 400, "Manivelle"], ["kiln_belt", 4700], ["paint_table_belt", 4700], ["star_press", 4700], ["loom", 4700], ["wreath_table_belt", 4700]],
   4:[["belt_fonte", 20, "Tapis en fonte"], ["boiler", 1200, "Chaudière"], ...["steam_furnace", "steam_sprayer", "steam_press", "steam_loom", "steam_wreath", "steam_tree"].map((k) => [k, 11350])],
   5:[["belt_metal", 60, "Tapis en métal"], ["generator", 8000, "Générateur"], ["pole", 400, "Poteau électrique"], ["extractor_sable", 3000, "Extracteur"],
     ["chest_metal", 500, "Coffre en métal"], ...["elec_furnace", "paint_booth", "assembler", "elec_loom", "elec_wreath", "tree_decorator"].map((k) => [k, 23240])],
@@ -132,7 +141,7 @@ const BELT_COST = { bois:5, fonte:20, metal:60 };
 // Serre de l'usine (dessin : tools/usine-pixel/serre.py) : on plante, ça pousse en FLOWER_TIME (même hors ligne), on récolte ;
 // la récolte (3 fleurs, tirées par le serveur) va dans l'inventaire de la salle. Images : 0 vide, 1 pousses, 2 plantes, 3 fleurs.
 const FLOWER_TIME = 2 * 3600, MAX_BEDS = 10; // le serveur n'accepte que 10 serres (numéros 0 à 9)
-const STAGE_OF = { crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
+const STAGE_OF = { aiguilleur:3, quarry:3, crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
 // Énergie (balance.json) : une chaudière fait 6 u/s de vapeur, une machine à vapeur en prend 2 → 3 machines ; 1 bois = 60 u de vapeur.
 // Un générateur fait 900 kW avec 10 u/s de vapeur, une machine électrique (ou un extracteur) prend 150 kW → 6 appareils.
 // ponytail: pas de tuyaux, la vapeur porte à BOILER_R cases (comme la manivelle) ; à remplacer par des réseaux de tuyaux si besoin.
@@ -196,7 +205,7 @@ function addSources(stage) {
 }
 function addEnt(e) {
   e.id = S.ids++;
-  if (e.kind === "machine") Object.assign(e, { inb:{}, outb:{}, craft:null, boost:0, recipe:e.recipe || "auto", color:e.color || null, lane:0, queue:[] });
+  if (e.kind === "machine") Object.assign(e, { inb:{}, outb:{}, craft:null, boost:0, recipe:e.recipe || (MACH[e.name].power ? defaultRecipe(e.name) : "auto"), color:e.color || null, lane:0, queue:[] });
   if (e.kind === "crank") e.reserve = CRANK_MAX;
   S.ents.push(e); invalidate(); return e;
 }
@@ -218,7 +227,7 @@ function bagTake(it, n) {
 }
 
 // ---------------------------------------------------------------- géométrie
-function sprOf(name, stage, o) { const ob = META[stage].objects[name]; return o ? ob[o] : ob; }
+function sprOf(name, stage, o) { const ob = META[stage].objects[name]; return o && ob[o] ? ob[o] : ob; } // sans orientation (tas, aiguilleur) : le même dessin
 const spr = (e) => sprOf(e.name, e.stage, e.o);
 function fp(e) { const f = spr(e).footprint || [1, 1]; return { w:f[0], h:f[1] }; }
 function tilesOf(e) { const f = fp(e), out = []; for (let j = 0; j < f.h; j++) for (let i = 0; i < f.w; i++) out.push([e.x + i, e.y + j]); return out; }
@@ -255,6 +264,8 @@ function feeders(e, pt = portsOf(e)) {
   for (const [tx, ty] of tilesOf(e)) for (const [d, [dx, dy]] of Object.entries(DIRS)) {
     const bx = tx - dx, by = ty - dy, b = S.belts[bx + "," + by]; // tapis voisin qui avance vers cette case de la machine
     if (b && b.d === d && !isOutBelt(pt, bx, by)) res.push(b);
+    const sw = !b && entAt(bx, by); // un aiguilleur collé à la machine peut aussi l'alimenter
+    if (sw && sw.kind === "switch" && !isOutBelt(pt, bx, by) && !res.includes(sw)) res.push(sw);
   }
   return res;
 }
@@ -264,7 +275,7 @@ function unlinked(e) {
   const out = [];
   if (pt.in && !feeders(e, pt).length) out.push("entrée");
   const ob = pt.out && S.belts[pt.out.outside[0] + "," + pt.out.outside[1]];
-  if (pt.out && !(ob && ob.d !== OPP[pt.out.side])) out.push("sortie");
+  if (pt.out && !(ob && ob.d !== OPP[pt.out.side]) && entAt(pt.out.outside[0], pt.out.outside[1])?.kind !== "switch") out.push("sortie");
   return out;
 }
 function bfs(sx, sy, isGoal) {
@@ -293,13 +304,35 @@ function activeRecipes(m) {
   if (!recipeMemo.has(k)) recipeMemo.set(k, computeRecipes(m));
   return recipeMemo.get(k);
 }
+// Ce qu'une machine automatique fabrique : UNE recette choisie (ou une « famille » de couleurs : fam:boule = boules
+// peintes de toutes les couleurs), plus les intermédiaires qu'elle se fait elle-même (la peinture pour les boules).
+// L'ancien mode « automatique » (tout ce qu'elle peut) mélangeait les recettes et bouchait les tapis : il est retiré.
+const famOf = (r) => (r.color ? r.id.replace("_" + r.color, "") : null);
+/** Les choix proposés dans la fiche : chaque famille de couleurs, puis chaque recette. */
+function recipeChoices(name) {
+  const all = RECIPES[name], out = [], seen = new Set();
+  for (const r of all) {
+    const f = famOf(r);
+    if (f && !seen.has(f) && all.filter((x) => famOf(x) === f).length > 1) { seen.add(f); out.push({ id:"fam:" + f, fam:f, r }); }
+  }
+  for (const r of all) out.push({ id:r.id, r });
+  return out;
+}
+/** Ce qu'une machine automatique fait d'office : le premier produit qui n'est pas l'intermédiaire d'une autre recette. */
+function defaultRecipe(name) {
+  const all = RECIPES[name];
+  const fin = all.find((r) => !r.manual && !all.some((x) => x !== r && Object.keys(r.out).some((o) => Object.keys(x.in).some((k) => matches(o, k)))));
+  const r = fin || all[0], f = famOf(r);
+  return f && all.filter((x) => famOf(x) === f).length > 1 ? "fam:" + f : r.id;
+}
 function computeRecipes(m) {
   const all = RECIPES[m.name];
   let list;
-  if (m.recipe === "auto") list = all.filter((r) => !r.manual);
+  if (m.recipe === "auto") list = all.filter((r) => !r.manual); // vieilles parties pas encore reprises (voir dropGone)
   else {
-    const main = all.find((r) => r.id === m.recipe) || all[0];
-    list = [main];
+    const fam = m.recipe?.startsWith("fam:") && m.recipe.slice(4);
+    list = fam ? all.filter((r) => famOf(r) === fam) : [all.find((r) => r.id === m.recipe) || all[0]];
+    if (!list.length) list = [all[0]];
     for (let d = 0; d < 2; d++)
       for (const r of all) if (!list.includes(r) && list.some((l) => Object.keys(l.in).some((k) => Object.keys(r.out).some((o) => matches(o, k))))) list.push(r);
   }
@@ -501,7 +534,11 @@ function updateMachine(m, dt) {
   const pt = portsOf(m);
   if (pt && outTotal(m) > 0) {
     const [bx, by] = pt.out.outside, b = S.belts[bx + "," + by];
-    if (b && b.d !== OPP[pt.out.side] && b.on) {
+    const sw = !b && entAt(bx, by);
+    if (sw && sw.kind === "switch") { // aiguilleur collé à la sortie : la machine lui passe directement ce qu'elle a fait
+      const it = Object.keys(m.outb)[0];
+      if (deliver({ x:pt.out.inside[0], y:pt.out.inside[1], d:pt.out.side }, 0, it)) { if (!--m.outb[it]) delete m.outb[it]; }
+    } else if (b && b.d !== OPP[pt.out.side] && b.on) {
       // une machine pose toujours sur la voie de gauche : la voie de droite reste libre pour les jonctions
       if (laneRoom(b, 0, 0)) { const it = Object.keys(m.outb)[0]; b.lanes[0].push({ it, p:0 }); if (!--m.outb[it]) delete m.outb[it]; }
     }
@@ -578,7 +615,23 @@ function beltPos(b, lane, p) {
   const [lx, ly] = LVEC[dir], off = lane === 0 ? 5 : -5;
   return [b.x * T + x + lx * off, b.y * T + y + ly * off];
 }
-function deliver(b, lane, it) {   // l'objet de tête est au bout du tapis : où va-t-il ?
+/**
+ * Aiguilleur (étape 3) : il ne garde rien, il fait suivre l'objet tout de suite.
+ * - Sans filtre : il répartit à parts égales, chacun son tour, entre tout droit, gauche et droite.
+ * - Avec un filtre : l'objet choisi va tout droit, les autres partent sur les côtés.
+ * Un tapis, une machine, un coffre, la caisse ou un autre aiguilleur peuvent être à chaque sortie. Comme dans Mindustry.
+ */
+function throughSwitch(sw, from, lane, it, depth) {
+  if (depth > 6) return false; // une boucle d'aiguilleurs collés : on s'arrête
+  const left = LEFT[from], right = OPP[left];
+  const exits = sw.filter ? (matches(it, sw.filter) ? [from] : [left, right]) : [from, left, right];
+  for (let k = 0; k < exits.length; k++) {
+    const i = ((sw.rr || 0) + k) % exits.length;
+    if (deliver({ x:sw.x, y:sw.y, d:exits[i] }, lane, it, depth + 1)) { sw.rr = i + 1; sw.seen = it; return true; }
+  }
+  return false;
+}
+function deliver(b, lane, it, depth = 0) {   // l'objet de tête est au bout du tapis : où va-t-il ?
   const [dx, dy] = DIRS[b.d], nx = b.x + dx, ny = b.y + dy;
   const nb = S.belts[nx + "," + ny];
   if (nb) {
@@ -591,6 +644,7 @@ function deliver(b, lane, it) {   // l'objet de tête est au bout du tapis : où
   }
   const e = entAt(nx, ny);
   if (!e) return false;
+  if (e.kind === "switch") return throughSwitch(e, b.d, lane, it, depth);
   if (e.kind === "crate") { if (!price(it)) return false; sell(it, 1, nx, ny); return true; }
   if (e.kind === "chest") return chestAdd(e, it, 1) === 1;
   if (e.kind === "boiler" || e.kind === "generator") { if (it !== "bois" || e.fuel > FUEL_CAP - 1) return false; e.fuel++; return true; }
@@ -771,7 +825,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     if (first) { const n = Math.min(bagCount("bois"), Math.floor(FUEL_CAP - e.fuel)); if (n > 0) { bagTake("bois", n); e.fuel += n; p.work = 0.3; } select(e); }
     return;
   }
-  if (e.kind === "extractor" || e.kind === "pole") { if (first) select(e); return; }
+  if (e.kind === "extractor" || e.kind === "pole" || e.kind === "switch") { if (first) select(e); return; }
   if (e.kind !== "machine") return;
   let moved = 0;
   if (manual(e)) {                                      // machine manuelle : les ingrédients de base restent dans le sac
@@ -852,6 +906,11 @@ function place(key, rot, x, y) {
   }
   if (S.coins < cost) { toast("Pas assez de pièces"); return false; }
   if (!canPlace(key, o, x, y)) { toast("Place occupée"); return false; }
+  if (key === "quarry") { // une carrière : un tas de plus, où l'on veut, avec sa goulotte (sable au départ, à changer dans sa fiche)
+    addEnt({ kind:"source", name:"source_sable", stage:3, gives:"sable", quarry:true, x, y, stock:0, chute:true, acc:0, lane:0 });
+    S.coins -= cost; return true;
+  }
+  if (key === "aiguilleur") { addEnt({ kind:"switch", name:"aiguilleur", stage:3, x, y, filter:null, rr:0 }); S.coins -= cost; return true; }
   const kind = MACH[key] ? "machine" : ["crank", "boiler", "generator", "pole"].includes(key) ? key : key.startsWith("extractor") ? "extractor" : key === "serre_fleurs" ? "flowerbed" : "chest";
   addEnt({ kind, name:key, stage:stageOf(key), x, y, o:hasOri(key) ? o : key.startsWith("extractor") ? "e" : undefined, store:kind === "chest" ? {} : undefined,
     ...(kind === "flowerbed" ? { planted:false, grown:0 } : kind === "boiler" || kind === "generator" ? { fuel:0 } : kind === "extractor" ? { gives:"sable", rate:0.25, acc:0, lane:0 } : {}) });
@@ -861,7 +920,7 @@ function demolish(x, y) {
   const b = S.belts[x + "," + y];
   if (b) { delete S.belts[x + "," + y]; S.coins += BELT_COST[b.k || "bois"]; return; }
   const e = entAt(x, y);
-  if (!e || ["source", "crate", "deco", "rug"].includes(e.kind)) return;
+  if (!e || ["source", "crate", "deco", "rug"].includes(e.kind) && !e.quarry) return;
   if (e.kind === "chest" && S.ents.filter((c) => c.kind === "chest").length === 1) { toast("Garde au moins un coffre."); return; }
   if (e.kind === "chest" && chestTotal(e) > 0) { toast("Vide le coffre avant de le démonter."); return; } // avant : son contenu disparaissait
   // Ce que la machine contenait (ingrédients mis de côté compris) revient dans le sac, autant qu'il en tient.
@@ -869,9 +928,9 @@ function demolish(x, y) {
   if (e.kind === "machine") for (const box of [e.inb, e.outb, e.res]) for (const [it, n] of Object.entries(box || {})) lost += n - bagAdd(it, n);
   if (lost) toast(`Sac plein : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.`);
   S.ents = S.ents.filter((z) => z !== e); invalidate();
-  S.coins += Math.round(costOf(e.name) / 2);
+  S.coins += Math.round((e.quarry ? QUARRY_COST : costOf(e.name)) / 2);
   if (ui.sel === e.id) ui.sel = null;
-  toast(`${nameOf(e.name)} démonté : la moitié du prix est rendue.`);
+  toast(`${e.quarry ? "Carrière" : nameOf(e.name)} démonté${e.quarry ? "e" : ""} : la moitié du prix est rendue.`);
 }
 /**
  * Démonter un bâtiment se confirme : il faut toucher une seconde fois (le même, dans les 4 s), au mode Démonter comme
@@ -881,17 +940,17 @@ function demolish(x, y) {
 const CONFIRM_S = 4;
 const confirming = (e) => !!ui.confirmDemol && ui.confirmDemol.id === e.id && performance.now() - ui.confirmDemol.at < CONFIRM_S * 1000;
 function askDemolish(e) {
-  if (["source", "crate", "deco", "rug"].includes(e.kind)) return;
+  if (["source", "crate", "deco", "rug"].includes(e.kind) && !e.quarry) return;
   if (confirming(e)) { ui.confirmDemol = null; demolish(e.x, e.y); ui.dirty = true; return; }
   ui.confirmDemol = { id:e.id, at:performance.now() };
-  toast(`Touche encore pour démonter : ${nameOf(e.name)} (la moitié du prix est rendue).`);
+  toast(`Touche encore pour démonter : ${e.quarry ? "Carrière" : nameOf(e.name)} (la moitié du prix est rendue).`);
   ui.dirty = true;
   setTimeout(() => { ui.dirty = true; }, CONFIRM_S * 1000 + 50); // le bouton reprend son texte
 }
 const demolBtn = (e) => `<button class="btn rouge" id="demol">${icon("poubelle")} ${confirming(e) ? "Sûr ? Démonter" : "Démonter"}</button>`;
 
 // Déplacer un objet déjà posé (appui long) : machines, coffres, manivelles, énergie, décorations (pas les tas ni la caisse).
-const MOVABLE = ["machine", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
+const MOVABLE = ["machine", "switch", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
 /** L'objet `key` (étape `stage`, orientation `o`) tient-il avec son coin haut-gauche en (x, y) ? `ignore` : l'objet qu'on déplace. */
 function fits(key, stage, o, x, y, ignore) {
   const f = sprOf(key, stage, o).footprint || [1, 1];
@@ -1006,7 +1065,8 @@ function upgrade(e) {
   // ce qu'elle contenait revient dans le sac (les recettes changent)
   let lost = 0;
   for (const box of [e.inb, e.outb]) for (const [it, n] of Object.entries(box)) lost += n - bagAdd(it, n);
-  Object.assign(e, { name:t, stage:st, inb:{}, outb:{}, craft:null, recipe:"auto", color:null, queue:[] });
+  const keep = recipeChoices(t).some((c) => c.id === e.recipe) ? e.recipe : defaultRecipe(t); // elle garde sa recette si la nouvelle sait la faire
+  Object.assign(e, { name:t, stage:st, inb:{}, outb:{}, craft:null, recipe:keep, color:null, queue:[] });
   S.coins -= cost; invalidate();
   toast(`Amélioré : ${MACH[t].name} !${lost ? ` (${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""} : sac plein)` : ""}`);
 }
@@ -1134,6 +1194,7 @@ function drawEnt(e, time) {
   }
   if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > CRANK_MAX * 0.1 ? "#9ad8ff" : "#d8382f");
   if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
+  if (e.kind === "switch" && e.filter) drawItem(iconOf(e.filter), e.x * T + 8, e.y * T - 4);
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
 // Vitre des fenêtres du mur du fond (rectangle dans la case de 32 × 64, variante « fenêtre ») : la neige y tombe.
@@ -1398,7 +1459,7 @@ function renderUI() {
   for (const b of document.querySelectorAll("[data-page]")) b.classList.toggle("on", panel && b.dataset.page === ui.tab);
   const q = ui.place;
   $("placebar").hidden = !q;
-  if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !(q.belt || (q.id && !["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
+  if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !(q.belt || (q.id && (!["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind) || byId(q.id)?.quarry))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
   $("beltdone").hidden = !(ui.mode === "build" && ui.build === "belt");
   // sac
   let bag = "";
@@ -1481,8 +1542,11 @@ function renderUI() {
         h += `<h3>Recettes</h3><div class="card">${recs.map((r) => `<div class="rec">${line(r)}<small>${(r.t / SPEED[info.stage]).toFixed(1).replace(".", ",")} s</small></div>`).join("")}</div>`;
       } else {
       if (recs.length > 1) {
-          h += `<label>Recette <select id="recipe"><option value="auto">Automatique</option>${recs.map((r) => `<option value="${r.id}" ${e.recipe === r.id ? "selected" : ""}>${r.name}</option>`).join("")}</select></label>`;
-          if (recs.some((r) => r.color)) h += `<label>Couleur préférée <select id="color"><option value="">—</option>${COLORS.map((c) => `<option value="${c}" ${e.color === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>`;
+          // une seule recette à la fois : on touche celle qu'on veut ; les intermédiaires suivent tout seuls
+          const out1 = (c) => (c.fam ? itemHTML(c.fam === "boule" ? "@boule_peinte" : c.fam === "finie" ? "@boule_finie" : "@peinture") : itemHTML(Object.keys(c.r.out)[0]));
+          const nm = (c) => (c.fam ? { boule:"Boules peintes (toutes couleurs)", finie:"Boules finies (toutes couleurs)", peinture:"Peinture (toutes couleurs)" }[c.fam] || c.r.name : c.r.name);
+          h += `<h3>${icon("marteau")} Elle fabrique</h3><div class="grid">${recipeChoices(e.name).map((c) => `<button class="btn tile ${e.recipe === c.id ? "on" : ""}" data-setrecipe="${c.id}"><span class="picbox">${out1(c)}</span><span>${nm(c)}</span></button>`).join("")}</div>`;
+          h += `<p class="muted">Ce qu'il lui faut, et ce qu'elle se fait elle-même :</p>`;
         }
         h += `<div class="card">${activeRecipes(e).slice(0, 6).map((r) => `<div class="rec ${e.craft && e.craft.id === r.id ? "on" : ""}">${Object.entries(r.in).map(([k, n]) => itemHTML(k, n)).join("")}<span class="arrow">→</span>${Object.entries(r.out).map(([k, n]) => itemHTML(k, n < 1 ? "~" : n)).join("")}<small>${(r.t / SPEED[info.stage]).toFixed(1).replace(".", ",")} s</small></div>`).join("")}</div>`;
       }
@@ -1492,12 +1556,15 @@ function renderUI() {
       h += `<div class="row"><button class="btn" id="rotate">${icon("tourner")} Tourner</button>${demolBtn(e)}</div>`;
     } else if (e.kind === "source") {
       const r = RAW[e.gives];
-      h += `<h3>${itemHTML(e.gives)} Tas de ${label(e.gives).toLowerCase()}</h3><p>${Math.floor(e.stock)} unités · se recharge de ${fmtN(r.refill)}/s jusqu'à ${r.cap}.</p>${gauge(Math.min(1, e.stock / r.cap), "bleu")}`;
+      h += `<h3>${itemHTML(e.gives)} ${e.quarry ? "Carrière" : "Tas"} de ${label(e.gives).toLowerCase()}</h3><p>${Math.floor(e.stock)} unités · se recharge de ${fmtN(r.refill)}/s jusqu'à ${r.cap}.</p>${gauge(Math.min(1, e.stock / r.cap), "bleu")}`;
+      if (e.quarry) h += `<p class="muted">Un tas de plus, avec sa goulotte : il verse sur les tapis qui partent de lui. Le marché, lui, remplit le tas d'origine.</p>`
+        + `<div class="row" style="flex-wrap:wrap;gap:4px"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((k) => RAW[k].stage <= S.stage).map((k) => `<button class="btn sm ${e.gives === k ? "on" : ""}" data-qgives="${k}">${itemHTML(k)}</button>`).join("")}</div>`;
       const room = Math.min(Math.floor(e.stock), bagRoom(e.gives));
       h += `<div class="row"><span class="muted">Prendre</span><span class="grow"></span>${[1, 5, 20].map((n) => `<button class="btn sm vert" data-take="${n}" ${room < 1 ? "disabled" : ""}>×${n}</button>`).join("")}</div>`;
       if (Math.floor(e.stock) >= 1 && !bagRoom(e.gives)) h += `<p class="muted">Sac plein : dépose dans un coffre ou une machine.</p>`;
-      h += `<div class="row"><span class="muted">Acheter (${fmtN(r.cost)} p l'unité)</span><span class="grow"></span>${[1, 10, 50].map((n) => `<button class="btn sm" data-buy="${e.gives}" data-n="${n}">×${n}</button>`).join("")}</div>`;
-      if (S.stage >= 3) h += e.chute ? `<p class="muted">${icon("tapis")} Goulotte posée.</p>`
+      if (!e.quarry) h += `<div class="row"><span class="muted">Acheter (${fmtN(r.cost)} p l'unité)</span><span class="grow"></span>${[1, 10, 50].map((n) => `<button class="btn sm" data-buy="${e.gives}" data-n="${n}">×${n}</button>`).join("")}</div>`;
+      if (e.quarry) h += `<div class="row">${demolBtn(e)}</div>`;
+      else if (S.stage >= 3) h += e.chute ? `<p class="muted">${icon("tapis")} Goulotte posée.</p>`
         : `<button class="btn or wide" id="chute">${icon("tapis")} Poser une goulotte (${CHUTE_COST} p)</button>`;
     } else if (e.kind === "crank") {
       h += `<h3>Manivelle</h3><p>${e.reserve > 0 ? `Encore ${fmtAway(e.reserve)} de marche (8 h une fois remontée).` : "À l'arrêt."} Touche-la pour la remonter à fond.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}`;
@@ -1512,6 +1579,12 @@ function renderUI() {
       h += `<h3>Dans ton sac</h3>`;
       h += inBag.length ? `<div class="card">${inBag.map((k) => { const n = bagCount(k); return `<div class="rec">${itemHTML(k, n)}<span>${label(k)}</span><span class="grow"></span>${[1, 10].filter((q) => q < n).map((q) => `<button class="btn sm" data-cput="${k}" data-n="${q}">×${q}</button>`).join("")}<button class="btn sm or" data-cput="${k}" data-n="${n}">Tout</button></div>`; }).join("")}</div><button class="btn wide" id="cputall">Tout déposer</button>`
         : `<p class="muted">Ton sac est vide.</p>`;
+    } else if (e.kind === "switch") {
+      h += `<h3>${icon("tapis")} Aiguilleur</h3><p>Il fait suivre ce qui arrive, sans rien garder. ${e.filter ? `<b>${label(e.filter)}</b> va tout droit, le reste part sur les côtés.` : "Sans filtre, il partage à parts égales entre tout droit, gauche et droite."}</p>`;
+      h += `<p class="muted">Pour changer une ligne de recette sans tout refaire : change le filtre.</p>`;
+      h += `<h3>Filtre</h3><div class="row" style="flex-wrap:wrap;gap:4px"><button class="btn sm ${e.filter ? "" : "on"}" data-filter="">Aucun (partager)</button>${SWITCH_FILTERS.map((k) => `<button class="btn sm ${e.filter === k ? "on" : ""}" data-filter="${k}" title="${label(k)}">${itemHTML(iconOf(k))}</button>`).join("")}</div>`;
+      if (e.seen) h += `<p class="muted">Dernier passé : ${label(e.seen)}.</p>`;
+      h += `<div class="row">${demolBtn(e)}</div>`;
     } else if (e.kind === "extractor") {
       h += `<h3>${itemHTML(e.gives)} Extracteur de ${label(e.gives).toLowerCase()}</h3><p>Pose ${fmtN(e.rate)} objet/s sur le tapis voisin, sur la voie de son côté. Demande un poteau électrique à ${POLE_R} cases.</p>`;
       h += `<div class="row"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((r) => RAW[r].stage <= S.stage).map((r) => `<button class="btn sm ${e.gives === r ? "on" : ""}" data-gives="${r}">${itemHTML(r)}</button>`).join("")}</div>`;
@@ -1575,6 +1648,9 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.trash) { const n = bagTake(d.trash, bagCount(d.trash)); if (n) toast(`${n} × ${label(d.trash).toLowerCase()} jeté${n > 1 ? "s" : ""}.`); }
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gift) offerFlowers(d.gift);
+  else if (d.setrecipe && e) e.recipe = d.setrecipe; // la fabrication en cours se termine, la suivante suit la nouvelle recette
+  else if (d.filter != null && e && e.kind === "switch") e.filter = d.filter || null;
+  else if (d.qgives && e && e.quarry) { if (e.gives !== d.qgives) { e.gives = d.qgives; e.name = SRC_FILE[d.qgives] || "source_" + d.qgives; e.stock = 0; } }
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
     const r = recipeOf(e, d.craft);
