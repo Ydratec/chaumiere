@@ -79,6 +79,8 @@ function dropGone(st) {
   for (const b of Object.values(st.belts || {})) b.lanes = (b.lanes || [[], []]).map((L) => L.filter((o) => !GONE.includes(o.it)));
   // et les machines automatiques restées en « automatique » prennent leur recette par défaut (c'est ce qu'elles faisaient)
   for (const e of st.ents || []) if (e.kind === "machine" && MACH[e.name]?.power && (e.recipe === "auto" || !e.recipe)) e.recipe = defaultRecipe(e.name);
+  // et l'ancien réglage de sortie d'une goulotte (un seul côté, une voie) devient le nouveau (côté par côté)
+  for (const e of st.ents || []) if (e.out) { e.outs = { [e.out]:e.lanePick == null ? "b" : e.lanePick }; delete e.out; delete e.lanePick; }
 }
 const ETOILE = { id:"etoile_bois", name:"Étoile en bois", in:{ planche:1 }, out:{ etoile_bois:1 }, t:1.5 };
 const BOULE_ART = { id:"boule", name:"Boule transparente", in:{ sable:2 }, out:{ boule_transparente:1 }, t:8 };
@@ -538,31 +540,46 @@ function updateMachine(m, dt) {
     const sw = !b && entAt(bx, by);
     if (sw && sw.kind === "switch") { // aiguilleur collé à la sortie : la machine lui passe directement ce qu'elle a fait
       const it = Object.keys(m.outb)[0];
-      if (deliver({ x:pt.out.inside[0], y:pt.out.inside[1], d:pt.out.side }, 0, it)) { if (!--m.outb[it]) delete m.outb[it]; }
+      const lane = m.outLane === 1 ? 1 : m.outLane === "b" ? (m.lane || 0) : 0;
+      if (deliver({ x:pt.out.inside[0], y:pt.out.inside[1], d:pt.out.side }, lane, it)) { if (!--m.outb[it]) delete m.outb[it]; m.lane = 1 - lane; }
     } else if (b && b.d !== OPP[pt.out.side] && b.on) {
-      // une machine pose toujours sur la voie de gauche : la voie de droite reste libre pour les jonctions
-      if (laneRoom(b, 0, 0)) { const it = Object.keys(m.outb)[0]; b.lanes[0].push({ it, p:0 }); if (!--m.outb[it]) delete m.outb[it]; }
+      // voie de sortie choisie dans la fiche : gauche (par défaut, comme avant), droite, ou les deux à tour de rôle
+      let lane = m.outLane === 1 ? 1 : m.outLane === "b" ? (m.lane || 0) : 0;
+      if (!laneRoom(b, lane, 0) && m.outLane === "b" && laneRoom(b, 1 - lane, 0)) lane = 1 - lane;
+      if (laneRoom(b, lane, 0)) { const it = Object.keys(m.outb)[0]; b.lanes[lane].push({ it, p:0 }); if (!--m.outb[it]) delete m.outb[it]; m.lane = 1 - lane; }
     }
   }
 }
 
-// Sortie d'une goulotte ou d'un extracteur : avant, ils versaient sur tous les tapis qui les touchaient, et la voie
-// dépendait de leur place (un tas au-dessus d'un tapis ne remplissait que la voie du haut). On choisit maintenant
-// le côté où ils versent, puis la voie de ce tapis (y compris celle d'en face), ou les deux à tour de rôle.
+// Sortie d'une goulotte, d'une carrière ou d'un extracteur : avant, ils versaient sur tous les tapis qui les touchaient,
+// et la voie dépendait de leur place. On choisit maintenant les côtés où ils versent (un ou plusieurs, servis à tour de
+// rôle) et, pour chacun, la voie du tapis : celle du haut, celle du bas (même celle d'en face), ou les deux.
+// e.outs = { N:0|1|"b", … } ; absent ou vide : tous les côtés, comme avant.
+const SIDES = ["N", "E", "S", "W"];
 const SIDE_NAME = { N:"Haut", E:"Droite", S:"Bas", W:"Gauche" };
 const LANE_NAME = { N:"du haut", E:"de droite", S:"du bas", W:"de gauche" };
+const hasOuts = (e) => !!e.outs && Object.keys(e.outs).length > 0;
+/** Les deux voies d'un tapis, nommées comme on les voit à l'écran (voie 0 = à gauche dans le sens du tapis). */
+const laneNames = (b) => (b ? [LANE_NAME[LEFT[b.d]], LANE_NAME[OPP[LEFT[b.d]]]] : ["de gauche", "de droite"]);
 function outControls(e) {
-  let h = `<h3>${icon("tapis")} Elle verse vers</h3><div class="row" style="flex-wrap:wrap;gap:4px">`
-    + `<button class="btn sm ${e.out ? "" : "on"}" data-cout="">Tous les côtés</button>`
-    + ["N", "E", "S", "W"].map((d) => `<button class="btn sm ${e.out === d ? "on" : ""}" data-cout="${d}">${SIDE_NAME[d]}</button>`).join("") + `</div>`;
-  if (!e.out) return h + `<p class="muted">Tous les tapis qui touchent ${e.kind === "source" ? "le tas" : "l'extracteur"} reçoivent. Choisis un côté pour ne remplir qu'une ligne.</p>`;
-  const [dx, dy] = DIRS[e.out], b = S.belts[(e.x + dx) + "," + (e.y + dy)];
-  if (!b || b.d === OPP[e.out]) return h + `<p class="muted">Pose un tapis côté « ${SIDE_NAME[e.out].toLowerCase()} », qui ne vienne pas vers ${e.kind === "source" ? "le tas" : "l'extracteur"}.</p>`;
-  const l0 = LANE_NAME[LEFT[b.d]], l1 = LANE_NAME[OPP[LEFT[b.d]]]; // voie 0 = gauche dans le sens du tapis
-  return h + `<div class="row" style="flex-wrap:wrap;gap:4px"><span class="muted">Voie</span><span class="grow"></span>`
-    + `<button class="btn sm ${e.lanePick == null ? "on" : ""}" data-clane="">Les deux</button>`
-    + `<button class="btn sm ${e.lanePick === 0 ? "on" : ""}" data-clane="0">Voie ${l0}</button>`
-    + `<button class="btn sm ${e.lanePick === 1 ? "on" : ""}" data-clane="1">Voie ${l1}</button></div>`;
+  const what = e.kind === "source" ? "le tas" : "l'extracteur", all = !hasOuts(e);
+  let h = `<h3>${icon("tapis")} Elle verse vers</h3><div class="row"><button class="btn sm ${all ? "on" : ""}" data-oall="1">Tous les côtés</button>`
+    + `<span class="muted">${all ? `tous les tapis qui touchent ${what}` : "les côtés choisis, à tour de rôle"}</span></div><div class="card">`;
+  for (const d of SIDES) {
+    const [dx, dy] = DIRS[d], b = S.belts[(e.x + dx) + "," + (e.y + dy)], ok = b && b.d !== OPP[d];
+    const cur = e.outs?.[d], [l0, l1] = laneNames(ok ? b : null);
+    const btn = (v, txt) => `<button class="btn sm ${!all && (v === "off" ? cur === undefined : cur === v) ? "on" : ""}" data-oside="${d}" data-olane="${v}">${txt}</button>`;
+    h += `<div class="row" style="flex-wrap:wrap;gap:4px"><span style="min-width:4.5em">${SIDE_NAME[d]}</span>${btn("off", "Non")}${btn("b", "Les deux")}${btn(0, "Voie " + l0)}${btn(1, "Voie " + l1)}`
+      + (ok ? "" : `<span class="muted">(pas de tapis qui part de ce côté)</span>`) + `</div>`;
+  }
+  return h + `</div><p class="muted">Une flèche dorée sur ${what} montre chaque côté choisi.</p>`;
+}
+/** Voie de sortie d'une machine à tapis : à gauche dans le sens du tapis (comme avant), à droite, ou les deux. */
+function machineLaneControls(m, pt) {
+  const b = S.belts[pt.out.outside[0] + "," + pt.out.outside[1]], ok = b && b.d !== OPP[pt.out.side];
+  const [l0, l1] = laneNames(ok ? b : null), cur = m.outLane ?? 0;
+  const btn = (v, txt) => `<button class="btn sm ${cur === v ? "on" : ""}" data-mlane="${v}">${txt}</button>`;
+  return `<div class="row" style="flex-wrap:wrap;gap:4px"><span class="muted">Sortie sur</span><span class="grow"></span>${btn(0, "Voie " + l0)}${btn(1, "Voie " + l1)}${btn("b", "Les deux")}</div>`;
 }
 
 /** Pourquoi une machine est sans énergie (phrase à afficher). */
@@ -576,9 +593,10 @@ function whyNoPower(m) {
   return `les manivelles à côté font déjà tourner ${CRANK_M} machines chacune : ajoutes-en une.`;
 }
 
-/** Petite flèche dorée sur le bord d'une goulotte ou d'un extracteur, du côté où il verse. */
-function drawOutArrow(e) {
-  const [dx, dy] = DIRS[e.out], cx = e.x * T + 16 + dx * 13, cy = e.y * T + 16 + dy * 13, px = -dy, py = dx; // pointe, puis perpendiculaire
+/** Petites flèches dorées sur les bords d'une goulotte ou d'un extracteur, une par côté où il verse. */
+function drawOutArrow(e) { if (hasOuts(e)) for (const d in e.outs) drawArrowSide(e, d); }
+function drawArrowSide(e, side) {
+  const [dx, dy] = DIRS[side], cx = e.x * T + 16 + dx * 13, cy = e.y * T + 16 + dy * 13, px = -dy, py = dx; // pointe, puis perpendiculaire
   ctx.fillStyle = "#f6c445"; ctx.strokeStyle = "#1c1820"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(cx + dx * 4, cy + dy * 4); ctx.lineTo(cx + px * 4, cy + py * 4); ctx.lineTo(cx - px * 4, cy - py * 4); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
@@ -709,16 +727,21 @@ function updateBelts(dt) {
     if (!chute && !ext) continue;
     // jusqu'à deux objets par pas (un par voie) : avec le pas d'une seconde du rattrapage hors ligne, 2 objets/s passent encore
     s.acc = Math.min(2, (s.acc || 0) + dt * (ext ? s.rate : CHUTE_RATE));
+    // côtés choisis (à tour de rôle), sinon tous ; pour chacun : sa voie (0, 1), ou les deux en alternant ("b")
+    const chosen = hasOuts(s), sides = chosen ? SIDES.filter((d) => d in s.outs) : SIDES;
     for (let put = 0; put < 2 && s.acc >= 1 && !(chute && s.stock < 1); put++)
-    for (const [side, [dx, dy]] of s.out ? [[s.out, DIRS[s.out]]] : Object.entries(DIRS)) { // sortie choisie : ce côté seulement
+    for (let k = 0; k < sides.length; k++) {
+      const side = sides[((s.rr || 0) + k) % sides.length], [dx, dy] = DIRS[side];
       const b = S.belts[(s.x + dx) + "," + (s.y + dy)];
       if (!b || !b.on || b.d === OPP[side]) continue;
       const from = OPP[side];                          // côté du tapis où se trouve la source
-      const lane = s.out && s.lanePick != null ? s.lanePick // voie choisie (même celle d'en face)
-        : from === b.d || from === OPP[b.d] ? (s.lane || 0) : from === LEFT[b.d] ? 0 : 1;
+      const pick = chosen ? s.outs[side] : null;
+      let lane = pick === 0 || pick === 1 ? pick       // voie choisie (même celle d'en face)
+        : pick === "b" || from === b.d || from === OPP[b.d] ? (s.lane || 0) : from === LEFT[b.d] ? 0 : 1;
       const at = from === OPP[b.d] ? 0 : 0.5;
-      if (!laneRoom(b, lane, at)) continue;
-      b.lanes[lane].push({ it:s.gives, p:at }); if (chute) s.stock--; s.acc -= 1; s.lane = 1 - (s.lane || 0); break;
+      if (!laneRoom(b, lane, at)) { if (pick !== "b" || !laneRoom(b, 1 - lane, at)) continue; lane = 1 - lane; }
+      b.lanes[lane].push({ it:s.gives, p:at }); if (chute) s.stock--; s.acc -= 1; s.lane = 1 - lane;
+      s.rr = ((s.rr || 0) + k + 1) % sides.length; break;
     }
   }
 }
@@ -1222,12 +1245,12 @@ function drawEnt(e, time) {
     bar(e.x * T + 4, e.y * T - 4, 24, e.stock / r.cap, e.stock >= 1 ? "#3d8be0" : "#d8382f");
     if (e.stock > r.cap) text("+" + Math.floor(e.stock - r.cap), e.x * T + 16, e.y * T - 7, "#9ad8ff");
     if (e.chute) drawIcon("tapis", e.x * T + 8, e.y * T + 20);
-    if (e.chute && e.out) drawOutArrow(e);
+    if (e.chute && hasOuts(e)) drawOutArrow(e);
   }
   if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > CRANK_MAX * 0.1 ? "#9ad8ff" : "#d8382f");
   if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
   if (e.kind === "switch" && e.filter) drawItem(iconOf(e.filter), e.x * T + 8, e.y * T - 4);
-  if (e.kind === "extractor" && e.out) drawOutArrow(e);
+  if (e.kind === "extractor" && hasOuts(e)) drawOutArrow(e);
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
 // Vitre des fenêtres du mur du fond (rectangle dans la case de 32 × 64, variante « fenêtre ») : la neige y tombe.
@@ -1562,6 +1585,7 @@ function renderUI() {
       h += `<h3>${info.name}</h3><p class="muted">Étape ${info.stage} · vitesse ×${String(SPEED[info.stage]).replace(".", ",")}</p>`;
       if (e.stalled) h += `<p class="bad">${icon("eclair")} Sans énergie : ${whyNoPower(e)}</p>`;
       if (unlinked(e).length) h += `<p class="bad">${icon("non")} Pas de tapis relié : ${unlinked(e).join(", ")}</p>`;
+      if (portsOf(e)?.out) h += machineLaneControls(e, portsOf(e));
       if (portsOf(e) && activeRecipes(e).some((r) => Object.keys(r.in).filter((k) => !madeHere(e, k)).length > 1)) h += `<p class="muted">Les ingrédients peuvent arriver par n'importe quel côté, sauf la sortie : un tapis par ingrédient, et rien ne se bloque.</p>`;
       if (manual(e)) {
         // D'abord ce qu'on peut fabriquer maintenant (avec la machine et le sac), puis, plus bas, toutes les recettes.
@@ -1695,8 +1719,13 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.visit) visit(d.visit, d.name);
   else if (d.gift) offerFlowers(d.gift);
   else if (d.setrecipe && e) e.recipe = d.setrecipe;
-  else if (d.cout != null && e) { e.out = d.cout || null; e.lanePick = null; }
-  else if (d.clane != null && e) e.lanePick = d.clane === "" ? null : +d.clane; // la fabrication en cours se termine, la suivante suit la nouvelle recette
+  else if (d.oall && e) e.outs = null;
+  else if (d.oside && e) {
+    const o = { ...(e.outs || {}) };
+    if (d.olane === "off") delete o[d.oside]; else o[d.oside] = d.olane === "b" ? "b" : +d.olane;
+    e.outs = Object.keys(o).length ? o : null; // plus aucun côté choisi : retour à « tous les côtés »
+  }
+  else if (d.mlane != null && e && e.kind === "machine") e.outLane = d.mlane === "b" ? "b" : +d.mlane; // la fabrication en cours se termine, la suivante suit la nouvelle recette
   else if (d.filter != null && e && e.kind === "switch") e.filter = d.filter || null;
   else if (d.qgives && e && e.quarry) { if (e.gives !== d.qgives) { e.gives = d.qgives; e.name = SRC_FILE[d.qgives] || "source_" + d.qgives; e.stock = 0; } }
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
