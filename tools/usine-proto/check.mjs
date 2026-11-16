@@ -204,6 +204,22 @@ dropGone(S);
 out.recipe = { press:sp.recipe, loom:lm.recipe, pressList:activeRecipes(sp).map((r) => r.id).join(","),
   choices:recipeChoices("paint_table_belt").map((c) => c.id).slice(0, 3).join(","), kiln:defaultRecipe("kiln_belt") };
 
+// visites guidées des étapes : chaque mission se calcule sans erreur, de l'usine vide à l'usine complète
+out.tours = {};
+for (const st of [2, 3, 4, 5]) {
+  fresh(st); computePower();
+  out.tours[st] = STAGE_TOURS[st].map((x) => (x.need ? (x.need() ? "✓" : "○") : "·")).join("");
+}
+
+// étape 3 faite : goulotte, four à tapis relié au tas et à la sortie, manivelle remontée -> toutes les missions cochées
+fresh(3);
+addEnt({ kind:"source", name:"source_sable", gives:"sable", stage:1, x:2, y:9, stock:20, chute:true, acc:0, lane:0 }); // fresh() ne garde que la caisse
+const kb3 = addEnt({ kind:"machine", name:"kiln_belt", stage:3, x:5, y:9, o:"e" });
+S.belts["4,9"] = { x:4, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+S.belts["7,9"] = { x:7, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+const c3 = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); c3.reserve = CRANK_MAX; computePower();
+out.tour3done = STAGE_TOURS[3].map((x) => (x.need ? (x.need() ? "✓" : "○") : "·")).join("");
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -243,4 +259,7 @@ assert.deepEqual({ ...out.confirm }, { afterOne:true, afterTwo:false, belt:false
 assert.deepEqual({ ...out.quarry }, { placed:true, cost:2500, chute:true, sandOnBelt:true, gone:true, refund:1250 }, "carrière : posée, elle verse du sable sur son tapis, se démonte (moitié rendue)");
 assert.deepEqual({ ...out.switch }, { filtered:"sable | - | bois", shared:"1,1,1", fromMachine:"boule_transparente", unlinked:"entrée" }, "aiguilleur : filtre tout droit / côtés, partage égal, et prend la sortie d'une machine");
 assert.deepEqual({ ...out.recipe }, { press:"fam:finie", loom:"guirlande", pressList:"finie_rouge,finie_vert,finie_or,finie_bleu,crochet", choices:"fam:boule,fam:peinture,etoile_doree", kiln:"soufflage" }, "une seule recette par machine automatique");
+
+assert.equal(out.tour3done, "·✓✓✓✓✓····", "étape 3 faite : toutes ses missions sont cochées");
+for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
