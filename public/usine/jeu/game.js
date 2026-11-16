@@ -244,14 +244,27 @@ function portsOf(e) {
   }
   return res;
 }
-/** Ports d'une machine à tapis qui ne sont reliés à rien : il faut un tapis qui arrive sur chaque entrée et un qui part de la sortie. */
+// Entrées d'une machine à tapis : un tapis peut arriver par n'importe quel côté, sauf la case de sortie.
+// Avant, seule la case « entrée » prenait les objets : une machine à deux ingrédients (métier à tisser : fil et perles)
+// devait tout recevoir sur un seul tapis, et si les deux se suivaient sur la même voie, elle se bloquait.
+/** Le tapis posé en (bx, by) est-il celui de la sortie ? */
+const isOutBelt = (pt, bx, by) => !!pt?.out && pt.out.outside[0] === bx && pt.out.outside[1] === by;
+/** Les tapis qui entrent dans la machine. */
+function feeders(e, pt = portsOf(e)) {
+  const res = [];
+  for (const [tx, ty] of tilesOf(e)) for (const [d, [dx, dy]] of Object.entries(DIRS)) {
+    const bx = tx - dx, by = ty - dy, b = S.belts[bx + "," + by]; // tapis voisin qui avance vers cette case de la machine
+    if (b && b.d === d && !isOutBelt(pt, bx, by)) res.push(b);
+  }
+  return res;
+}
+/** Ports d'une machine à tapis qui ne sont reliés à rien : il faut au moins un tapis qui arrive, et un qui part de la sortie. */
 function unlinked(e) {
   const pt = e.kind === "machine" && portsOf(e); if (!pt) return [];
-  const linked = (port, inward) => { const b = S.belts[port.outside[0] + "," + port.outside[1]]; return !!b && (inward ? b.d === OPP[port.side] : b.d !== OPP[port.side]); };
   const out = [];
-  if (pt.in && !linked(pt.in, true)) out.push(pt.in2 ? "entrée 1" : "entrée");
-  if (pt.in2 && !linked(pt.in2, true)) out.push("entrée 2");
-  if (pt.out && !linked(pt.out, false)) out.push("sortie");
+  if (pt.in && !feeders(e, pt).length) out.push("entrée");
+  const ob = pt.out && S.belts[pt.out.outside[0] + "," + pt.out.outside[1]];
+  if (pt.out && !(ob && ob.d !== OPP[pt.out.side])) out.push("sortie");
   return out;
 }
 function bfs(sx, sy, isGoal) {
@@ -583,8 +596,7 @@ function deliver(b, lane, it) {   // l'objet de tête est au bout du tapis : où
   if (e.kind === "boiler" || e.kind === "generator") { if (it !== "bois" || e.fuel > FUEL_CAP - 1) return false; e.fuel++; return true; }
   if (e.kind === "machine") {
     const pt = portsOf(e); if (!pt) return false;
-    const okPort = ["in", "in2"].some((k) => pt[k] && pt[k].inside[0] === nx && pt[k].inside[1] === ny && pt[k].side === OPP[b.d]);
-    if (!okPort || !accepts(e, it, true)) return false;   // ingrédient en trop : la voie se bloque
+    if (isOutBelt(pt, b.x, b.y) || !accepts(e, it, true)) return false; // par tous les côtés sauf la sortie ; ingrédient en trop : la voie se bloque
     e.inb[it] = (e.inb[it] || 0) + 1; return true;
   }
   return false;
@@ -861,6 +873,23 @@ function demolish(x, y) {
   if (ui.sel === e.id) ui.sel = null;
   toast(`${nameOf(e.name)} démonté : la moitié du prix est rendue.`);
 }
+/**
+ * Démonter un bâtiment se confirme : il faut toucher une seconde fois (le même, dans les 4 s), au mode Démonter comme
+ * avec le bouton de sa fiche. Avant, un seul toucher suffisait, et on perdait la moitié du prix sur une erreur.
+ * Les tapis se démontent toujours d'un coup (on en enlève souvent plusieurs, ils ne coûtent presque rien).
+ */
+const CONFIRM_S = 4;
+const confirming = (e) => !!ui.confirmDemol && ui.confirmDemol.id === e.id && performance.now() - ui.confirmDemol.at < CONFIRM_S * 1000;
+function askDemolish(e) {
+  if (["source", "crate", "deco", "rug"].includes(e.kind)) return;
+  if (confirming(e)) { ui.confirmDemol = null; demolish(e.x, e.y); ui.dirty = true; return; }
+  ui.confirmDemol = { id:e.id, at:performance.now() };
+  toast(`Touche encore pour démonter : ${nameOf(e.name)} (la moitié du prix est rendue).`);
+  ui.dirty = true;
+  setTimeout(() => { ui.dirty = true; }, CONFIRM_S * 1000 + 50); // le bouton reprend son texte
+}
+const demolBtn = (e) => `<button class="btn rouge" id="demol">${icon("poubelle")} ${confirming(e) ? "Sûr ? Démonter" : "Démonter"}</button>`;
+
 // Déplacer un objet déjà posé (appui long) : machines, coffres, manivelles, énergie, décorations (pas les tas ni la caisse).
 const MOVABLE = ["machine", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
 /** L'objet `key` (étape `stage`, orientation `o`) tient-il avec son coin haut-gauche en (x, y) ? `ignore` : l'objet qu'on déplace. */
@@ -1189,7 +1218,7 @@ function draw(time) {
     if (key === "crank") { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((hx - CRANK_R) * T, (hy - CRANK_R) * T, (2 * CRANK_R + 1) * T, (2 * CRANK_R + 1) * T); ctx.setLineDash([]); }
     if (MACH[key] && MACH[key].power) {
       const pt = portsOf({ name:key, stage:stageOf(key), o:ROT[ui.rot], x:hx, y:hy });
-      if (pt) { text("entrée", pt.in.outside[0] * T + 16, pt.in.outside[1] * T + 18, "#9ad8ff"); text("sortie", pt.out.outside[0] * T + 16, pt.out.outside[1] * T + 18, "#ffd65a"); }
+      if (pt) { text("entrée", pt.in.outside[0] * T + 16, pt.in.outside[1] * T + 18, "#9ad8ff"); text("sortie", pt.out.outside[0] * T + 16, pt.out.outside[1] * T + 18, "#ffd65a"); } // (entrée : ou par les autres côtés)
     }
   }
   const tuEnt = ui.tuto != null && TUTO[ui.tuto].ent?.();
@@ -1210,6 +1239,8 @@ function draw(time) {
     ctx.strokeStyle = ok ? "#6cc46a" : "#d8382f"; ctx.lineWidth = 1; ctx.strokeRect(q.x * T + 0.5, q.y * T + 0.5, f[0] * T - 1, f[1] * T - 1);
   }
   if (ui.hover && ui.mode === "demolish") { ctx.strokeStyle = "#d8382f"; ctx.strokeRect(ui.hover[0] * T + 0.5, ui.hover[1] * T + 0.5, T - 1, T - 1); }
+  { const c = ui.confirmDemol && byId(ui.confirmDemol.id); // bâtiment en attente de confirmation : cadre rouge qui clignote
+    if (c && confirming(c) && Math.floor(time * 4) % 2) { const f = fp(c); ctx.strokeStyle = "#d8382f"; ctx.lineWidth = 2; ctx.strokeRect(c.x * T + 1, c.y * T + 1, f.w * T - 2, f.h * T - 2); ctx.lineWidth = 1; } }
   if (ui.target) { const [tx, ty] = ui.target; ctx.strokeStyle = "rgba(255,214,90,.7)"; ctx.strokeRect(tx * T + 8.5, ty * T + 8.5, 15, 15); }
   for (const f of fxs) { ctx.globalAlpha = 1 - f.t / 1.2; text(f.text, f.x, f.y - f.t * 18, f.color); ctx.globalAlpha = 1; }
 }
@@ -1292,7 +1323,7 @@ cv.addEventListener("pointerdown", (ev) => {
     if (place(ui.build, ui.rot, x, y) && ui.build === "belt") ui.drag = [x, y];
     ui.dirty = true; return;
   }
-  if (ui.mode === "demolish") { demolish(x, y); ui.dirty = true; return; }
+  if (ui.mode === "demolish") { const e = !S.belts[x + "," + y] && entAt(x, y); if (e) askDemolish(e); else demolish(x, y); ui.dirty = true; return; }
   if (ui.place) { // on fait glisser le fantôme (en le saisissant, ou en touchant ailleurs pour l'y amener)
     const q = ui.place, f = footOf(q);
     if (x < q.x || y < q.y || x >= q.x + f[0] || y >= q.y + f[1]) { q.x = x; q.y = y; }
@@ -1436,6 +1467,7 @@ function renderUI() {
       h += `<h3>${info.name}</h3><p class="muted">Étape ${info.stage} · vitesse ×${String(SPEED[info.stage]).replace(".", ",")}</p>`;
       if (e.stalled) h += `<p class="bad">${icon("eclair")} Sans énergie : ${whyNoPower(e)}</p>`;
       if (unlinked(e).length) h += `<p class="bad">${icon("non")} Pas de tapis relié : ${unlinked(e).join(", ")}</p>`;
+      if (portsOf(e) && activeRecipes(e).some((r) => Object.keys(r.in).filter((k) => !madeHere(e, k)).length > 1)) h += `<p class="muted">Les ingrédients peuvent arriver par n'importe quel côté, sauf la sortie : un tapis par ingrédient, et rien ne se bloque.</p>`;
       if (manual(e)) {
         // D'abord ce qu'on peut fabriquer maintenant (avec la machine et le sac), puis, plus bas, toutes les recettes.
         const q = e.queue || [], room = QUEUE_MAX - q.length;
@@ -1457,7 +1489,7 @@ function renderUI() {
       h += `<div class="row"><span class="muted">Dedans</span>${Object.entries(e.inb).map(([k, n]) => itemHTML(k, n)).join("") || '<span class="muted">vide</span>'}</div>`;
       h += `<div class="row"><span class="muted">Sorti</span>${Object.entries(e.outb).map(([k, n]) => itemHTML(k, n)).join("") || '<span class="muted">rien</span>'}</div>`;
       if (e.craft) h += gauge(e.craft.t / e.craft.dur, e.boost > 0 ? "or" : "vert");
-      h += `<div class="row"><button class="btn" id="rotate">${icon("tourner")} Tourner</button><button class="btn rouge" id="demol">${icon("poubelle")} Démonter</button></div>`;
+      h += `<div class="row"><button class="btn" id="rotate">${icon("tourner")} Tourner</button>${demolBtn(e)}</div>`;
     } else if (e.kind === "source") {
       const r = RAW[e.gives];
       h += `<h3>${itemHTML(e.gives)} Tas de ${label(e.gives).toLowerCase()}</h3><p>${Math.floor(e.stock)} unités · se recharge de ${fmtN(r.refill)}/s jusqu'à ${r.cap}.</p>${gauge(Math.min(1, e.stock / r.cap), "bleu")}`;
@@ -1470,7 +1502,7 @@ function renderUI() {
     } else if (e.kind === "crank") {
       h += `<h3>Manivelle</h3><p>${e.reserve > 0 ? `Encore ${fmtAway(e.reserve)} de marche (8 h une fois remontée).` : "À l'arrêt."} Touche-la pour la remonter à fond.</p>${gauge(e.reserve / CRANK_MAX, "bleu")}`;
       h += `<p class="muted">Fait tourner les ${CRANK_M} machines à tapis les plus proches (à ${CRANK_R} cases) et tous les tapis en bois autour. En ce moment : ${e.machines || 0} / ${CRANK_M} machine${(e.machines || 0) > 1 ? "s" : ""}.</p>`;
-      h += `<div class="row"><button class="btn vert" id="wind">${icon("tourner")} Remonter</button><button class="btn rouge" id="demol">${icon("poubelle")} Démonter</button></div>`;
+      h += `<div class="row"><button class="btn vert" id="wind">${icon("tourner")} Remonter</button>${demolBtn(e)}</div>`;
     } else if (e.kind === "chest") {
       const inBag = [...new Set(S.bag.filter(Boolean).map((sl) => sl.it))];
       h += `<h3>Coffre</h3><p class="muted">${chestTotal(e)} / 200 objets</p>`;
@@ -1556,7 +1588,7 @@ $("panel").addEventListener("click", (ev) => {
   }
   else ({
     advance, expand, visitback2:comeBack, sellall:() => e && sellBag(e),
-    rotate:() => e && rotateEnt(e), demol:() => e && demolish(e.x, e.y), upgrade:() => e && upgrade(e),
+    rotate:() => e && rotateEnt(e), demol:() => e && askDemolish(e), upgrade:() => e && upgrade(e),
     clearq:() => { if (!e) return; if (manual(e)) clearQueue(e); else e.queue = []; },
     cgetall:() => e && doNear(e, () => { for (const it of Object.keys(e.store)) chestTake(e, it, e.store[it]); }),
     cputall:() => e && doNear(e, () => { for (const it of new Set(S.bag.filter(Boolean).map((sl) => sl.it))) chestPut(e, it, bagCount(it)); }),
