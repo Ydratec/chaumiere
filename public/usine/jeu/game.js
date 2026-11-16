@@ -155,7 +155,7 @@ const TILESET = { 1:["floor_wood", "wall_log"], 2:["floor_wood", "wall_log"], 3:
 const BELT_SPEED = { bois:0.5, fonte:1, metal:2 };      // cases/s : 1, 2 et 4 objets/s par voie
 const POLE_R = 4;
 const UNLOCK_TEXT = { 2:"Bois, fil et sapins ; table à couronnes, tour à bois, établi à sapins, four à soufflet.",
-  3:"Tapis à deux voies, goulottes sur les tas, manivelles (remontées en un geste, elles tiennent 8 h) et machines à tapis.",
+  3:"Tapis à deux voies, goulottes, carrières, aiguilleurs, manivelles (remontées en un geste, elles tiennent 8 h) et machines à tapis.",
   4:"Chaudières (au bois) et machines à vapeur : elles tournent même quand tu n'es pas là. Tapis en fonte, deux fois plus rapides.",
   5:"Générateur, poteaux et extracteurs : l'usine s'alimente toute seule. Machines électriques et tapis en métal." };
 const DIRS = { E:[1,0], S:[0,1], W:[-1,0], N:[0,-1] };
@@ -786,7 +786,8 @@ function gateStatus() {
 function advance() {
   const st = gateStatus(); if (!st || !st.ok) return;
   S.stage++; addSources(S.stage);
-  toast(`Étape ${S.stage} : ${STAGE_NAMES[S.stage]} ! ${UNLOCK_TEXT[S.stage]}`, 6000); ui.dirty = true;
+  toast(`Étape ${S.stage} : ${STAGE_NAMES[S.stage]} !`, 3000); ui.dirty = true;
+  if (STAGE_TOURS[S.stage]) setTimeout(() => { if (!S.visit) tourShow(S.stage); }, 800); // la visite guidée de la nouvelle étape
 }
 
 // ---------------------------------------------------------------- le personnage
@@ -1282,7 +1283,7 @@ function draw(time) {
       if (pt) { text("entrée", pt.in.outside[0] * T + 16, pt.in.outside[1] * T + 18, "#9ad8ff"); text("sortie", pt.out.outside[0] * T + 16, pt.out.outside[1] * T + 18, "#ffd65a"); } // (entrée : ou par les autres côtés)
     }
   }
-  const tuEnt = ui.tuto != null && TUTO[ui.tuto].ent?.();
+  const tuEnt = curStep()?.ent?.();
   if (tuEnt) { // tutoriel : flèche dorée qui rebondit au-dessus de l'objet montré
     const sp = spr(tuEnt), f = fp(tuEnt), cx = (tuEnt.x + f.w / 2) * T, top = tuEnt.y * T - ((sp.origin || [0, 0])[1]) - 6 - Math.abs(Math.sin(time * 4)) * 5;
     ctx.fillStyle = "#1c1820"; ctx.beginPath(); ctx.moveTo(cx - 7, top - 9); ctx.lineTo(cx + 7, top - 9); ctx.lineTo(cx, top + 1); ctx.fill();
@@ -1451,6 +1452,7 @@ function patch(a, b) {
   for (let i = an.length - 1; i >= bn.length; i--) a.removeChild(an[i]);
 }
 function renderUI() {
+  if (ui.tour) tourRefresh();
   $("coins").textContent = fmt(S.coins); $("stars").textContent = fmt(S.stars);
   $("stage").textContent = `Étape ${S.stage} · ${STAGE_NAMES[S.stage]}`;
   for (const b of document.querySelectorAll("[data-mode]")) b.classList.toggle("on", b.dataset.mode === ui.mode);
@@ -1689,9 +1691,10 @@ for (const b of document.querySelectorAll("[data-page]")) b.addEventListener("cl
 $("menuclose").addEventListener("click", closePanel);
 $("visitback").addEventListener("click", comeBack);
 $("visitgift").addEventListener("click", () => S.visitId && offerFlowers(S.visitId));
-$("tutonext").addEventListener("click", () => tutoShow(ui.tuto + 1));
-$("tutoskip").addEventListener("click", () => tutoShow(null));
-$("help").addEventListener("click", () => { if (!S.visit) tutoShow(0); });
+$("tutonext").addEventListener("click", () => ui.tour && tourShow(ui.tour.key, ui.tour.i + 1));
+$("tutoskip").addEventListener("click", () => (ui.tour ? tourShow(ui.tour.key, Infinity) : tourShow(null)));
+$("tuto").addEventListener("click", (ev) => { const k = ev.target.closest("[data-tour]")?.dataset.tour; if (k) tourShow(k === "start" ? "start" : +k); });
+$("help").addEventListener("click", () => { if (!S.visit) tourPick(); });
 $("prot").addEventListener("click", rotatePlace);
 $("pok").addEventListener("click", confirmPlace);
 $("pno").addEventListener("click", cancelPlace);
@@ -1758,16 +1761,88 @@ const TUTO = [
 ];
 function setIcons(on) { document.body.classList.toggle("menu", on); $("menubtn").textContent = on ? "✕" : "☰"; }
 function page(tab) { setIcons(true); ui.tab = tab; if (tab === "visiter") loadMembers(); openPanel(); ui.dirty = true; }
-function tutoShow(i) {
+// ---- Visites guidées : celle du début (TUTO), puis une à chaque nouvelle étape (STAGE_TOURS), qui se lance au passage
+// d'étape (et une fois pour ceux qui y sont déjà). Une étape « mission » (need) attend que ce soit fait : elle se coche toute seule.
+const named = (n) => S.ents.find((e) => e.name === n);
+const pileOf = (raw) => S.ents.find((e) => e.kind === "source" && e.gives === raw);
+const beltMachines = (pw) => S.ents.filter((e) => e.kind === "machine" && MACH[e.name].power === pw);
+/** L'objet est-il quelque part : sac, coffres, sortie d'une machine ? */
+const have = (it) => bagCount(it) > 0 || S.ents.some((e) => (e.kind === "chest" && e.store[it]) || (e.kind === "machine" && e.outb[it]));
+const STAGE_TOURS = {
+  2:[
+    { t:"Étape 2 ! De nouveaux tas sont arrivés : bois, fil et sapins bruts. Les machines restent à la main : tu leur demandes ce qu'elles fabriquent.", ent:() => pileOf("bois"), go:() => closePanel() },
+    { t:"Une machine se rend plus rapide avec « Améliorer », dans sa fiche : le four devient un four à soufflet.", ent:() => firstOf("machine"), go:() => { const m = firstOf("machine"); if (m) select(m); } },
+    { t:"À toi : construis un tour à bois (page Construire). Avec du bois, il fait des planches, puis des étoiles en bois.", need:() => !!named("lathe"), go:() => page("construire") },
+    { t:"À toi : fabrique une étoile en bois au tour. Demande-la directement : il fait d'abord les planches qui manquent.", need:() => have("etoile_bois"), ent:() => named("lathe"), go:() => closePanel() },
+    { t:"L'établi à sapins : 1 sapin brut, 4 boules peintes et 1 étoile en bois donnent un sapin décoré, ce qui se vend le plus cher.", need:() => !!named("tree_bench"), go:() => page("construire") },
+    { t:"Pour passer à l'étape 3 : page Commandes, tout en bas. Bonne fabrication !", hi:'[data-page="commandes"]', go:() => page("commandes") },
+  ],
+  3:[
+    { t:"Étape 3 ! Les machines à tapis fabriquent toutes seules, tant qu'elles reçoivent leurs ingrédients par tapis et qu'une manivelle les fait tourner.", go:() => closePanel() },
+    { t:"À toi : pose une goulotte sur le tas de sable (touche le tas, puis « Poser une goulotte »). Le tas versera sur les tapis qui partent de lui.", need:() => !!pileOf("sable")?.chute, ent:() => pileOf("sable"), go:() => { const sb = pileOf("sable"); if (sb) select(sb); } },
+    { t:"À toi : construis un four à tapis (page Construire), ou améliore ton four à soufflet.", need:() => !!named("kiln_belt"), go:() => page("construire") },
+    { t:"À toi : trace un tapis du tas de sable jusqu'au four (Construire, Tapis, puis fais glisser le doigt). Il peut entrer par n'importe quel côté, sauf la sortie.", need:() => beltMachines(true).some((m) => m.name === "kiln_belt" && feeders(m).length), ent:() => named("kiln_belt"), go:() => closePanel() },
+    { t:"À toi : pose une manivelle à 4 cases au plus du four, puis touche-la : remontée, elle tient 8 h, même quand tu n'es pas là.", need:() => beltMachines(true).some((m) => m.name === "kiln_belt" && powered.has("m" + m.id)), ent:() => named("kiln_belt"), go:() => page("construire") },
+    { t:"À toi : relie la sortie du four à la caisse d'expédition par un tapis. Les boules s'y vendent toutes seules.", need:() => beltMachines(true).some((m) => m.name === "kiln_belt" && !unlinked(m).includes("sortie")), ent:() => firstOf("crate"), go:() => closePanel() },
+    { t:"Une machine à tapis fabrique une seule recette : dans sa fiche, « Elle fabrique », touche celle que tu veux (ou « toutes couleurs »). Elle se fait seule ses intermédiaires.", ent:() => named("kiln_belt"), go:() => { const m = named("kiln_belt"); if (m) select(m); } },
+    { t:"Plus de sable ? Construis une carrière : un tas de plus, posé où tu veux, avec sa goulotte. Une carrière par ligne, et le sable ne manque plus.", go:() => page("construire") },
+    { t:"Un aiguilleur partage un tapis entre plusieurs lignes. Avec un filtre, il trie : l'objet choisi va tout droit, le reste part sur les côtés. Pour changer une ligne, change juste le filtre.", go:() => page("construire") },
+    { t:"Ensuite, ajoute des machines à la chaîne (peinture, presse…) : un tapis par ingrédient, et chaque machine prend la sortie de la précédente. Si une machine s'arrête, sa fiche dit pourquoi.", go:() => closePanel() },
+  ],
+  4:[
+    { t:"Étape 4 : la vapeur ! Les machines à vapeur vont 1,5 fois plus vite, et une chaudière remplace les manivelles.", go:() => closePanel() },
+    { t:`À toi : construis une chaudière. Elle fait tourner les ${BOILER_N} machines à vapeur les plus proches, à ${BOILER_R} cases au plus.`, need:() => !!firstOf("boiler"), go:() => page("construire") },
+    { t:"À toi : donne-lui du bois. À la main ça marche, mais un tapis depuis le tas de bois (avec une goulotte) la fait tourner sans fin.", need:() => S.ents.some((e) => e.kind === "boiler" && e.fuel > 0), ent:() => firstOf("boiler"), go:() => closePanel() },
+    { t:"À toi : fais tourner une machine à vapeur près de la chaudière (« Améliorer » dans la fiche d'une machine à tapis, ou Construire).", need:() => beltMachines("steam").some((m) => powered.has("m" + m.id)), ent:() => firstOf("boiler"), go:() => closePanel() },
+    { t:"Les tapis en fonte vont deux fois plus vite que le bois : mets-les sur les lignes qui débordent. Avec du bois amené par tapis, ton usine tourne même quand tu n'es pas là.", go:() => closePanel() },
+  ],
+  5:[
+    { t:`Étape 5 : l'électricité ! Un générateur au bois alimente ${GEN_N} appareils électriques, reliés par des poteaux.`, go:() => closePanel() },
+    { t:"À toi : construis un générateur. Il peut être n'importe où : c'est le réseau de poteaux qui amène le courant.", need:() => !!firstOf("generator"), go:() => page("construire") },
+    { t:"À toi : donne-lui du bois (par tapis, c'est mieux).", need:() => S.ents.some((e) => e.kind === "generator" && e.fuel > 0), ent:() => firstOf("generator"), go:() => closePanel() },
+    { t:`À toi : fais tourner une machine électrique (« Améliorer », ou Construire) avec un poteau à ${POLE_R} cases au plus d'elle.`, need:() => beltMachines("elec").some((m) => elecPowered(m)), go:() => page("construire") },
+    { t:"Les extracteurs produisent une matière tout seuls (choisis laquelle dans leur fiche), sans tas ni marché. Les tapis en métal vont 4 fois plus vite que le bois. Joyeux Noël !", go:() => closePanel() },
+  ],
+};
+const TOURS = { start:TUTO, ...STAGE_TOURS };
+const curStep = () => ui.tour && TOURS[ui.tour.key]?.[ui.tour.i];
+/** Montre l'étape i de la visite `key` ; au-delà de la dernière (ou key null), la visite se ferme et compte comme vue. */
+function tourShow(key, i = 0) {
   document.querySelectorAll(".tuto-hi").forEach((el) => el.classList.remove("tuto-hi"));
-  if (i == null || i >= TUTO.length) { ui.tuto = null; $("tuto").hidden = true; S.tutoDone = true; save(); return; }
-  const st = TUTO[i]; ui.tuto = i; st.go?.();
-  $("tutotext").textContent = st.t; $("tutostep").textContent = `${i + 1} / ${TUTO.length}`; $("tutonext").textContent = i === TUTO.length - 1 ? "C'est parti !" : "Suivant";
+  const list = key != null && TOURS[key];
+  if (!list || i >= list.length) {
+    if (ui.tour) { if (ui.tour.key === "start") S.tutoDone = true; else (S.toursDone ||= {})[ui.tour.key] = true; save(); }
+    ui.tour = null; $("tuto").hidden = true; ui.dirty = true; return;
+  }
+  ui.tour = { key, i }; const st = list[i]; st.go?.();
+  $("tutotext").textContent = st.t; $("tutonext").hidden = false; $("tutoskip").textContent = "Passer";
   if (st.hi) document.querySelector(st.hi)?.classList.add("tuto-hi");
-  $("tuto").hidden = false; ui.dirty = true;
+  tourRefresh(); $("tuto").hidden = false; ui.dirty = true;
 }
-/** Première visite : le tutoriel se lance (après le rattrapage hors ligne s'il y en a un). */
-function tutoAuto() { if (S.tutoDone || S.demo || S.visit) return; if (catching) return setTimeout(tutoAuto, 500); tutoShow(0); }
+/** À chaque rendu du volet : la mission en cours se coche dès qu'elle est faite. */
+function tourRefresh() {
+  const st = curStep(); if (!st) return;
+  const list = TOURS[ui.tour.key], last = ui.tour.i === list.length - 1, done = !st.need || st.need();
+  $("tutostep").textContent = `${ui.tour.i + 1} / ${list.length}` + (st.need ? (done ? " · ✓ fait !" : " · à toi de jouer") : "");
+  $("tutonext").disabled = !done;
+  $("tutonext").textContent = last ? "C'est parti !" : "Suivant";
+}
+/** Le bouton d'aide : revoir les bases, ou la visite d'une étape déjà atteinte. */
+function tourPick() {
+  if (S.stage < 2) return tourShow("start");
+  ui.tour = null; document.querySelectorAll(".tuto-hi").forEach((el) => el.classList.remove("tuto-hi"));
+  const opts = [`<button class="btn sm" data-tour="start">Les bases</button>`,
+    ...Object.keys(STAGE_TOURS).filter((k) => +k <= S.stage).map((k) => `<button class="btn sm" data-tour="${k}">Étape ${k} : ${STAGE_NAMES[k]}</button>`)];
+  $("tutotext").innerHTML = `Que veux-tu revoir ?<span class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">${opts.join("")}</span>`;
+  $("tutostep").textContent = ""; $("tutonext").hidden = true; $("tutoskip").textContent = "Fermer"; $("tuto").hidden = false;
+}
+/** À l'ouverture : la visite du début si elle n'a pas été faite, sinon celle de l'étape où l'on est, une fois. */
+function tutoAuto() {
+  if (S.demo || S.visit) return;
+  if (catching) return setTimeout(tutoAuto, 500);
+  if (!S.tutoDone) return tourShow("start");
+  if (STAGE_TOURS[S.stage] && !S.toursDone?.[S.stage]) tourShow(S.stage);
+}
 // ---- Visiter l'usine d'un membre de la salle : on affiche sa partie (elle tourne), sans rien pouvoir y faire ni enregistrer.
 let mine = null; // sa propre partie, gardée pendant une visite
 async function loadMembers() {
