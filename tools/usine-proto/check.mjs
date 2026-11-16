@@ -181,6 +181,18 @@ const onBelt = S.belts["4,12"].lanes.flat().filter((o) => o.it === "sable").leng
 quarry.gives = "bois"; quarry.name = "source_bois"; quarry.stock = 0;
 const coinsBefore = S.coins; askDemolish(quarry); askDemolish(quarry);
 out.quarry = { placed:placedQ, cost:10000 - coinsBefore, chute:quarry.chute, sandOnBelt:onBelt > 0, gone:!S.ents.includes(quarry), refund:S.coins - coinsBefore };
+// carrières suivantes : 1,5 fois plus chères à chaque fois ; on rend la moitié de ce qu'on a payé ; une seule à sapins
+fresh(3); S.coins = 100000;
+const qCosts = [];
+for (let i = 0; i < 3; i++) { const c0 = S.coins; place("quarry", 0, 3 + 2 * i, 12); qCosts.push(c0 - S.coins); }
+const qs = S.ents.filter((e) => e.quarry);
+const c1 = S.coins; askDemolish(qs[2]); askDemolish(qs[2]);
+const refund3 = S.coins - c1;
+qs[0].gives = "sapin_brut";
+out.quarry2 = { qCosts, refund3, next:costOf("quarry"), sapinOther:sapinQuarryTaken(qs[1]), sapinSelf:sapinQuarryTaken(qs[0]) };
+// couronnes : la table simple fait la couronne (15), la machine à tapis la couronne décorée (26), même recette qu'avant
+out.wreath = { simple:RECIPES.wreath_table[0].out, belt:{ ...RECIPES.wreath_table_belt[0].out }, beltIn:{ ...RECIPES.wreath_table_belt[0].in }, steam:RECIPES.steam_wreath[0].out.couronne_deco, elec:RECIPES.elec_wreath[0].out.couronne_deco,
+  price:[PRICE.couronne, PRICE.couronne_deco, PRICE.guirlande, PRICE.etoile_doree], sold3:SELL[3].includes("couronne_deco"), icon:ITEMS.indexOf("couronne_deco"), name:NAMES.couronne_deco };
 
 // aiguilleur : avec un filtre, l'objet choisi va tout droit et le reste sur les côtés ; sans filtre, chacun son tour
 fresh(3); S.coins = 1000;
@@ -229,7 +241,8 @@ const c3 = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); c3.reserv
 out.tour3done = STAGE_TOURS[3].map((x) => (x.need ? (x.need() ? "✓" : "○") : "·")).join("");
 // nouveautés : à l'étape 1, seulement celles qui la concernent ; à l'étape 3, toutes
 S.stage = 1; const news1 = tourList("news").length; S.stage = 3; const news3 = tourList("news").length;
-out.news = { news1, news3, total:NEWS.length };
+ui.newsFrom = 1; const newsSince1 = tourList("news").length; ui.newsFrom = 0;   // un joueur qui avait vu la v1 : l'intro et les 3 nouvelles
+out.news = { news1, news3, newsSince1, total:NEWS.length };
 
 // sortie d'une goulotte : un seul côté, et la voie au choix (même celle d'en face)
 fresh(3); // tapis en fonte : ils tournent sans manivelle
@@ -306,6 +319,8 @@ assert.equal(JSON.stringify(out.lanes2), JSON.stringify({ multi:{ east:"0/2", be
 assert.deepEqual(out.chuteOut.east, "0/0", "goulotte tournée vers le bas : rien sur le tapis de droite");
 assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie du bas : le tapis du dessous reçoit sur sa voie d'en face");
 assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite : toutes ses missions sont cochées");
-assert.deepEqual({ ...out.news }, { news1:6, news3:10, total:10 }, "nouveautés : filtrées selon l'étape atteinte");
+assert.deepEqual(JSON.parse(JSON.stringify(out.quarry2)), { qCosts:[2500, 3750, 5625], refund3:2813, next:5625, sapinOther:true, sapinSelf:false }, "carrières : prix qui monte, remboursement de la moitié payée, une seule à sapins");
+assert.equal(JSON.stringify(out.wreath), JSON.stringify({ simple:{ couronne:1 }, belt:{ couronne_deco:1 }, beltIn:{ branche:4, ruban:1, "@boule_finie":2 }, steam:1, elec:1, price:[15, 26, 11, 6], sold3:true, icon:37, name:"Couronne décorée" }), "couronnes séparées");
+assert.deepEqual({ ...out.news }, { news1:6, news3:13, newsSince1:4, total:13 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
