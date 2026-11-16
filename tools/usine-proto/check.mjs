@@ -141,6 +141,27 @@ S.bag = Array(BAG).fill(null); dk.inb = { sable:3 }; dk.outb = { boule_transpare
 demolish(dk.x, dk.y);
 out.demolish = { sable:bagCount("sable"), boules:bagCount("boule_transparente"), gone:!S.ents.includes(dk) };
 
+// métier à tisser : le fil et les perles arrivent par deux côtés différents (avant : seule la case « entrée » prenait)
+fresh(3);
+const crank2 = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); crank2.reserve = CRANK_MAX;
+const loom = addEnt({ kind:"machine", name:"loom", stage:3, x:5, y:9, o:"e" });             // cases (5,9) et (6,9) ; sortie à l'est
+const west = S.belts["4,9"] = { x:4, y:9, d:"E", k:"bois", lanes:[[], []], on:true };     // arrive par l'entrée
+const north = S.belts["6,8"] = { x:6, y:8, d:"S", k:"bois", lanes:[[], []], on:true };    // arrive par le haut
+const outb = S.belts["7,9"] = { x:7, y:9, d:"E", k:"bois", lanes:[[], []], on:true };     // part de la sortie
+const unl = unlinked(loom).join(",");
+const fil1 = deliver(west, 0, "fil"), perle1 = deliver(north, 1, "perles");
+outb.d = "W"; const viaSortie = deliver(outb, 0, "perles"); outb.d = "E";                 // un tapis sur la sortie, tourné vers la machine
+loom.inb.perles = 12; computePower(); run(10);
+out.loom = { unlinked:unl, fil:fil1, perles:perle1, viaSortie, guirlandes:(loom.outb.guirlande || 0) + outb.lanes[0].filter((o) => o.it === "guirlande").length };
+
+// démonter un bâtiment se confirme (deux touchers) ; un tapis part d'un coup
+newState();
+const dk2 = S.ents.find((e) => e.name === "kiln");
+askDemolish(dk2); const afterOne = S.ents.includes(dk2);
+askDemolish(dk2); const afterTwo = S.ents.includes(dk2);
+S.belts["3,9"] = { x:3, y:9, d:"E", k:"bois", lanes:[[], []], on:true }; demolish(3, 9);
+out.confirm = { afterOne, afterTwo, belt:!!S.belts["3,9"] };
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -175,4 +196,6 @@ assert.ok(!out.crank.after8h, "au bout de 8 h, la manivelle est à l'arrêt");
 assert.deepEqual({ ...out.paint }, { possible:6, plan:"peinture_rouge×2 boule_rouge×6", balls:6, queue:0, pigmentsLeft:0 }, "6 boules rouges demandées d'un coup : 2 peintures faites d'abord, puis les 6 boules");
 assert.deepEqual({ ...out.beltPaint }, { byHand:false, byBelt:true, pigment:true, capped:false }, "peinture à tapis : la voie ne se bloque plus derrière des boules sans peinture");
 assert.deepEqual({ ...out.demolish }, { sable:7, boules:2, gone:true }, "démonter une machine rend son contenu");
+assert.deepEqual({ ...out.loom }, { unlinked:"", fil:true, perles:true, viaSortie:false, guirlandes:1 }, "métier à tisser : fil par l'entrée, perles par le haut, une guirlande ; rien n'entre par la sortie");
+assert.deepEqual({ ...out.confirm }, { afterOne:true, afterTwo:false, belt:false }, "démonter un bâtiment demande un second toucher ; un tapis part d'un coup");
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
