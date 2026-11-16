@@ -162,6 +162,48 @@ askDemolish(dk2); const afterTwo = S.ents.includes(dk2);
 S.belts["3,9"] = { x:3, y:9, d:"E", k:"bois", lanes:[[], []], on:true }; demolish(3, 9);
 out.confirm = { afterOne, afterTwo, belt:!!S.belts["3,9"] };
 
+// carrière : un tas de plus, posé où l'on veut, avec sa goulotte ; il verse sur le tapis qui part de lui
+fresh(3); S.coins = 10000;
+const placedQ = place("quarry", 0, 3, 12);
+const quarry = S.ents.find((e) => e.quarry);
+S.belts["4,12"] = { x:4, y:12, d:"E", k:"bois", lanes:[[], []], on:true };
+const cq = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:14 }); cq.reserve = CRANK_MAX; computePower();
+run(30);
+const onBelt = S.belts["4,12"].lanes.flat().filter((o) => o.it === "sable").length;
+quarry.gives = "bois"; quarry.name = "source_bois"; quarry.stock = 0;
+const coinsBefore = S.coins; askDemolish(quarry); askDemolish(quarry);
+out.quarry = { placed:placedQ, cost:10000 - coinsBefore, chute:quarry.chute, sandOnBelt:onBelt > 0, gone:!S.ents.includes(quarry), refund:S.coins - coinsBefore };
+
+// aiguilleur : avec un filtre, l'objet choisi va tout droit et le reste sur les côtés ; sans filtre, chacun son tour
+fresh(3); S.coins = 1000;
+place("aiguilleur", 0, 5, 9);
+const sw = S.ents.find((e) => e.kind === "switch");
+const inB = S.belts["4,9"] = { x:4, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+const fwd = S.belts["6,9"] = { x:6, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+const up = S.belts["5,8"] = { x:5, y:8, d:"N", k:"bois", lanes:[[], []], on:true };
+const down = S.belts["5,10"] = { x:5, y:10, d:"S", k:"bois", lanes:[[], []], on:true };
+const clear = () => [fwd, up, down].forEach((b) => (b.lanes = [[], []]));
+const where = () => [fwd, up, down].map((b) => b.lanes.flat().map((o) => o.it).join("+") || "-").join(" | ");
+sw.filter = "sable"; deliver(inB, 0, "sable"); deliver(inB, 1, "bois"); const filtered = where();
+clear(); sw.filter = null; for (const l of [0, 1, 0]) { clear2: { deliver(inB, l, "verre"); } [fwd, up, down].forEach((b) => b.lanes.forEach((L) => L.forEach((o) => (o.p = 0.9)))); }
+const shared = [fwd, up, down].map((b) => b.lanes.flat().length).join(",");
+// une machine dont la sortie touche un aiguilleur lui passe ce qu'elle fait
+fresh(3); S.coins = 1000;
+const kq = addEnt({ kind:"machine", name:"kiln_belt", stage:3, x:3, y:9, o:"e" });            // sortie à l'est, en (5,9)
+place("aiguilleur", 0, 5, 9);
+const fwd2 = S.belts["6,9"] = { x:6, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+kq.outb = { boule_transparente:1 };
+updateMachine(kq, 0.1);
+out.switch = { filtered, shared, fromMachine:fwd2.lanes.flat().map((o) => o.it).join(","), unlinked:unlinked(kq).join(",") };
+
+// une seule recette : les vieilles machines en « automatique » prennent la leur ; une famille de couleurs suit les intermédiaires
+fresh(3);
+const sp = addEnt({ kind:"machine", name:"star_press", stage:3, x:3, y:9, o:"e" }); sp.recipe = "auto";
+const lm = addEnt({ kind:"machine", name:"loom", stage:3, x:3, y:12, o:"e" }); lm.recipe = "auto";
+dropGone(S);
+out.recipe = { press:sp.recipe, loom:lm.recipe, pressList:activeRecipes(sp).map((r) => r.id).join(","),
+  choices:recipeChoices("paint_table_belt").map((c) => c.id).slice(0, 3).join(","), kiln:defaultRecipe("kiln_belt") };
+
 // rattrapage : 24 h d'une usine électrique complète (la démo)
 demoState(); S.demo = false; catching = true; // comme pendant un vrai rattrapage
 const t0 = Date.now(); const coins0 = S.coins;
@@ -198,4 +240,7 @@ assert.deepEqual({ ...out.beltPaint }, { byHand:false, byBelt:true, pigment:true
 assert.deepEqual({ ...out.demolish }, { sable:7, boules:2, gone:true }, "démonter une machine rend son contenu");
 assert.deepEqual({ ...out.loom }, { unlinked:"", fil:true, perles:true, viaSortie:false, guirlandes:1 }, "métier à tisser : fil par l'entrée, perles par le haut, une guirlande ; rien n'entre par la sortie");
 assert.deepEqual({ ...out.confirm }, { afterOne:true, afterTwo:false, belt:false }, "démonter un bâtiment demande un second toucher ; un tapis part d'un coup");
+assert.deepEqual({ ...out.quarry }, { placed:true, cost:2500, chute:true, sandOnBelt:true, gone:true, refund:1250 }, "carrière : posée, elle verse du sable sur son tapis, se démonte (moitié rendue)");
+assert.deepEqual({ ...out.switch }, { filtered:"sable | - | bois", shared:"1,1,1", fromMachine:"boule_transparente", unlinked:"entrée" }, "aiguilleur : filtre tout droit / côtés, partage égal, et prend la sortie d'une machine");
+assert.deepEqual({ ...out.recipe }, { press:"fam:finie", loom:"guirlande", pressList:"finie_rouge,finie_vert,finie_or,finie_bleu,crochet", choices:"fam:boule,fam:peinture,etoile_doree", kiln:"soufflage" }, "une seule recette par machine automatique");
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
