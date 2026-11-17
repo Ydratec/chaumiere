@@ -45,6 +45,11 @@ const m4 = SM(4, 8), m1 = SM(0, 10), m2 = SM(0, 11), m3 = SM(0, 12);
 const B2 = addEnt({ kind:"boiler", name:"boiler", stage:4, x:6, y:6, o:"e", fuel:30 });
 computePower();
 out.match = { all:[m1, m2, m3, m4].every((m) => powered.has("m" + m.id)), b1:B1.linked, b2:B2.linked, why:(B2.fuel = 0, computePower(), whyNoPower(m3)) };
+// au choix : B1 ne fait tourner que m3 ; B2 (auto) garde m4 ; m1 et m2 s'arrêtent. « Auto » revient à la répartition.
+B2.fuel = 30; B1.pick = [m3.id]; computePower();
+const pickOn = [m1, m2, m3, m4].map((m) => powered.has("m" + m.id)), why1 = whyNoPower(m1), reach1 = inReach(B1).length;
+B1.pick = null; computePower();
+out.pick = { pickOn, why1, reach1, back:[m1, m2, m3, m4].every((m) => powered.has("m" + m.id)) };
 // vapeur : chaudière avec du bois à côté d'un four à vapeur rempli de sable
 fresh(4);
 const boil = addEnt({ kind:"boiler", name:"boiler", stage:4, x:2, y:8, o:"e", fuel:30 });
@@ -331,6 +336,7 @@ assert.ok(out.steam.produced > 0, "le four à vapeur fabrique");
 assert.ok(out.steam.fuelUsed > 0 && out.steam.fuelUsed < 2, "la chaudière brûle au plus 2 bois par minute pour une machine, seulement quand elle fabrique");
 assert.deepEqual({ ...out.steamIdle }, { burnt:0, idle:true }, "machine à l'arrêt : pas de bois brûlé");
 assert.deepEqual({ ...out.match }, { all:true, b1:3, b2:1, why:"les chaudières à côté font déjà tourner 3 machines chacune : ajoutes-en une." }, "chaudières : machines réparties au mieux");
+assert.deepEqual(JSON.parse(JSON.stringify(out.pick)), { pickOn:[false, false, true, true], why1:"les chaudières à côté sont réglées sur d'autres machines (coche-la dans leur fiche).", reach1:4, back:true }, "chaudière au choix");
 assert.ok(out.steamOff.stalled, "sans bois, le four s'arrête");
 assert.ok(out.elec.powered, "l'extracteur est sur le réseau électrique");
 assert.ok(out.elec.inChest >= 20, "l'extracteur remplit le coffre par le tapis en métal");
@@ -363,6 +369,6 @@ assert.deepEqual(JSON.parse(JSON.stringify(out.quarry2)), { qCosts:[2500, 3750, 
 assert.deepEqual({ ...out.oldWreath }, { recipe:"couronne_deco", made:1 }, "ancienne recette de couronne reprise");
 assert.equal(JSON.stringify(out.edit), JSON.stringify({ selN:3, blocked:true, movedTo:[5, 11, true, true, true, 1], rotated:true, stock:2, coins:10, left:0, belts:0, sand:1, back:true, at:[3, 9], kept:3, paid:10, stockAfter:1 }), "mode édition : déplacer en bloc, tourner, tout ranger puis reposer");
 assert.equal(JSON.stringify(out.wreath), JSON.stringify({ simple:{ couronne:1 }, belt:{ couronne_deco:1 }, beltIn:{ branche:4, ruban:1, "@boule_finie":2 }, steam:1, elec:1, price:[15, 26, 11, 6], sold3:true, icon:37, name:"Couronne décorée" }), "couronnes séparées");
-assert.deepEqual({ ...out.news }, { news1:8, news3:15, newsSince1:6, total:15 }, "nouveautés : filtrées selon l'étape atteinte");
+assert.deepEqual({ ...out.news }, { news1:8, news3:15, newsSince1:6, total:16 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
