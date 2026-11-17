@@ -197,6 +197,24 @@ ow.recipe = "couronne"; ow.craft = { id:"couronne", t:0, dur:1 }; ow.queue = ["c
 dropGone(S); const cw = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); cw.reserve = CRANK_MAX; computePower();
 run(3);
 out.oldWreath = { recipe:ow.recipe, made:ow.outb.couronne_deco || 0 };
+// mode édition : on déplace d'un bloc une machine et ses tapis ; une case prise bloque ; on tourne ; « Tout démonter » rembourse tout
+fresh(3); S.coins = 0; S.player.x = 1; S.player.y = 14;
+const em = addEnt({ kind:"machine", name:"kiln_belt", stage:3, x:5, y:9, o:"e" });
+em.outb = { boule_transparente:3 };
+S.belts["4,9"] = { x:4, y:9, d:"E", k:"bois", lanes:[[{ it:"sable", p:0.5 }], []], on:true };
+S.belts["7,9"] = { x:7, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+setMode("edit");
+editDown(3, 8); editMove(8, 10); editUp();                      // depuis le sol vide : on sélectionne la zone (3..8, 8..10)
+const selN = eselSize();
+const blocker = addEnt({ kind:"crank", name:"crank", stage:3, x:8, y:13 });
+const blocked = !editFits(1, 4);                                  // la manivelle est sur le chemin
+editDown(5, 9); editMove(5, 11); editUp();                        // deux cases plus bas : libre
+const movedTo = [em.x, em.y, !!S.belts["4,11"], !!S.belts["7,11"], !S.belts["4,9"], S.belts["4,11"]?.lanes[0].length];
+editDown(5, 11); editUp(); editDown(5, 11); editUp();             // toucher la machine : elle seule ; encore : elle tourne
+const rotated = em.o === ROT[(ROT.indexOf("e") + 1) % 4];
+const val = purgeValue(); editAsk("all"); editAsk("all");
+out.edit = { selN, blocked, movedTo, rotated, refund:S.coins, val, left:S.ents.filter((e) => e.kind === "machine" || e.kind === "crank").length, belts:Object.keys(S.belts).length, bag:bagCount("boule_transparente") + bagCount("sable"), mode:ui.mode };
+setMode("hand");
 // couronnes : la table simple fait la couronne (15), la machine à tapis la couronne décorée (26), même recette qu'avant
 out.wreath = { simple:RECIPES.wreath_table[0].out, belt:{ ...RECIPES.wreath_table_belt[0].out }, beltIn:{ ...RECIPES.wreath_table_belt[0].in }, steam:RECIPES.steam_wreath[0].out.couronne_deco, elec:RECIPES.elec_wreath[0].out.couronne_deco,
   price:[PRICE.couronne, PRICE.couronne_deco, PRICE.guirlande, PRICE.etoile_doree], sold3:SELL[3].includes("couronne_deco"), icon:ITEMS.indexOf("couronne_deco"), name:NAMES.couronne_deco };
@@ -328,7 +346,8 @@ assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie
 assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite : toutes ses missions sont cochées");
 assert.deepEqual(JSON.parse(JSON.stringify(out.quarry2)), { qCosts:[2500, 3750, 5625], refund3:2813, next:5625, sapinOther:true, sapinSelf:false }, "carrières : prix qui monte, remboursement de la moitié payée, une seule à sapins");
 assert.deepEqual({ ...out.oldWreath }, { recipe:"couronne_deco", made:1 }, "ancienne recette de couronne reprise");
+assert.equal(JSON.stringify(out.edit), JSON.stringify({ selN:3, blocked:true, movedTo:[5, 11, true, true, true, 1], rotated:true, refund:4700 + 400 + 10, val:4700 + 400 + 10, left:0, belts:0, bag:4, mode:"edit" }), "mode édition : déplacer en bloc, tourner, tout démonter");
 assert.equal(JSON.stringify(out.wreath), JSON.stringify({ simple:{ couronne:1 }, belt:{ couronne_deco:1 }, beltIn:{ branche:4, ruban:1, "@boule_finie":2 }, steam:1, elec:1, price:[15, 26, 11, 6], sold3:true, icon:37, name:"Couronne décorée" }), "couronnes séparées");
-assert.deepEqual({ ...out.news }, { news1:6, news3:13, newsSince1:4, total:13 }, "nouveautés : filtrées selon l'étape atteinte");
+assert.deepEqual({ ...out.news }, { news1:8, news3:15, newsSince1:6, total:15 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);

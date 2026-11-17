@@ -1112,6 +1112,134 @@ function confirmPlace() {
   ui.place = null; ui.dirty = true;
 }
 function cancelPlace() { ui.place = null; ui.dirty = true; }
+// ---- Mode édition (bouton main) : on arrange l'usine sans marcher ni rien payer. Glisser un bâtiment ou un tapis le déplace
+// (avec ses réglages et ce qu'il contient) ; le toucher une seconde fois le tourne ; glisser sur le sol sélectionne une zone,
+// qu'on déplace ensuite d'un bloc (une ligne entière, tapis compris). « Tout démonter » repart de zéro, tout remboursé.
+const editable = (e) => !!e && MOVABLE.includes(e.kind);
+function eselClear() { ui.esel = { ents:new Set(), belts:new Set() }; ui.econf = null; }
+const eselSize = () => ui.esel.ents.size + ui.esel.belts.size;
+function editDown(x, y) {
+  const e = entAt(x, y), bk = !e && S.belts[x + "," + y] ? x + "," + y : null;
+  if (e && !editable(e)) return;
+  if (e || bk) {
+    const was = e ? ui.esel.ents.has(e.id) : ui.esel.belts.has(bk), single = was && eselSize() === 1;
+    if (!was) { eselClear(); if (e) ui.esel.ents.add(e.id); else ui.esel.belts.add(bk); }
+    ui.edrag = { x0:x, y0:y, dx:0, dy:0, single, was, id:e?.id, bk };
+  } else ui.erect = { x0:x, y0:y, x1:x, y1:y };
+}
+function editMove(x, y) {
+  if (ui.edrag) { ui.edrag.dx = x - ui.edrag.x0; ui.edrag.dy = y - ui.edrag.y0; ui.dirty = true; return true; }
+  if (ui.erect) { ui.erect.x1 = x; ui.erect.y1 = y; ui.dirty = true; return true; }
+  return false;
+}
+function editUp() {
+  const d = ui.edrag, r = ui.erect; ui.edrag = null; ui.erect = null; ui.dirty = true;
+  if (d) {
+    if (d.dx || d.dy) { if (!editMoveSel(d.dx, d.dy)) toast("Pas la place ici."); }
+    else if (d.single) editRotate();
+    else if (d.was) { eselClear(); if (d.id) ui.esel.ents.add(d.id); else ui.esel.belts.add(d.bk); } // touché dans une sélection : lui seul
+  }
+  if (r) {
+    eselClear();
+    const xa = Math.min(r.x0, r.x1), xb = Math.max(r.x0, r.x1), ya = Math.min(r.y0, r.y1), yb = Math.max(r.y0, r.y1), inR = (x, y) => x >= xa && x <= xb && y >= ya && y <= yb;
+    if (xa === xb && ya === yb) return; // simple toucher du sol : on désélectionne
+    for (const e of S.ents) if (editable(e) && tilesOf(e).some(([x, y]) => inR(x, y))) ui.esel.ents.add(e.id);
+    for (const b of Object.values(S.belts)) if (inR(b.x, b.y)) ui.esel.belts.add(b.x + "," + b.y);
+    if (eselSize()) toast(`${eselSize()} sélectionné${eselSize() > 1 ? "s" : ""} : fais-les glisser pour les déplacer.`);
+  }
+}
+/** La sélection tient-elle décalée de (dx, dy) ? (les cases qu'elle libère comptent comme libres) */
+function editFits(dx, dy) {
+  const taken = new Set();
+  const free = (x, y) => { // (le lutin ne gêne pas : s'il se retrouve dessous, il est poussé à côté)
+    const k = x + "," + y, o = entAt(x, y);
+    if (!inFloor(x, y) || taken.has(k) || (o && !ui.esel.ents.has(o.id)) || (S.belts[k] && !ui.esel.belts.has(k))) return false;
+    taken.add(k); return true;
+  };
+  for (const id of ui.esel.ents) { const e = byId(id); if (e) for (const [x, y] of tilesOf(e)) if (!free(x + dx, y + dy)) return false; }
+  for (const k of ui.esel.belts) { const b = S.belts[k]; if (b && !free(b.x + dx, b.y + dy)) return false; }
+  return true;
+}
+function editMoveSel(dx, dy) {
+  if (!editFits(dx, dy)) return false;
+  for (const id of ui.esel.ents) { const e = byId(id); if (e) { e.x += dx; e.y += dy; } }
+  const belts = [...ui.esel.belts].map((k) => S.belts[k]).filter(Boolean);
+  for (const b of belts) delete S.belts[b.x + "," + b.y];
+  ui.esel.belts = new Set();
+  for (const b of belts) { b.x += dx; b.y += dy; S.belts[b.x + "," + b.y] = b; ui.esel.belts.add(b.x + "," + b.y); }
+  invalidate(); unstuck(); save(); return true;
+}
+/** Le lutin s'est retrouvé sous un bâtiment : on le pose sur la case libre la plus proche. */
+function unstuck() {
+  const p = S.player; if (walkable(p.x, p.y)) return;
+  let best = null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walkable(x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
+  if (best) { p.x = p.px = best[0]; p.y = p.py = best[1]; p.path = []; p.job = null; }
+}
+const editCanRotate = () => {
+  if (eselSize() !== 1) return false;
+  const [bk] = ui.esel.belts; if (bk) return true;
+  const e = byId([...ui.esel.ents][0]); return !!e?.o && e.kind !== "extractor";
+};
+function editRotate() {
+  if (!editCanRotate()) return;
+  const [bk] = ui.esel.belts;
+  if (bk) { const b = S.belts[bk]; b.d = BROT[(BROT.indexOf(b.d) + 1) % 4]; save(); ui.dirty = true; return; }
+  const e = byId([...ui.esel.ents][0]), o = ROT[(ROT.indexOf(e.o) + 1) % 4];
+  if (!fits(e.name, e.stage, o, e.x, e.y, e)) return toast("Pas la place pour la tourner ici.");
+  e.o = o; invalidate(); save(); ui.dirty = true;
+}
+/** Démonter (2 touches) : la sélection (la moitié du prix rendue, comme d'habitude), ou tout (« Tout démonter » : tout est remboursé). */
+function editAsk(what) {
+  if (ui.econf?.what === what && Date.now() < ui.econf.until) { ui.econf = null; return what === "all" ? purgeAll() : editDelete(); }
+  ui.econf = { what, until:Date.now() + 4000 };
+  toast(what === "all" ? `Touche encore « Tout démonter » : machines, tapis, carrières, énergie… tout part, et tu récupères ${fmt(purgeValue())} pièces.` : "Touche encore pour démonter la sélection (la moitié du prix est rendue).");
+  setTimeout(() => { ui.dirty = true; }, 4100); ui.dirty = true;
+}
+function editDelete() {
+  const ents = [...ui.esel.ents].map(byId).filter(Boolean);
+  for (const k of ui.esel.belts) { const b = S.belts[k]; if (b) demolish(b.x, b.y); }
+  for (const e of ents) if (S.ents.includes(e)) demolish(e.x, e.y);
+  eselClear(); computePower(); save(); ui.dirty = true;
+}
+// Tout démonter : ce qui est construit part (les coffres, tas, caisse, serres et décorations restent), entièrement remboursé ;
+// ce que contenaient machines et tapis va dans le sac, puis dans les coffres.
+const PURGED = ["machine", "switch", "trash", "crank", "boiler", "generator", "pole", "extractor"];
+const purged = (e) => !!e.quarry || PURGED.includes(e.kind);
+const purgeValue = () => S.ents.filter(purged).reduce((n, e) => n + (e.quarry ? e.paid || QUARRY_COST : costOf(e.name)), 0)
+  + Object.values(S.belts).reduce((n, b) => n + BELT_COST[b.k || "bois"], 0);
+function purgeAll() {
+  const refund = purgeValue(), items = {}, nb = S.ents.filter(purged).length + Object.keys(S.belts).length;
+  const keep = (it, n) => { if (n > 0) items[it] = (items[it] || 0) + n; };
+  for (const e of S.ents) if (purged(e) && e.kind === "machine") for (const box of [e.inb, e.outb, e.res]) for (const [it, n] of Object.entries(box || {})) keep(it, n);
+  for (const b of Object.values(S.belts)) for (const L of b.lanes) for (const o of L) keep(o.it, 1);
+  S.ents = S.ents.filter((e) => !purged(e)); S.belts = {}; invalidate(); computePower();
+  let lost = 0; const chests = S.ents.filter((c) => c.kind === "chest");
+  for (const [it, n] of Object.entries(items)) { let left = n - bagAdd(it, n); for (const c of chests) if (left > 0) left -= chestAdd(c, it, left); lost += left; }
+  S.coins += refund; eselClear(); ui.sel = null; save(); push(); ui.dirty = true;
+  toast(`Usine vidée : ${nb} élément${nb > 1 ? "s" : ""} démonté${nb > 1 ? "s" : ""}, +${fmt(refund)} pièces.${lost ? ` Sac et coffres pleins : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.` : ""}`, 6000);
+}
+function drawEdit() {
+  const d = ui.edrag && (ui.edrag.dx || ui.edrag.dy) ? ui.edrag : null, dx = d ? d.dx : 0, dy = d ? d.dy : 0;
+  const col = d ? (editFits(dx, dy) ? "#6cc46a" : "#d8382f") : "#ffd65a";
+  ctx.lineWidth = 1;
+  for (const id of ui.esel.ents) {
+    const e = byId(id); if (!e) continue; const f = fp(e);
+    if (d) { const sp = spr(e), i = stageImg(e.stage, sp.file), og = sp.origin || [0, 0]; ctx.globalAlpha = 0.6; if (i) ctx.drawImage(i, 0, 0, sp.frame[0], sp.frame[1], (e.x + dx) * T - og[0], (e.y + dy) * T - og[1], sp.frame[0], sp.frame[1]); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = col; ctx.strokeRect((e.x + dx) * T + 0.5, (e.y + dy) * T + 0.5, f.w * T - 1, f.h * T - 1);
+  }
+  for (const k of ui.esel.belts) {
+    const b = S.belts[k]; if (!b) continue;
+    if (d) { const bi = img(`usine/tapis/${b.k || "bois"}.png`); ctx.globalAlpha = 0.6; if (bi) ctx.drawImage(bi, 0, BELT_ROWS.indexOf(b.d) * 32, 32, 32, (b.x + dx) * T, (b.y + dy) * T, 32, 32); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = col; ctx.strokeRect((b.x + dx) * T + 0.5, (b.y + dy) * T + 0.5, T - 1, T - 1);
+  }
+  const r = ui.erect;
+  if (r) {
+    const xa = Math.min(r.x0, r.x1), xb = Math.max(r.x0, r.x1), ya = Math.min(r.y0, r.y1), yb = Math.max(r.y0, r.y1);
+    ctx.strokeStyle = "#ffd65a"; ctx.setLineDash([4, 3]); ctx.strokeRect(xa * T + 0.5, ya * T + 0.5, (xb - xa + 1) * T - 1, (yb - ya + 1) * T - 1); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(255,214,90,.12)"; ctx.fillRect(xa * T, ya * T, (xb - xa + 1) * T, (yb - ya + 1) * T);
+  }
+}
 function expand() {
   const n = nextExpand();
   if (!n) return;
@@ -1365,6 +1493,7 @@ function draw(time) {
     ctx.globalAlpha = 1;
     ctx.strokeStyle = ok ? "#6cc46a" : "#d8382f"; ctx.lineWidth = 1; ctx.strokeRect(q.x * T + 0.5, q.y * T + 0.5, f[0] * T - 1, f[1] * T - 1);
   }
+  if (ui.mode === "edit") drawEdit();
   if (ui.hover && ui.mode === "demolish") { ctx.strokeStyle = "#d8382f"; ctx.strokeRect(ui.hover[0] * T + 0.5, ui.hover[1] * T + 0.5, T - 1, T - 1); }
   { const c = ui.confirmDemol && byId(ui.confirmDemol.id); // bâtiment en attente de confirmation : cadre rouge qui clignote
     if (c && confirming(c) && Math.floor(time * 4) % 2) { const f = fp(c); ctx.strokeStyle = "#d8382f"; ctx.lineWidth = 2; ctx.strokeRect(c.x * T + 1, c.y * T + 1, f.w * T - 2, f.h * T - 2); ctx.lineWidth = 1; } }
@@ -1373,7 +1502,7 @@ function draw(time) {
 }
 
 // ---------------------------------------------------------------- entrées
-const ui = { mode:"hand", build:null, rot:0, sel:null, hover:null, target:null, dirty:true, tab:"commandes", drag:null, hold:null, holdT:0, harvest:0 };
+const ui = { esel:{ ents:new Set(), belts:new Set() }, edrag:null, erect:null, econf:null, mode:"hand", build:null, rot:0, sel:null, hover:null, target:null, dirty:true, tab:"commandes", drag:null, hold:null, holdT:0, harvest:0 };
 function tileAt(ev) {
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / zoom + cam.x, y = (ev.clientY - r.top) / zoom + cam.y;
   return [Math.floor(x / T), Math.floor(y / T)];
@@ -1387,7 +1516,7 @@ function startPinch() {
   pinch = { d:Math.hypot(a.x - b.x, a.y - b.y) || 1, wx:cam.x + mx / zoom, wy:cam.y + my / zoom, z:zoom };
   // le geste à un doigt commencé juste avant (marcher, appui long, tracé de tapis) s'arrête
   if (ui.press) clearTimeout(ui.press.timer);
-  ui.press = null; ui.follow = null; ui.hold = null; ui.drag = null; ui.placeDrag = null;
+  ui.press = null; ui.follow = null; ui.hold = null; ui.drag = null; ui.placeDrag = null; ui.edrag = null; ui.erect = null;
   camFree = true;
 }
 function movePinch() {
@@ -1407,6 +1536,7 @@ cv.addEventListener("pointermove", (ev) => {
   if (pan) { cam.x = pan.cx - (ev.clientX - pan.x) / zoom; cam.y = pan.cy - (ev.clientY - pan.y) / zoom; camFree = true; return; }
   if (pinch) return; // un doigt reste après un pincement : il ne fait rien de plus
   const [x, y] = tileAt(ev); ui.hover = [x, y];
+  if (ui.mode === "edit" && editMove(x, y)) return;
   // appui long : un mouvement l'annule (c'était un glissé)
   if (ui.press && !ui.press.fired && Math.hypot(ev.clientX - ui.press.x, ev.clientY - ui.press.y) > 8) { clearTimeout(ui.press.timer); ui.press = null; }
   if (ui.follow) { ui.follow.cx = ev.clientX; ui.follow.cy = ev.clientY; }
@@ -1431,6 +1561,7 @@ const release = (ev) => {
     return;
   }
   if (pan) { if (!ptrs.size) pan = null; return; }
+  if (ui.mode === "edit") editUp();
   ui.drag = null; ui.hold = null; ui.placeDrag = null; ui.follow = null;
   // appui court sur un objet déplaçable : son menu s'ouvre au relâché (un appui long l'a pris en main à la place)
   const p = ui.press; ui.press = null;
@@ -1451,6 +1582,7 @@ cv.addEventListener("pointerdown", (ev) => {
     ui.dirty = true; return;
   }
   if (ui.mode === "demolish") { const e = !S.belts[x + "," + y] && entAt(x, y); if (e) askDemolish(e); else demolish(x, y); ui.dirty = true; return; }
+  if (ui.mode === "edit") { editDown(x, y); ui.dirty = true; return; }
   if (ui.place) { // on fait glisser le fantôme (en le saisissant, ou en touchant ailleurs pour l'y amener)
     const q = ui.place, f = footOf(q);
     if (x < q.x || y < q.y || x >= q.x + f[0] || y >= q.y + f[1]) { q.x = x; q.y = y; }
@@ -1472,7 +1604,7 @@ cv.addEventListener("pointerdown", (ev) => {
 });
 window.addEventListener("keydown", (ev) => {
   if (ev.target.tagName === "SELECT" || ev.target.tagName === "INPUT") return;
-  if (ev.key === "r" || ev.key === "R") { if (ui.place) rotatePlace(); else { ui.rot = (ui.rot + 1) % 4; ui.dirty = true; } }
+  if (ev.key === "r" || ev.key === "R") { if (ui.place) rotatePlace(); else if (ui.mode === "edit") editRotate(); else { ui.rot = (ui.rot + 1) % 4; ui.dirty = true; } }
   if (ui.place && ev.key === "Enter") confirmPlace();
   if (ui.place && ev.key === "Escape") return cancelPlace();
   if (ev.key === "Escape") setMode("hand");
@@ -1495,7 +1627,12 @@ function togglePanel(tab) {
   if (tab === "visiter") loadMembers(); if (document.body.classList.contains("panel") && ui.tab === tab) closePanel(); else { ui.tab = tab; openPanel(); } ui.dirty = true; }
 function toggleIcons() { const on = !document.body.classList.contains("menu"); document.body.classList.toggle("menu", on); $("menubtn").textContent = on ? "✕" : "☰"; if (!on) closePanel(); }
 function select(e, quiet) { ui.sel = e.id; if (!quiet || ui.tab === "selection") ui.tab = "selection"; if (!quiet) openPanel(); ui.dirty = true; }
-function setMode(m) { ui.mode = m; if (m !== "build") ui.build = null; if (m === "build") { ui.tab = "construire"; openPanel(); } else closePanel(); ui.dirty = true; }
+function setMode(m) {
+  if (m === "edit" && ui.mode === "edit") m = "hand"; // le bouton main ouvre et ferme le mode édition
+  if (ui.mode === "edit" && m !== "edit") { eselClear(); ui.edrag = null; ui.erect = null; }
+  if (m === "edit") { if (S.visit) return; ui.place = null; S.player.path = S.player.path.slice(0, 1); ui.target = null;
+    toast("Mode édition : fais glisser un bâtiment ou un tapis pour le déplacer, touche-le encore pour le tourner. Glisse sur le sol pour en prendre plusieurs.", 6000); }
+  ui.mode = m; if (m !== "build") ui.build = null; if (m === "build") { ui.tab = "construire"; openPanel(); } else closePanel(); ui.dirty = true; }
 let toastT = 0;
 function toast(msg, ms = 3500) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), ms); }
 const fmtTime = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`; };
@@ -1528,6 +1665,13 @@ function renderUI() {
   $("placebar").hidden = !q;
   if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !(q.belt || (q.id && (!["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind) || byId(q.id)?.quarry))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
   $("beltdone").hidden = !(ui.mode === "build" && ui.build === "belt");
+  { const ed = ui.mode === "edit" && !S.visit, n = eselSize(), sure = (w) => ui.econf?.what === w && Date.now() < ui.econf.until;
+    $("editbar").hidden = !ed; $("editbtn").hidden = !!S.visit; document.body.classList.toggle("editing", ed);
+    if (ed) {
+      $("erot").disabled = !editCanRotate(); $("edel").disabled = !n;
+      const t1 = sure("sel") ? "Sûr ? Démonter" : n ? `Démonter (${n})` : "Démonter", t2 = sure("all") ? "Sûr ? Tout démonter" : "Tout démonter";
+      if ($("edel").textContent !== t1) $("edel").textContent = t1; if ($("eall").textContent !== t2) $("eall").textContent = t2;
+    } }
   // sac
   let bag = "";
   for (let i = 0; i < BAG; i++) { const s = S.bag[i]; bag += `<div class="slot">${s ? itemHTML(s.it, s.n) : ""}</div>`; }
@@ -1792,6 +1936,10 @@ $("pok").addEventListener("click", confirmPlace);
 $("pno").addEventListener("click", cancelPlace);
 $("pdel").addEventListener("click", removePlace);
 $("beltdone").addEventListener("click", () => setMode("hand"));
+$("erot").addEventListener("click", editRotate);
+$("edel").addEventListener("click", () => editAsk("sel"));
+$("eall").addEventListener("click", () => editAsk("all"));
+$("edone").addEventListener("click", () => setMode("hand"));
 $("zin").addEventListener("click", () => zoomStep(1));
 $("zout").addEventListener("click", () => zoomStep(-1)); // jusqu'à 0,5 : toute l'usine à l'écran
 
@@ -1846,6 +1994,7 @@ const TUTO = [
   { t:"Ta serre de l'usine : plante, attends 2 h, et récolte 3 fleurs. Tu peux les offrir aux autres joueurs.", ent:() => firstOf("flowerbed"), go:() => { const b = firstOf("flowerbed"); if (b) select(b); } },
   { t:"Ton sac, en bas : tout ce que ton lutin porte. Plein ? Range dans un coffre, ou pose une poubelle (Construire) pour le vider.", hi:"#bagwrap", go:() => closePanel() },
   { t:"Appui long sur un objet pour le déplacer et le tourner. Garde le doigt sur le sol pour marcher.", go:() => closePanel() },
+  { t:"Pour tout réarranger, le bouton main passe en mode édition : fais glisser bâtiments et tapis (même toute une zone), et « Tout démonter » repart de zéro, remboursé.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
   { t:"Glisse à deux doigts pour regarder ailleurs, pince pour zoomer (sur ordinateur : molette et clic droit). Le bouton − va jusqu'à montrer toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
   { t:"Pour démonter, touche deux fois l'objet (mode Démonter, ou bouton de sa fiche) : la moitié du prix revient, et ce que contenait une machine retourne dans ton sac. Un coffre se vide d'abord.", go:() => closePanel() },
   { t:"Le menu ☰ : le zoom et toutes les pages.", hi:"#menubtn", go:() => { closePanel(); setIcons(true); } },
@@ -1910,7 +2059,7 @@ const STAGE_TOURS = {
 // Nouveautés, montrées une fois à ceux qui avaient déjà fait la visite du début (min : étape à partir de laquelle ça compte).
 // Pour annoncer une prochaine mise à jour : augmenter NEWS_V et ajouter ses bulles avec v:NEWS_V.
 // Au lancement, un joueur ne voit que les bulles plus récentes que sa dernière visite ; le menu les montre toutes.
-const NEWS_V = 2;
+const NEWS_V = 3;
 const NEWS = [
   { v:0, t:"Du nouveau à l'usine ! Voici ce qui a changé, en quelques bulles.", go:() => closePanel() },
   { t:"La vue bouge : glisse à deux doigts, pince pour zoomer (molette et clic droit sur ordinateur). Le bouton − montre toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
@@ -1925,6 +2074,8 @@ const NEWS = [
   { v:2, min:3, t:"Une carrière peut verser de plusieurs côtés, chacun sur la voie de ton choix. Et une machine à tapis pose ce qu'elle fait sur la voie choisie dans sa fiche.", go:() => closePanel() },
   { v:2, min:3, t:"Nouveaux prix : la guirlande se vend 11, l'étoile dorée 6. La machine à couronnes à tapis fait la couronne décorée (même recette), vendue 26 ; la couronne simple reste à 15.", go:() => closePanel() },
   { v:2, min:3, t:"Chaque carrière coûte 1,5 fois plus que la précédente, et une seule peut donner des sapins.", go:() => page("construire") },
+  { v:3, t:"Mode édition (bouton main) : fais glisser bâtiments et tapis pour les déplacer, gratuitement ; touche-les encore pour les tourner. Glisse sur le sol pour prendre toute une zone.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
+  { v:3, t:"Et pour repartir de zéro : « Tout démonter », dans le mode édition. Machines, tapis et énergie partent, tout est remboursé, et leur contenu va dans ton sac.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
 ];
 const TOURS = { start:TUTO, ...STAGE_TOURS };
 /** Les bulles d'une visite (les nouveautés : seulement celles des étapes atteintes). */

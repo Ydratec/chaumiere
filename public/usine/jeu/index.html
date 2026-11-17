@@ -104,7 +104,9 @@ label { display:flex; justify-content:space-between; align-items:center; gap:8px
 #catchup { position:fixed; left:50%; top:40%; transform:translate(-50%, -50%); width:min(320px, 86%); z-index:10; padding:8px; text-align:center; }
 #catchup[hidden] { display:none; }
 #placebar { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); display:flex; gap:4px; margin:0; z-index:4; }
-#placebar[hidden], #beltdone[hidden], #visitbar[hidden], #tuto[hidden] { display:none; }
+body.editing #bagwrap { display:none; } /* en mode édition, la barre prend la place du sac */
+#editbar { position:absolute; left:50%; bottom:4px; transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin:0; z-index:4; width:max-content; max-width:96%; }
+#placebar[hidden], #editbar[hidden], #beltdone[hidden], #visitbar[hidden], #tuto[hidden] { display:none; }
 #tuto { position:absolute; left:8px; right:8px; bottom:64px; z-index:8; padding:4px 6px; max-width:520px; margin:0 auto; }
 body.panel #tuto { bottom:calc(52% + 12px); } /* au-dessus du volet ouvert, sous la rangée d'icônes */
 #tuto p { margin:2px 0 4px; }
@@ -162,6 +164,7 @@ body.panel #tuto { bottom:calc(52% + 12px); } /* au-dessus du volet ouvert, sous
       <button class="btn icon page" data-page="commandes" title="Commandes"><span class="ic" style="--i:17"></span></button>
       <button class="btn icon page" data-page="marche" title="Marché"><span class="ic" style="--i:10"></span></button>
       <button class="btn icon page" data-page="construire" title="Construire"><span class="ic" style="--i:3"></span></button>
+      <button class="btn icon" id="editbtn" data-mode="edit" title="Mode édition : arranger l'usine"><span class="ic" style="--i:2"></span></button>
       <button class="btn icon page" data-page="visiter" title="Visiter une usine"><span class="ic" style="--i:22"></span></button>
       <button class="btn icon" id="help" title="Comment jouer"><span class="ic" style="--i:21"></span></button>
     </div>
@@ -174,6 +177,8 @@ body.panel #tuto { bottom:calc(52% + 12px); } /* au-dessus du volet ouvert, sous
     <!-- Pose d'un objet (nouveau ou déplacé) : tourner, valider, annuler. -->
     <div id="placebar" class="card" hidden><button class="btn rouge" id="pdel">Retirer</button><button class="btn" id="prot">↻ Tourner</button><button class="btn rouge" id="pno">✕</button><button class="btn vert" id="pok">✓ Poser</button></div>
     <button class="btn vert" id="beltdone" hidden>✓ Terminé</button>
+    <!-- Mode édition : déplacer, tourner, démonter (la sélection ou tout). -->
+    <div id="editbar" class="card" hidden><button class="btn" id="erot">↻ Tourner</button><button class="btn rouge" id="edel">Démonter</button><button class="btn rouge" id="eall">Tout démonter</button><button class="btn vert" id="edone">✓ Terminé</button></div>
   </div>
   <aside>
     <div class="tabs">
