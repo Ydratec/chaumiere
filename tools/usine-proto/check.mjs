@@ -233,6 +233,30 @@ const stored = { stock:S.stock.length, coins:S.coins - c0e, left:S.ents.filter((
 startStock(S.stock.findIndex((e) => e === em)); const q = ui.place; q.x = 3; q.y = 9; confirmPlace();   // on repose le four : tel quel, gratuit
 out.edit = { selN, blocked, movedTo, rotated, ...stored, back:S.ents.includes(em), at:[em.x, em.y], kept:em.outb.boule_transparente, paid:S.coins - c0e, stockAfter:S.stock.length };
 setMode("hand");
+// étape 5 : répartiteur, passage souterrain, silo (tapis en métal : pas besoin de manivelle)
+fresh(5);
+const MB = (x, y, d = "E") => (S.belts[x + "," + y] = { x, y, d, k:"metal", lanes:[[], []], on:true });
+const feedB = (b, n, it = "sable") => { let put = 0; for (let i = 0; i < 400 && put < n; i++) { if (laneRoom(b, 0, 0)) { b.lanes[0].push({ it, p:0 }); put++; } step(0.25); } for (let i = 0; i < 40; i++) step(0.25); };
+const sIn = MB(2, 6), spl = addEnt({ kind:"splitter", name:"splitter", stage:5, x:3, y:6, o:"e", filter:null, fside:0, prio:null, rr:0 });
+MB(4, 6); MB(4, 7);
+const tL = addEnt({ kind:"trash", name:"poubelle", stage:1, x:5, y:6, eaten:0 }), tR = addEnt({ kind:"trash", name:"poubelle", stage:1, x:5, y:7, eaten:0 });
+feedB(sIn, 10); const half = [tL.eaten, tR.eaten];
+spl.prio = 1; feedB(sIn, 6); const prio = [tL.eaten - half[0], tR.eaten - half[1]];
+spl.prio = null; spl.filter = "bois"; spl.fside = 0; const b0 = [tL.eaten, tR.eaten]; feedB(sIn, 3, "bois"); feedB(sIn, 4, "sable");
+const filt = [tL.eaten - b0[0], tR.eaten - b0[1]];
+// souterrain : une manivelle entre l'entrée et la sortie, les objets passent dessous
+const tIn = MB(2, 10); addEnt({ kind:"tunnel", name:"underground_metal_in", stage:5, x:3, y:10, o:"e", io:"in", q:[[], []] });
+addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:10, reserve:0 });
+const tOut = addEnt({ kind:"tunnel", name:"underground_metal_out", stage:5, x:7, y:10, o:"e", io:"out", q:[[], []] });
+MB(8, 10); const tT = addEnt({ kind:"trash", name:"poubelle", stage:1, x:9, y:10, eaten:0 });
+feedB(tIn, 5); const lane1 = S.belts["8,10"];
+// silo : se remplit ; ne rend rien tant qu'on n'a pas choisi de côté ; puis vide sur le tapis de droite
+const siIn = MB(2, 13), silo = addEnt({ kind:"silo", name:"silo", stage:5, x:3, y:13, o:"e", item:null, n:0, acc:0, lane:0 });
+MB(4, 13); const sT = addEnt({ kind:"trash", name:"poubelle", stage:1, x:5, y:13, eaten:0 });
+feedB(siIn, 6); const kept = [silo.n, silo.item, sT.eaten];
+const refused = siloAdd(silo, "bois");
+silo.outs = { E:0 }; for (let i = 0; i < 40; i++) step(0.25);
+out.st5 = { half, prio, filt, tunnel:tT.eaten, pairOk:tunnelOut(S.ents.find((e) => e.name === "underground_metal_in")) === tOut, kept, refused, emptied:[silo.n, silo.item, sT.eaten] };
 // couronnes : la table simple fait la couronne (15), la machine à tapis la couronne décorée (26), même recette qu'avant
 out.wreath = { simple:RECIPES.wreath_table[0].out, belt:{ ...RECIPES.wreath_table_belt[0].out }, beltIn:{ ...RECIPES.wreath_table_belt[0].in }, steam:RECIPES.steam_wreath[0].out.couronne_deco, elec:RECIPES.elec_wreath[0].out.couronne_deco,
   price:[PRICE.couronne, PRICE.couronne_deco, PRICE.guirlande, PRICE.etoile_doree], sold3:SELL[3].includes("couronne_deco"), icon:ITEMS.indexOf("couronne_deco"), name:NAMES.couronne_deco };
@@ -368,7 +392,8 @@ assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite
 assert.deepEqual(JSON.parse(JSON.stringify(out.quarry2)), { qCosts:[2500, 3750, 5625], refund3:2813, next:5625, sapinOther:true, sapinSelf:false }, "carrières : prix qui monte, remboursement de la moitié payée, une seule à sapins");
 assert.deepEqual({ ...out.oldWreath }, { recipe:"couronne_deco", made:1 }, "ancienne recette de couronne reprise");
 assert.equal(JSON.stringify(out.edit), JSON.stringify({ selN:3, blocked:true, movedTo:[5, 11, true, true, true, 1], rotated:true, stock:2, coins:10, left:0, belts:0, sand:1, back:true, at:[3, 9], kept:3, paid:10, stockAfter:1 }), "mode édition : déplacer en bloc, tourner, tout ranger puis reposer");
+assert.equal(JSON.stringify(out.st5), JSON.stringify({ half:[5, 5], prio:[0, 6], filt:[3, 4], tunnel:5, pairOk:true, kept:[6, "sable", 0], refused:0, emptied:[0, null, 6] }), "étape 5 : répartiteur, souterrain, silo");
 assert.equal(JSON.stringify(out.wreath), JSON.stringify({ simple:{ couronne:1 }, belt:{ couronne_deco:1 }, beltIn:{ branche:4, ruban:1, "@boule_finie":2 }, steam:1, elec:1, price:[15, 26, 11, 6], sold3:true, icon:37, name:"Couronne décorée" }), "couronnes séparées");
-assert.deepEqual({ ...out.news }, { news1:8, news3:15, newsSince1:6, total:16 }, "nouveautés : filtrées selon l'étape atteinte");
+assert.deepEqual({ ...out.news }, { news1:9, news3:16, newsSince1:7, total:19 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
