@@ -8,10 +8,12 @@ const META = window.USINE_META;
 META["3"].objects.aiguilleur ||= { file:"aiguilleur.png", frame:[32, 32], frames:1, footprint:[1, 1], origin:[0, 0] };
 META["3"].objects.quarry ||= META["3"].objects.source_sable;
 META["1"].objects.poubelle ||= { file:"poubelle.png", frame:[32, 32], frames:1, footprint:[1, 1], origin:[0, 0] };
-const T = 32, W = 24, H = 18, Y0 = 2; // W × H : taille maximale de l'atelier ; Y0 : rangées du mur du fond
+const T = 32, W = 40, H = 30, Y0 = 2; // W × H : taille maximale de l'atelier ; Y0 : rangées du mur du fond
 // L'atelier commence petit et s'agrandit (page Construire) : S.area = { w, h } est la partie utilisable de la carte.
 const AREA0 = { w:9, h:8 }; // 9 × 6 cases de sol : juste la place des tas, de la caisse, du coffre et des deux premières machines
-const EXPAND = [[10, 9, 150], [12, 9, 400], [12, 11, 900], [14, 11, 2000], [16, 13, 4000], [18, 14, 7000], [20, 16, 11000], [22, 17, 15000], [W, H, 20000]]; // [largeur, hauteur, prix]
+const EXPAND = [[10, 9, 150], [12, 9, 400], [12, 11, 900], [14, 11, 2000], [16, 13, 4000], [18, 14, 7000], [20, 16, 11000], [22, 17, 15000], [24, 18, 20000],
+  // au-delà (étape 5 et plus) : de quoi bâtir de grandes lignes ; avant, l'atelier s'arrêtait à 24 × 18
+  [26, 20, 35000], [28, 21, 55000], [30, 23, 80000], [32, 24, 110000], [34, 26, 150000], [36, 27, 200000], [38, 29, 260000], [W, H, 330000]]; // [largeur, hauteur, prix]
 const nextExpand = () => EXPAND.find(([w, h]) => w > S.area.w || h > S.area.h);
 // La salle vient de l'onglet Usine (?room=…) : la partie est gardée sur le serveur (/api/usine/<salle>) et sur l'appareil.
 const ROOM = new URLSearchParams(location.search).get("room");
@@ -148,13 +150,13 @@ const BUILD = {   // [clé, coût, nom affiché si ce n'est pas une machine]
   3:[["belt", 5, "Tapis en bois"], ["aiguilleur", 60, "Aiguilleur"], ["quarry", QUARRY_COST, "Carrière"], ["crank", 400, "Manivelle"], ["kiln_belt", 4700], ["paint_table_belt", 4700], ["star_press", 4700], ["loom", 4700], ["wreath_table_belt", 4700]],
   4:[["belt_fonte", 20, "Tapis en fonte"], ["boiler", 1200, "Chaudière"], ...["steam_furnace", "steam_sprayer", "steam_press", "steam_loom", "steam_wreath", "steam_tree"].map((k) => [k, 11350])],
   5:[["belt_metal", 60, "Tapis en métal"], ["generator", 8000, "Générateur"], ["pole", 400, "Poteau électrique"], ["extractor_sable", 3000, "Extracteur"],
-    ["chest_metal", 500, "Coffre en métal"], ...["elec_furnace", "paint_booth", "assembler", "elec_loom", "elec_wreath", "tree_decorator"].map((k) => [k, 23240])],
+    ["chest_metal", 500, "Coffre en métal"], ["splitter", 1500, "Répartiteur"], ["underground_metal_in", 800, "Entrée souterraine"], ["underground_metal_out", 800, "Sortie souterraine"], ["silo", 4000, "Silo"], ...["elec_furnace", "paint_booth", "assembler", "elec_loom", "elec_wreath", "tree_decorator"].map((k) => [k, 23240])],
 };
 const BELT_COST = { bois:5, fonte:20, metal:60 };
 // Serre de l'usine (dessin : tools/usine-pixel/serre.py) : on plante, ça pousse en FLOWER_TIME (même hors ligne), on récolte ;
 // la récolte (3 fleurs, tirées par le serveur) va dans l'inventaire de la salle. Images : 0 vide, 1 pousses, 2 plantes, 3 fleurs.
 const FLOWER_TIME = 2 * 3600, MAX_BEDS = 10; // le serveur n'accepte que 10 serres (numéros 0 à 9)
-const STAGE_OF = { poubelle:1, aiguilleur:3, quarry:3, crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5 };
+const STAGE_OF = { poubelle:1, aiguilleur:3, quarry:3, crank:3, belt_fonte:4, boiler:4, belt_metal:5, generator:5, pole:5, chest_metal:5, splitter:5, underground_metal_in:5, underground_metal_out:5, silo:5 };
 // Énergie (balance.json) : une chaudière fait 6 u/s de vapeur, une machine à vapeur en prend 2 → 3 machines ; 1 bois = 60 u de vapeur.
 // Un générateur fait 900 kW avec 10 u/s de vapeur, une machine électrique (ou un extracteur) prend 150 kW → 6 appareils.
 // ponytail: pas de tuyaux, la vapeur porte à BOILER_R cases (comme la manivelle) ; à remplacer par des réseaux de tuyaux si besoin.
@@ -278,7 +280,7 @@ function feeders(e, pt = portsOf(e)) {
     const bx = tx - dx, by = ty - dy, b = S.belts[bx + "," + by]; // tapis voisin qui avance vers cette case de la machine
     if (b && b.d === d && !isOutBelt(pt, bx, by)) res.push(b);
     const sw = !b && entAt(bx, by); // un aiguilleur collé à la machine peut aussi l'alimenter
-    if (sw && sw.kind === "switch" && !isOutBelt(pt, bx, by) && !res.includes(sw)) res.push(sw);
+    if (sw && PASS.includes(sw.kind) && !isOutBelt(pt, bx, by) && !res.includes(sw)) res.push(sw);
   }
   return res;
 }
@@ -288,7 +290,7 @@ function unlinked(e) {
   const out = [];
   if (pt.in && !feeders(e, pt).length) out.push("entrée");
   const ob = pt.out && S.belts[pt.out.outside[0] + "," + pt.out.outside[1]];
-  if (pt.out && !(ob && ob.d !== OPP[pt.out.side]) && entAt(pt.out.outside[0], pt.out.outside[1])?.kind !== "switch") out.push("sortie");
+  if (pt.out && !(ob && ob.d !== OPP[pt.out.side]) && !PASS.includes(entAt(pt.out.outside[0], pt.out.outside[1])?.kind)) out.push("sortie");
   return out;
 }
 function bfs(sx, sy, isGoal) {
@@ -548,7 +550,7 @@ function updateMachine(m, dt) {
   if (pt && outTotal(m) > 0) {
     const [bx, by] = pt.out.outside, b = S.belts[bx + "," + by];
     const sw = !b && entAt(bx, by);
-    if (sw && sw.kind === "switch") { // aiguilleur collé à la sortie : la machine lui passe directement ce qu'elle a fait
+    if (sw && PASS.includes(sw.kind)) { // aiguilleur (ou répartiteur, souterrain, silo) collé à la sortie : la machine lui passe directement ce qu'elle a fait
       const it = Object.keys(m.outb)[0];
       const lane = m.outLane === 1 ? 1 : m.outLane === "b" ? (m.lane || 0) : 0;
       if (deliver({ x:pt.out.inside[0], y:pt.out.inside[1], d:pt.out.side }, lane, it)) { if (!--m.outb[it]) delete m.outb[it]; m.lane = 1 - lane; }
@@ -572,9 +574,9 @@ const hasOuts = (e) => !!e.outs && Object.keys(e.outs).length > 0;
 /** Les deux voies d'un tapis, nommées comme on les voit à l'écran (voie 0 = à gauche dans le sens du tapis). */
 const laneNames = (b) => (b ? [LANE_NAME[LEFT[b.d]], LANE_NAME[OPP[LEFT[b.d]]]] : ["de gauche", "de droite"]);
 function outControls(e) {
-  const what = e.kind === "source" ? "le tas" : "l'extracteur", all = !hasOuts(e);
-  let h = `<h3>${icon("tapis")} Elle verse vers</h3><div class="row"><button class="btn sm ${all ? "on" : ""}" data-oall="1">Tous les côtés</button>`
-    + `<span class="muted">${all ? `tous les tapis qui touchent ${what}` : "les côtés choisis, à tour de rôle"}</span></div><div class="card">`;
+  const silo = e.kind === "silo", what = e.kind === "source" ? "le tas" : silo ? "le silo" : "l'extracteur", all = !hasOuts(e);
+  let h = `<h3>${icon("tapis")} ${silo ? "Il" : "Elle"} verse vers</h3><div class="row"><button class="btn sm ${all ? "on" : ""}" data-oall="1">${silo ? "Nulle part" : "Tous les côtés"}</button>`
+    + `<span class="muted">${all ? (silo ? "le silo garde tout" : `tous les tapis qui touchent ${what}`) : "les côtés choisis, à tour de rôle"}</span></div><div class="card">`;
   for (const d of SIDES) {
     const [dx, dy] = DIRS[d], b = S.belts[(e.x + dx) + "," + (e.y + dy)], ok = b && b.d !== OPP[d];
     const cur = e.outs?.[d], [l0, l1] = laneNames(ok ? b : null);
@@ -720,6 +722,56 @@ function throughSwitch(sw, from, lane, it, depth) {
   }
   return false;
 }
+/**
+ * Étape 5. Répartiteur (2 cases de large) : ce qui arrive par derrière, sur l'une ou l'autre entrée, ressort devant,
+ * à tour de rôle à gauche et à droite (même voie) : il équilibre deux lignes. Si une sortie est bloquée, tout passe par
+ * l'autre. Réglages : une sortie prioritaire (l'autre ne reçoit que le trop-plein), ou un filtre (l'objet choisi d'un
+ * côté, tout le reste de l'autre). Comme dans Factorio.
+ */
+const flowOf = (e) => e.o.toUpperCase();
+/** Les deux cases du répartiteur, [gauche, droite] dans le sens du flux. */
+function splitTiles(sp) { const [lx, ly] = DIRS[LEFT[flowOf(sp)]]; return tilesOf(sp).sort((a, b) => (b[0] * lx + b[1] * ly) - (a[0] * lx + a[1] * ly)); }
+function throughSplitter(sp, lane, it, depth) {
+  if (depth > 6) return false;
+  const ts = splitTiles(sp), d = flowOf(sp), f = sp.fside || 0;
+  const order = sp.filter ? [matches(it, sp.filter) ? f : 1 - f] : sp.prio != null ? [sp.prio, 1 - sp.prio] : [sp.rr || 0, 1 - (sp.rr || 0)];
+  for (const i of order) if (deliver({ x:ts[i][0], y:ts[i][1], d }, lane, it, depth + 1)) { if (!sp.filter && sp.prio == null) sp.rr = 1 - i; sp.seen = it; return true; }
+  return false;
+}
+/**
+ * Passage souterrain : l'entrée avale ce qui arrive par derrière, la sortie (même sens, TUN_MAX cases plus loin au plus)
+ * le rend, voies comprises. Entre les deux, on construit ce qu'on veut : deux lignes peuvent se croiser.
+ */
+const TUN_MAX = 6;
+function tunnelOut(e) {
+  const [dx, dy] = DIRS[flowOf(e)];
+  for (let k = 1; k <= TUN_MAX + 1; k++) { const o = entAt(e.x + dx * k, e.y + dy * k); if (o && o.kind === "tunnel" && o.o === e.o) return o.io === "out" ? o : null; }
+  return null;
+}
+function tunnelIn(e, lane, it) {
+  const out = tunnelOut(e); if (!out) return false;
+  const dist = Math.abs(out.x - e.x) + Math.abs(out.y - e.y), q = (e.q ||= [[], []])[lane];
+  if (q.length >= Math.ceil(dist / GAP) + 1) return false;
+  q.push({ it, t:dist / BELT_SPEED.metal }); return true;
+}
+function updateTunnels(dt) {
+  for (const e of S.ents) if (e.kind === "tunnel" && e.io === "in" && e.q) {
+    const out = tunnelOut(e);
+    for (let lane = 0; lane < 2; lane++) {
+      const q = e.q[lane];
+      for (const o of q) o.t -= dt;
+      while (out && q.length && q[0].t <= 0 && deliver({ x:out.x, y:out.y, d:flowOf(e) }, lane, q[0].it)) q.shift();
+    }
+  }
+}
+/** Silo : un grand stock d'une seule sorte d'objet (SILO_CAP), rempli par les tapis, vidé par les côtés choisis dans sa fiche. */
+const SILO_CAP = 2000, SILO_RATE = 4;
+function siloAdd(e, it, n = 1) {
+  if (e.item && e.item !== it) return 0;
+  const k = Math.min(n, SILO_CAP - e.n); if (k <= 0) return 0;
+  e.item = it; e.n += k; return k;
+}
+const PASS = ["switch", "splitter", "tunnel", "silo"]; // ce qui peut prendre directement la sortie d'une machine
 function deliver(b, lane, it, depth = 0) {   // l'objet de tête est au bout du tapis : où va-t-il ?
   const [dx, dy] = DIRS[b.d], nx = b.x + dx, ny = b.y + dy;
   const nb = S.belts[nx + "," + ny];
@@ -734,6 +786,9 @@ function deliver(b, lane, it, depth = 0) {   // l'objet de tête est au bout du 
   const e = entAt(nx, ny);
   if (!e) return false;
   if (e.kind === "switch") return throughSwitch(e, b.d, lane, it, depth);
+  if (e.kind === "splitter") return flowOf(e) === b.d && throughSplitter(e, lane, it, depth);
+  if (e.kind === "tunnel") return e.io === "in" && flowOf(e) === b.d && tunnelIn(e, lane, it);
+  if (e.kind === "silo") return siloAdd(e, it) === 1;
   if (e.kind === "trash") { e.eaten = (e.eaten || 0) + 1; return true; } // la poubelle avale tout ce qu'un tapis lui amène
   if (e.kind === "crate") { if (!price(it)) return false; sell(it, 1, nx, ny); return true; }
   if (e.kind === "chest") return chestAdd(e, it, 1) === 1;
@@ -746,6 +801,7 @@ function deliver(b, lane, it, depth = 0) {   // l'objet de tête est au bout du 
   return false;
 }
 function updateBelts(dt) {
+  updateTunnels(dt);
   for (const b of Object.values(S.belts)) {
     b.on = (b.k || "bois") === "bois" ? powered.has("b" + b.x + "," + b.y) : true;
     const V = BELT_SPEED[b.k || "bois"];
@@ -768,12 +824,13 @@ function updateBelts(dt) {
   // goulottes (le tas verse sur le tapis qui part de lui) et extracteurs (étape 5) : la matière tombe sur la voie de leur côté
   for (const s of S.ents) {
     const chute = s.kind === "source" && s.chute && s.stock >= 1, ext = s.kind === "extractor" && elecPowered(s);
-    if (!chute && !ext) continue;
+    const silo = s.kind === "silo" && s.n >= 1 && hasOuts(s); // le silo ne verse que par les côtés choisis
+    if (!chute && !ext && !silo) continue;
     // jusqu'à deux objets par pas (un par voie) : avec le pas d'une seconde du rattrapage hors ligne, 2 objets/s passent encore
-    s.acc = Math.min(2, (s.acc || 0) + dt * (ext ? s.rate : CHUTE_RATE));
+    s.acc = Math.min(2, (s.acc || 0) + dt * (ext ? s.rate : silo ? SILO_RATE : CHUTE_RATE));
     // côtés choisis (à tour de rôle), sinon tous ; pour chacun : sa voie (0, 1), ou les deux en alternant ("b")
     const chosen = hasOuts(s), sides = chosen ? SIDES.filter((d) => d in s.outs) : SIDES;
-    for (let put = 0; put < 2 && s.acc >= 1 && !(chute && s.stock < 1); put++)
+    for (let put = 0; put < 2 && s.acc >= 1 && !(chute && s.stock < 1) && !(silo && s.n < 1); put++)
     for (let k = 0; k < sides.length; k++) {
       const side = sides[((s.rr || 0) + k) % sides.length], [dx, dy] = DIRS[side];
       const b = S.belts[(s.x + dx) + "," + (s.y + dy)];
@@ -784,7 +841,7 @@ function updateBelts(dt) {
         : pick === "b" || from === b.d || from === OPP[b.d] ? (s.lane || 0) : from === LEFT[b.d] ? 0 : 1;
       const at = from === OPP[b.d] ? 0 : 0.5;
       if (!laneRoom(b, lane, at)) { if (pick !== "b" || !laneRoom(b, 1 - lane, at)) continue; lane = 1 - lane; }
-      b.lanes[lane].push({ it:s.gives, p:at }); if (chute) s.stock--; s.acc -= 1; s.lane = 1 - lane;
+      b.lanes[lane].push({ it:silo ? s.item : s.gives, p:at }); if (chute) s.stock--; if (silo && !--s.n) s.item = null; s.acc -= 1; s.lane = 1 - lane;
       s.rr = ((s.rr || 0) + k + 1) % sides.length; break;
     }
   }
@@ -922,7 +979,7 @@ function interact(e, first) {          // appelée au toucher, puis toutes les 0
     if (first) { const n = Math.min(bagCount("bois"), Math.floor(FUEL_CAP - e.fuel)); if (n > 0) { bagTake("bois", n); e.fuel += n; p.work = 0.3; } select(e); }
     return;
   }
-  if (e.kind === "extractor" || e.kind === "pole" || e.kind === "switch" || e.kind === "trash") { if (first) select(e); return; }
+  if (["extractor", "pole", "switch", "trash", "splitter", "tunnel", "silo"].includes(e.kind)) { if (first) select(e); return; }
   if (e.kind !== "machine") return;
   let moved = 0;
   if (manual(e)) {                                      // machine manuelle : les ingrédients de base restent dans le sac
@@ -1010,6 +1067,9 @@ function place(key, rot, x, y) {
   }
   if (key === "poubelle") { addEnt({ kind:"trash", name:"poubelle", stage:1, x, y, eaten:0 }); S.coins -= cost; return true; }
   if (key === "aiguilleur") { addEnt({ kind:"switch", name:"aiguilleur", stage:3, x, y, filter:null, rr:0 }); S.coins -= cost; return true; }
+  if (key === "splitter") { addEnt({ kind:"splitter", name:key, stage:5, x, y, o, filter:null, fside:0, prio:null, rr:0 }); S.coins -= cost; return true; }
+  if (key.startsWith("underground_metal")) { addEnt({ kind:"tunnel", name:key, stage:5, x, y, o, io:key.endsWith("_in") ? "in" : "out", q:[[], []] }); S.coins -= cost; return true; }
+  if (key === "silo") { addEnt({ kind:"silo", name:key, stage:5, x, y, o, item:null, n:0, acc:0, lane:0 }); S.coins -= cost; return true; }
   const kind = MACH[key] ? "machine" : ["crank", "boiler", "generator", "pole"].includes(key) ? key : key.startsWith("extractor") ? "extractor" : key === "serre_fleurs" ? "flowerbed" : "chest";
   addEnt({ kind, name:key, stage:stageOf(key), x, y, o:hasOri(key) ? o : key.startsWith("extractor") ? "e" : undefined, store:kind === "chest" ? {} : undefined,
     ...(kind === "flowerbed" ? { planted:false, grown:0 } : kind === "boiler" || kind === "generator" ? { fuel:0 } : kind === "extractor" ? { gives:"sable", rate:0.25, acc:0, lane:0 } : {}) });
@@ -1025,6 +1085,8 @@ function demolish(x, y) {
   // Ce que la machine contenait (ingrédients mis de côté compris) revient dans le sac, autant qu'il en tient.
   let lost = 0;
   if (e.kind === "machine") for (const box of [e.inb, e.outb, e.res]) for (const [it, n] of Object.entries(box || {})) lost += n - bagAdd(it, n);
+  if (e.kind === "silo" && e.n) { let left = e.n - bagAdd(e.item, e.n); for (const c of S.ents) if (c.kind === "chest" && left > 0) left -= chestAdd(c, e.item, left); lost += left; }
+  if (e.kind === "tunnel") for (const q of e.q || []) for (const o of q) lost += 1 - bagAdd(o.it, 1);
   if (lost) toast(`Sac plein : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.`);
   S.ents = S.ents.filter((z) => z !== e); invalidate();
   S.coins += Math.round((e.quarry ? e.paid || QUARRY_COST : costOf(e.name)) / 2);
@@ -1049,7 +1111,7 @@ function askDemolish(e) {
 const demolBtn = (e) => `<button class="btn rouge" id="demol">${icon("poubelle")} ${confirming(e) ? "Sûr ? Démonter" : "Démonter"}</button>`;
 
 // Déplacer un objet déjà posé (appui long) : machines, coffres, manivelles, énergie, décorations (pas les tas ni la caisse).
-const MOVABLE = ["machine", "switch", "trash", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
+const MOVABLE = ["machine", "switch", "splitter", "tunnel", "silo", "trash", "chest", "crank", "boiler", "generator", "pole", "extractor", "flowerbed", "deco", "source", "crate"];
 /** L'objet `key` (étape `stage`, orientation `o`) tient-il avec son coin haut-gauche en (x, y) ? `ignore` : l'objet qu'on déplace. */
 function fits(key, stage, o, x, y, ignore) {
   const f = sprOf(key, stage, o).footprint || [1, 1];
@@ -1238,7 +1300,7 @@ function editAsk(what) {
   setTimeout(() => { ui.dirty = true; }, 4100); ui.dirty = true;
 }
 // Ce qui se range : tout ce qui se construit, sauf coffres et serres (les coffres, tas, caisse, serres et décorations restent en place).
-const STORED = ["machine", "switch", "trash", "crank", "boiler", "generator", "pole", "extractor"];
+const STORED = ["machine", "switch", "splitter", "tunnel", "silo", "trash", "crank", "boiler", "generator", "pole", "extractor"];
 const storable = (e) => !!e && (!!e.quarry || STORED.includes(e.kind));
 /** Range ces bâtiments et ces tapis ; ce qui était sur les tapis va dans le sac, puis les coffres. */
 function storeThings(ents, beltKeys) {
@@ -1441,6 +1503,10 @@ function drawEnt(e, time) {
   if (e.kind === "crank") bar(e.x * T + 4, Y - 5, 24, e.reserve / CRANK_MAX, e.reserve > CRANK_MAX * 0.1 ? "#9ad8ff" : "#d8382f");
   if (e.kind === "extractor") text(fmtN(e.rate) + "/s", e.x * T + 16, e.y * T + 30, "#9ad8ff");
   if (e.kind === "switch" && e.filter) drawItem(iconOf(e.filter), e.x * T + 8, e.y * T - 4);
+  if (e.kind === "splitter" && e.filter) { const [fx, fy] = splitTiles(e)[e.fside || 0]; drawItem(iconOf(e.filter), fx * T + 8, fy * T - 4); }
+  if (e.kind === "silo" && e.item) { drawItem(iconOf(e.item), e.x * T + 8, e.y * T - 30); text(fmt(e.n), e.x * T + 16, e.y * T + 30, "#ffd65a"); }
+  if (e.kind === "silo") drawOutArrow(e);
+  if (e.kind === "tunnel" && e.io === "in" && ui.sel === e.id) { const o = tunnelOut(e); if (o) { ctx.strokeStyle = "#9ad8ff"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(e.x * T + 16, e.y * T + 16); ctx.lineTo(o.x * T + 16, o.y * T + 16); ctx.stroke(); ctx.setLineDash([]); } }
   if (e.kind === "extractor" && hasOuts(e)) drawOutArrow(e);
   if (e.kind === "chest") { const n = Object.values(e.store).reduce((a, b) => a + b, 0); if (n) text(String(n), e.x * T + 26, e.y * T, "#ffffff"); }
 }
@@ -1773,9 +1839,15 @@ function renderUI() {
     } else h += `<p>${icon("etoile")} Étape 6 : à la prochaine mise à jour !</p>`;
   }
   if (ui.tab === "visiter") {
-    h += `<h3>${icon("maison")} Visiter une usine</h3>`;
     if (S.visit) h += `<p>Tu es chez ${S.visit}.</p><button class="btn or wide" id="visitback2">Revenir à mon usine</button>`;
-    const ms = ui.members;
+    const all = ui.members, ms = all && all.filter((m) => !m.me);
+    if (all?.some((m) => m.stage)) { // classement de la salle : les étoiles des contrats, puis l'étape, puis les pièces gagnées
+      const me = all.find((m) => m.me); if (me && !S.visit) { me.stars = S.stars; me.stage = S.stage; me.earned = S.earned; } // les siens, à jour
+      const rank = rankUsine(all);
+      h += `<h3>${icon("etoile")} Classement</h3><p class="muted">Les étoiles se gagnent avec les contrats (×1,5 s'ils sont livrés vite). À égalité : l'étape, puis les pièces gagnées.</p><div class="card">`
+        + rank.map((m, i) => `<div class="row"${m.me ? ' style="font-weight:bold"' : ""}><b style="min-width:1.6em">${["🥇", "🥈", "🥉"][i] || i + 1}</b><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">ét. ${m.stage} · ${fmt(m.earned)}</span>${icon("etoile")}<b>${fmt(m.stars)}</b></div>`).join("") + `</div>`;
+    }
+    h += `<h3>${icon("maison")} Visiter une usine</h3>`;
     h += !ms ? `<p class="muted">Chargement…</p>` : !ms.length ? `<p class="muted">Personne d'autre dans la salle.</p>`
       : ms.map((m) => `<div class="card"><div class="row"><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">${m.stage ? "étape " + m.stage : "pas d'usine"}</span>${m.stage ? `<button class="btn sm" data-visit="${m.id}" data-name="${m.name.replace(/"/g, "&quot;")}">Visiter</button>` : ""}<button class="btn sm or" data-gift="${m.id}">Offrir</button></div></div>`).join("");
   }
@@ -1882,6 +1954,27 @@ function renderUI() {
       h += `<h3>Filtre</h3><div class="row" style="flex-wrap:wrap;gap:4px"><button class="btn sm ${e.filter ? "" : "on"}" data-filter="">Aucun (partager)</button>${SWITCH_FILTERS.map((k) => `<button class="btn sm ${e.filter === k ? "on" : ""}" data-filter="${k}" title="${label(k)}">${itemHTML(iconOf(k))}</button>`).join("")}</div>`;
       if (e.seen) h += `<p class="muted">Dernier passé : ${label(e.seen)}.</p>`;
       h += `<div class="row">${demolBtn(e)}</div>`;
+    } else if (e.kind === "splitter") {
+      const side = ["gauche", "droite"];
+      h += `<h3>${icon("tapis")} Répartiteur</h3><p>Deux entrées derrière, deux sorties devant. ${e.filter ? `<b>${label(e.filter)}</b> sort à ${side[e.fside || 0]}, tout le reste à ${side[1 - (e.fside || 0)]}.` : e.prio != null ? `Tout sort à ${side[e.prio]} ; à ${side[1 - e.prio]} seulement si c'est bloqué.` : "Il partage à parts égales entre ses deux sorties : de quoi équilibrer deux lignes."}</p>`;
+      h += `<p class="muted">Gauche et droite dans le sens du flux. La voie de chaque objet est gardée.</p>`;
+      h += `<h3>Sortie prioritaire</h3><div class="row" style="gap:4px"><button class="btn sm ${e.prio == null ? "on" : ""}" data-sprio="">Aucune (partager)</button><button class="btn sm ${e.prio === 0 ? "on" : ""}" data-sprio="0">Gauche</button><button class="btn sm ${e.prio === 1 ? "on" : ""}" data-sprio="1">Droite</button></div>`;
+      h += `<h3>Filtre</h3><div class="row" style="flex-wrap:wrap;gap:4px"><button class="btn sm ${e.filter ? "" : "on"}" data-sfilter="">Aucun</button>${SWITCH_FILTERS.map((k) => `<button class="btn sm ${e.filter === k ? "on" : ""}" data-sfilter="${k}" title="${label(k)}">${itemHTML(iconOf(k))}</button>`).join("")}</div>`;
+      if (e.filter) h += `<div class="row" style="gap:4px"><span class="muted">${label(e.filter)} sort à</span><span class="grow"></span><button class="btn sm ${(e.fside || 0) === 0 ? "on" : ""}" data-sfside="0">Gauche</button><button class="btn sm ${e.fside === 1 ? "on" : ""}" data-sfside="1">Droite</button></div>`;
+      if (e.seen) h += `<p class="muted">Dernier passé : ${label(e.seen)}.</p>`;
+      h += `<div class="row"><button class="btn" id="rotate">${icon("tourner")} Tourner</button>${demolBtn(e)}</div>`;
+    } else if (e.kind === "tunnel") {
+      const pair = e.io === "in" ? tunnelOut(e) : S.ents.find((o) => o.kind === "tunnel" && o.io === "in" && tunnelOut(o) === e);
+      h += `<h3>${icon("tapis")} ${e.io === "in" ? "Entrée" : "Sortie"} souterraine</h3><p>Les objets passent sous terre, jusqu'à ${TUN_MAX} cases, de l'entrée à la sortie posée dans le même sens : on construit ce qu'on veut entre les deux.</p>`;
+      h += pair ? `<p>${icon("ok")} Reliée à ${e.io === "in" ? "la sortie" : "l'entrée"}, ${Math.abs(pair.x - e.x) + Math.abs(pair.y - e.y)} cases plus ${e.io === "in" ? "loin" : "haut dans le flux"}.</p>`
+        : `<p class="bad">${e.io === "in" ? `Pose une sortie souterraine dans le même sens, ${TUN_MAX} cases plus loin au plus.` : "Aucune entrée souterraine ne mène ici."}</p>`;
+      if (e.io === "in") { const n = (e.q || [[], []]).reduce((a, q) => a + q.length, 0); if (n) h += `<p class="muted">${n} objet${n > 1 ? "s" : ""} sous terre.</p>`; }
+      h += `<div class="row"><button class="btn" id="rotate">${icon("tourner")} Tourner</button>${demolBtn(e)}</div>`;
+    } else if (e.kind === "silo") {
+      h += `<h3>${icon("coffre")} Silo</h3><p>Garde jusqu'à ${fmt(SILO_CAP)} objets d'une seule sorte, apportés par les tapis, et les rend par les côtés choisis (${SILO_RATE} objets/s) : une réserve entre deux lignes.</p>`;
+      h += `<div class="row">${e.item ? itemHTML(e.item) : ""}<span>${e.item ? label(e.item) : "Vide"}</span><span class="grow"></span><b>${fmt(e.n)} / ${fmt(SILO_CAP)}</b></div>${gauge(e.n / SILO_CAP, "or")}`;
+      h += `<div class="row" style="gap:4px"><button class="btn sm" id="silotake" ${e.n ? "" : "disabled"}>Prendre dans le sac</button><button class="btn sm" id="siloput" ${e.item ? (bagCount(e.item) ? "" : "disabled") : S.bag.some(Boolean) ? "" : "disabled"}>Déposer du sac</button></div>`;
+      h += outControls(e) + `<div class="row">${demolBtn(e)}</div>`;
     } else if (e.kind === "extractor") {
       h += `<h3>${itemHTML(e.gives)} Extracteur de ${label(e.gives).toLowerCase()}</h3><p>Pose ${fmtN(e.rate)} objet/s sur le tapis voisin. Demande un poteau électrique à ${POLE_R} cases.</p>`;
       h += `<div class="row"><span class="muted">Matière</span><span class="grow"></span>${Object.keys(RAW).filter((r) => RAW[r].stage <= S.stage).map((r) => `<button class="btn sm ${e.gives === r ? "on" : ""}" data-gives="${r}">${itemHTML(r)}</button>`).join("")}</div>`;
@@ -1964,6 +2057,9 @@ $("panel").addEventListener("click", (ev) => {
   else if (d.gift) offerFlowers(d.gift);
   else if (d.setrecipe && e) e.recipe = d.setrecipe;
   else if (d.oall && e) e.outs = null;
+  else if (d.sprio != null && e && e.kind === "splitter") e.prio = d.sprio === "" ? null : +d.sprio;
+  else if (d.sfilter != null && e && e.kind === "splitter") e.filter = d.sfilter || null;
+  else if (d.sfside != null && e && e.kind === "splitter") e.fside = +d.sfside;
   else if (d.oside && e) {
     const o = { ...(e.outs || {}) };
     if (d.olane === "off") delete o[d.oside]; else o[d.oside] = d.olane === "b" ? "b" : +d.olane;
@@ -1994,6 +2090,8 @@ $("panel").addEventListener("click", (ev) => {
   else ({
     advance, expand, visitback2:comeBack, sellall:() => e && sellBag(e),
     rotate:() => e && rotateEnt(e), demol:() => e && askDemolish(e), upgrade:() => e && upgrade(e),
+    silotake:() => e && e.kind === "silo" && doNear(e, () => { const k = bagAdd(e.item, e.n); e.n -= k; if (!e.n) e.item = null; if (!k) toast("Sac plein."); ui.dirty = true; }),
+    siloput:() => e && e.kind === "silo" && doNear(e, () => { const it = e.item || S.bag.find(Boolean)?.it; if (!it) return; const k = siloAdd(e, it, bagCount(it)); if (k) bagTake(it, k); ui.dirty = true; }),
     clearq:() => { if (!e) return; if (manual(e)) clearQueue(e); else e.queue = []; },
     cgetall:() => e && doNear(e, () => { for (const it of Object.keys(e.store)) chestTake(e, it, e.store[it]); }),
     cputall:() => e && doNear(e, () => { for (const it of new Set(S.bag.filter(Boolean).map((sl) => sl.it))) chestPut(e, it, bagCount(it)); }),
@@ -2151,13 +2249,16 @@ const STAGE_TOURS = {
     { t:"À toi : donne-lui du bois (par tapis, c'est mieux).", need:() => S.ents.some((e) => e.kind === "generator" && e.fuel > 0), ent:() => firstOf("generator"), go:() => closePanel() },
     { t:`À toi : fais tourner une machine électrique (« Améliorer », ou Construire) avec un poteau à ${POLE_R} cases au plus d'elle.`, need:() => beltMachines("elec").some((m) => elecPowered(m)), go:() => page("construire") },
     { t:"Les extracteurs produisent une matière tout seuls, sans tas ni marché : dans leur fiche, choisis la matière, le débit, et le côté où ils versent (comme une goulotte).", go:() => page("construire") },
-    { t:"Les tapis en métal vont 4 fois plus vite que le bois. Joyeux Noël !", go:() => closePanel() },
+    { t:"Les tapis en métal vont 4 fois plus vite que le bois.", go:() => closePanel() },
+    { t:"Le répartiteur (2 cases) partage ce qui arrive entre deux sorties, à parts égales : pour équilibrer deux lignes. Dans sa fiche : une sortie prioritaire, ou un filtre.", go:() => page("construire") },
+    { t:`Entrée et sortie souterraines, dans le même sens et ${TUN_MAX} cases d'écart au plus : les objets passent dessous, et deux lignes peuvent se croiser.`, go:() => page("construire") },
+    { t:`Le silo garde ${fmt(SILO_CAP)} objets d'une sorte, et les rend par les côtés choisis : une réserve entre deux lignes. Et l'atelier s'agrandit jusqu'à ${W} × ${H - Y0} cases. Joyeux Noël !`, go:() => page("construire") },
   ],
 };
 // Nouveautés, montrées une fois à ceux qui avaient déjà fait la visite du début (min : étape à partir de laquelle ça compte).
 // Pour annoncer une prochaine mise à jour : augmenter NEWS_V et ajouter ses bulles avec v:NEWS_V.
 // Au lancement, un joueur ne voit que les bulles plus récentes que sa dernière visite ; le menu les montre toutes.
-const NEWS_V = 4;
+const NEWS_V = 5;
 const NEWS = [
   { v:0, t:"Du nouveau à l'usine ! Voici ce qui a changé, en quelques bulles.", go:() => closePanel() },
   { t:"La vue bouge : glisse à deux doigts, pince pour zoomer (molette et clic droit sur ordinateur). Le bouton − montre toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
@@ -2175,6 +2276,9 @@ const NEWS = [
   { v:3, t:"Mode édition (bouton main) : fais glisser bâtiments et tapis pour les déplacer, gratuitement ; touche-les encore pour les tourner. Glisse sur le sol pour prendre toute une zone.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
   { v:3, t:"Pour repartir de zéro : « Tout ranger », dans le mode édition. Les machines vont dans la réserve (en haut de Construire), telles quelles, et se reposent gratuitement ; les tapis sont remboursés.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
   { v:4, min:4, t:"Chaudières : touche-en une pour voir sa portée et les machines qu'elle fait tourner. Dans sa fiche, coche les machines à alimenter (ou « Auto »). Et elle ne brûle du bois que pour celles qui fabriquent.", ent:() => firstOf("boiler"), go:() => closePanel() },
+  { v:5, min:5, t:`Étape 5 complétée : le répartiteur partage entre deux lignes, les passages souterrains font croiser les tapis, le silo garde ${fmt(SILO_CAP)} objets en réserve (page Construire).`, go:() => page("construire") },
+  { v:5, min:5, t:`L'atelier s'agrandit maintenant jusqu'à ${W} × ${H - Y0} cases (page Construire, tout en bas).`, go:() => page("construire") },
+  { v:5, t:"Nouveau : le classement de l'usine (étoiles des contrats) est dans l'onglet Visiter, et dans les classements de l'app.", hi:'[data-page="visiter"]', go:() => page("visiter") },
 ];
 const TOURS = { start:TUTO, ...STAGE_TOURS };
 /** Les bulles d'une visite (les nouveautés : seulement celles des étapes atteintes). */
@@ -2228,6 +2332,8 @@ function tutoAuto() {
 }
 // ---- Visiter l'usine d'un membre de la salle : on affiche sa partie (elle tourne), sans rien pouvoir y faire ni enregistrer.
 let mine = null; // sa propre partie, gardée pendant une visite
+/** Classement de l'usine : étoiles, puis étape, puis pièces gagnées (ceux qui n'ont pas d'usine n'y sont pas). */
+const rankUsine = (ms) => ms.filter((m) => m.stage).sort((a, b) => b.stars - a.stars || b.stage - a.stage || b.earned - a.earned);
 async function loadMembers() {
   if (!API) return;
   try { const r = await fetch(API + "?list=1", { cache:"no-store" }); if (r.ok) { ui.members = (await r.json()).members; ui.dirty = true; } } catch {}
@@ -2361,5 +2467,5 @@ resize(); fitZoom();
 setTimeout(tutoAuto, 1200); // première visite : le tutoriel
 document.fonts?.load('8px "Chaumiere Pixel"');
 requestAnimationFrame(tick);
-window.__usine = { get S() { return S; }, get zoom() { return zoom; }, get cam() { return { ...cam, free:camFree }; }, step, place, advance, sell, interact, buy, byId, entAt, computePower, bagAdd };
+window.__usine = { get S() { return S; }, get zoom() { return zoom; }, get cam() { return { ...cam, free:camFree }; }, step, place, advance, sell, interact, buy, byId, entAt, computePower, bagAdd, ui };
 })();

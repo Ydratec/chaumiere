@@ -14,12 +14,14 @@ export default async function StandingsPage({ params, searchParams }: { params: 
   const [{ roomId }, { jeu }] = await Promise.all([params, searchParams]);
   const ctx = await getRoomContext(roomId);
   if (!ctx) redirect("/");
-  const [{ data: games }, { data: daily }] = await Promise.all([
+  const [{ data: games }, { data: daily }, { data: usine }] = await Promise.all([
     ctx.sb.from("games").select("type, creator, opponent, state->winner").eq("room_id", roomId).eq("status", "finished"),
     adminDb().from("daily_challenges").select("user_id, day, score, solved_at").eq("room_id", roomId), // tous les défis : un seul jeu par jour
+    // Usine de Noël : étoiles des contrats, puis étape, puis pièces gagnées (même ordre que dans le jeu)
+    adminDb().from("usine_saves").select("user_id, stage:state->stage, stars:state->stars, earned:state->earned").eq("room_id", roomId),
   ]);
   const played = ((games ?? []) as unknown as Played[]);
-  const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }];
+  const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }, { id: "usine", label: "Usine de Noël" }];
   const tab = tabs.find((t) => t.id === jeu) ?? tabs[0];
   const person = (id: string) => ctx.people[id];
   const who = (id: string) => (
@@ -44,7 +46,28 @@ export default async function StandingsPage({ params, searchParams }: { params: 
         ))}
       </nav>
 
-      {tab.id === "defi" ? (() => {
+      {tab.id === "usine" ? (() => {
+        const rows = (usine ?? []).map((r) => ({ user: r.user_id as string, stage: Number(r.stage) || 0, stars: Number(r.stars) || 0, earned: Number(r.earned) || 0 }))
+          .filter((r) => r.stage && person(r.user)).sort((a, b) => b.stars - a.stars || b.stage - a.stage || b.earned - a.earned);
+        if (!rows.length) return <p className="text-sm text-zinc-500">Personne n&apos;a encore d&apos;usine.</p>;
+        return (
+          <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+            <p className="mb-2 text-xs text-zinc-500">Étoiles des contrats · à égalité : l&apos;étape, puis les pièces gagnées</p>
+            <ol className="rows">
+              {rows.map((r, i) => (
+                <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
+                  <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                  {who(r.user)}
+                  <span className="text-right tabular-nums">
+                    <b>{r.stars.toLocaleString("fr-FR")}</b> <span className="text-zinc-500">★</span>
+                    <span className="block text-xs text-zinc-500">étape {r.stage} · {r.earned.toLocaleString("fr-FR")} pièces</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        );
+      })() : tab.id === "defi" ? (() => {
         const rows = dailyStandings((daily ?? []) as DailyRow[]);
         if (!rows.length) return <p className="text-sm text-zinc-500">Personne n&apos;a encore réussi de défi du jour.</p>;
         return (

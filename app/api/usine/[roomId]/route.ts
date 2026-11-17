@@ -8,17 +8,20 @@ import { getRoomContext } from "@/src/modules/rooms/context";
 export const dynamic = "force-dynamic";
 const MAX_BYTES = 2_000_000; // une partie fait quelques dizaines de Ko ; au-delà, c'est anormal
 
-// GET ?list=1 : les membres de la salle et l'étape de leur usine (pour les visiter) ; GET ?u=<membre> : l'usine d'un membre (visite).
+// GET ?list=1 : les membres de la salle (soi compris, `me`), l'étape, les étoiles et les pièces gagnées de leur usine (visites et classement) ; GET ?u=<membre> : l'usine d'un membre (visite).
 export async function GET(req: Request, { params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;
   const ctx = await getRoomContext(roomId);
   if (!ctx) return Response.json({ error: "Non autorisé" }, { status: 401 });
   const q = new URL(req.url).searchParams;
   if (q.get("list")) {
-    const { data, error } = await adminDb().from("usine_saves").select("user_id, stage:state->stage").eq("room_id", roomId);
+    const { data, error } = await adminDb().from("usine_saves").select("user_id, stage:state->stage, stars:state->stars, earned:state->earned").eq("room_id", roomId);
     if (error) return Response.json({ error: "Indisponible" }, { status: 503 });
-    const stage = Object.fromEntries((data ?? []).map((r) => [r.user_id, r.stage as number]));
-    return Response.json({ members: ctx.members.filter((m) => m.user_id !== ctx.user.id).map((m) => ({ id: m.user_id, name: m.username, stage: stage[m.user_id] ?? null })) });
+    const save = new Map((data ?? []).map((r) => [r.user_id, r]));
+    return Response.json({ members: ctx.members.map((m) => {
+      const r = save.get(m.user_id);
+      return { id: m.user_id, name: m.username, me: m.user_id === ctx.user.id, stage: (r?.stage as number) ?? null, stars: Number(r?.stars) || 0, earned: Number(r?.earned) || 0 };
+    }) });
   }
   const who = q.get("u") || ctx.user.id;
   if (!ctx.members.some((m) => m.user_id === who)) return Response.json({ error: "Pas dans cette salle" }, { status: 404 });
