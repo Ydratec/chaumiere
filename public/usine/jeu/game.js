@@ -73,6 +73,7 @@ const PLANCHE = { id:"planche", name:"Planches", in:{ bois:2 }, out:{ planche:2 
 const GONE = ["sciure"];
 function dropGone(st) {
   if (!st) return;
+  st.stock ||= []; // la réserve (bâtiments rangés depuis le mode édition)
   const clean = (box) => { if (box) for (const it of GONE) delete box[it]; };
   st.bag = (st.bag || []).map((sl) => (sl && GONE.includes(sl.it) ? null : sl));
   for (const e of st.ents || []) { clean(e.inb); clean(e.outb); clean(e.res); clean(e.store); }
@@ -135,9 +136,9 @@ const UPGRADE = {
 };
 const UPGRADED = new Set(Object.values(UPGRADE));
 const QUARRY_COST = 2500;   // la première ; chaque carrière déjà posée rend la suivante 1,5 fois plus chère
-const quarryCost = () => Math.round(QUARRY_COST * 1.5 ** S.ents.filter((e) => e.quarry).length / 5) * 5;
+const quarryCost = () => Math.round(QUARRY_COST * 1.5 ** [...S.ents, ...(S.stock || [])].filter((e) => e.quarry).length / 5) * 5; // (la réserve compte)
 /** Une seule carrière à sapins : c'est la matière la plus rentable, en multiplier les tas emballait toute l'économie. */
-const sapinQuarryTaken = (self) => S.ents.some((e) => e.quarry && e !== self && e.gives === "sapin_brut");
+const sapinQuarryTaken = (self) => [...S.ents].some((e) => e.quarry && e !== self && e.gives === "sapin_brut");
 const SWITCH_FILTERS = ["sable", "bois", "fil", "branche", "sapin_brut", "pigment_rouge", "pigment_vert", "pigment_or", "pigment_bleu",
   "verre", "perles", "planche", "crochet", "boule_transparente", "@peinture", "@boule_peinte", "@boule_finie", "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "couronne_deco", "sapin_decore"];
 
@@ -1108,13 +1109,17 @@ function confirmPlace() {
   if (!q || !placeOk()) return toast(S.coins < (q?.cost ?? 0) ? "Pas assez de pièces" : "Pas la place ici.");
   if (q.belt) { const b = S.belts[q.belt]; delete S.belts[q.belt]; Object.assign(b, { x:q.x, y:q.y, d:q.o }); S.belts[q.x + "," + q.y] = b; }
   else if (q.id) { const e = byId(q.id); Object.assign(e, { x:q.x, y:q.y, o:q.o }); invalidate(); }
+  else if (q.stock) {
+    if (q.stock.quarry && q.stock.gives === "sapin_brut" && sapinQuarryTaken(q.stock)) { q.stock.gives = "sable"; q.stock.name = "source_sable"; q.stock.stock = 0; toast("Une carrière donne déjà des sapins : celle-ci repart sur le sable."); }
+    S.stock = S.stock.filter((e) => e !== q.stock); Object.assign(q.stock, { x:q.x, y:q.y, o:q.o }); S.ents.push(q.stock); invalidate(); computePower(); save();
+  }
   else place(q.key, ROT.indexOf(q.o), q.x, q.y);
   ui.place = null; ui.dirty = true;
 }
 function cancelPlace() { ui.place = null; ui.dirty = true; }
 // ---- Mode édition (bouton main) : on arrange l'usine sans marcher ni rien payer. Glisser un bâtiment ou un tapis le déplace
 // (avec ses réglages et ce qu'il contient) ; le toucher une seconde fois le tourne ; glisser sur le sol sélectionne une zone,
-// qu'on déplace ensuite d'un bloc (une ligne entière, tapis compris). « Tout démonter » repart de zéro, tout remboursé.
+// qu'on déplace ensuite d'un bloc (une ligne entière, tapis compris). « Tout ranger » met tout dans la réserve, pour repartir de zéro.
 const editable = (e) => !!e && MOVABLE.includes(e.kind);
 function eselClear() { ui.esel = { ents:new Set(), belts:new Set() }; ui.econf = null; }
 const eselSize = () => ui.esel.ents.size + ui.esel.belts.size;
@@ -1189,35 +1194,49 @@ function editRotate() {
   if (!fits(e.name, e.stage, o, e.x, e.y, e)) return toast("Pas la place pour la tourner ici.");
   e.o = o; invalidate(); save(); ui.dirty = true;
 }
-/** Démonter (2 touches) : la sélection (la moitié du prix rendue, comme d'habitude), ou tout (« Tout démonter » : tout est remboursé). */
+/** Ranger (2 touches) : la sélection, ou tout. Les bâtiments vont dans la réserve, tels quels (réglages et contenu compris),
+ *  et se reposent gratuitement depuis la page Construire. Les tapis sont remboursés en entier, comme toujours. */
 function editAsk(what) {
-  if (ui.econf?.what === what && Date.now() < ui.econf.until) { ui.econf = null; return what === "all" ? purgeAll() : editDelete(); }
+  if (what === "sel") return storeSel(); // la sélection : rien ne se perd, pas besoin de confirmer
+  if (ui.econf?.what === what && Date.now() < ui.econf.until) { ui.econf = null; return storeAll(); }
   ui.econf = { what, until:Date.now() + 4000 };
-  toast(what === "all" ? `Touche encore « Tout démonter » : machines, tapis, carrières, énergie… tout part, et tu récupères ${fmt(purgeValue())} pièces.` : "Touche encore pour démonter la sélection (la moitié du prix est rendue).");
+  toast("Touche encore « Tout ranger » : machines et énergie vont dans la réserve (Construire), les tapis sont remboursés. Rien n'est vendu.", 5000);
   setTimeout(() => { ui.dirty = true; }, 4100); ui.dirty = true;
 }
-function editDelete() {
-  const ents = [...ui.esel.ents].map(byId).filter(Boolean);
-  for (const k of ui.esel.belts) { const b = S.belts[k]; if (b) demolish(b.x, b.y); }
-  for (const e of ents) if (S.ents.includes(e)) demolish(e.x, e.y);
-  eselClear(); computePower(); save(); ui.dirty = true;
-}
-// Tout démonter : ce qui est construit part (les coffres, tas, caisse, serres et décorations restent), entièrement remboursé ;
-// ce que contenaient machines et tapis va dans le sac, puis dans les coffres.
-const PURGED = ["machine", "switch", "trash", "crank", "boiler", "generator", "pole", "extractor"];
-const purged = (e) => !!e.quarry || PURGED.includes(e.kind);
-const purgeValue = () => S.ents.filter(purged).reduce((n, e) => n + (e.quarry ? e.paid || QUARRY_COST : costOf(e.name)), 0)
-  + Object.values(S.belts).reduce((n, b) => n + BELT_COST[b.k || "bois"], 0);
-function purgeAll() {
-  const refund = purgeValue(), items = {}, nb = S.ents.filter(purged).length + Object.keys(S.belts).length;
-  const keep = (it, n) => { if (n > 0) items[it] = (items[it] || 0) + n; };
-  for (const e of S.ents) if (purged(e) && e.kind === "machine") for (const box of [e.inb, e.outb, e.res]) for (const [it, n] of Object.entries(box || {})) keep(it, n);
-  for (const b of Object.values(S.belts)) for (const L of b.lanes) for (const o of L) keep(o.it, 1);
-  S.ents = S.ents.filter((e) => !purged(e)); S.belts = {}; invalidate(); computePower();
+// Ce qui se range : tout ce qui se construit, sauf coffres et serres (les coffres, tas, caisse, serres et décorations restent en place).
+const STORED = ["machine", "switch", "trash", "crank", "boiler", "generator", "pole", "extractor"];
+const storable = (e) => !!e && (!!e.quarry || STORED.includes(e.kind));
+/** Range ces bâtiments et ces tapis ; ce qui était sur les tapis va dans le sac, puis les coffres. */
+function storeThings(ents, beltKeys) {
+  const items = {}; let coins = 0;
+  (S.stock ||= []);
+  for (const e of ents) { S.stock.push(e); }
+  S.ents = S.ents.filter((e) => !ents.includes(e));
+  for (const k of beltKeys) { const b = S.belts[k]; if (!b) continue; coins += BELT_COST[b.k || "bois"]; for (const L of b.lanes) for (const o of L) items[o.it] = (items[o.it] || 0) + 1; delete S.belts[k]; }
+  invalidate(); computePower();
   let lost = 0; const chests = S.ents.filter((c) => c.kind === "chest");
   for (const [it, n] of Object.entries(items)) { let left = n - bagAdd(it, n); for (const c of chests) if (left > 0) left -= chestAdd(c, it, left); lost += left; }
-  S.coins += refund; eselClear(); ui.sel = null; save(); push(); ui.dirty = true;
-  toast(`Usine vidée : ${nb} élément${nb > 1 ? "s" : ""} démonté${nb > 1 ? "s" : ""}, +${fmt(refund)} pièces.${lost ? ` Sac et coffres pleins : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.` : ""}`, 6000);
+  S.coins += coins; eselClear(); ui.sel = null; save(); push(); ui.dirty = true;
+  const nb = ents.length, nt = beltKeys.length;
+  toast([nb && `${nb} bâtiment${nb > 1 ? "s" : ""} rangé${nb > 1 ? "s" : ""} dans la réserve (Construire)`, nt && `${nt} tapis remboursé${nt > 1 ? "s" : ""} (+${fmt(coins)})`].filter(Boolean).join(", ") + "."
+    + (lost ? ` Sac et coffres pleins : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.` : ""), 6000);
+}
+function storeSel() {
+  const ents = [...ui.esel.ents].map(byId).filter(storable), skipped = ui.esel.ents.size - ents.length;
+  storeThings(ents, [...ui.esel.belts]);
+  if (skipped) toast(`Coffres, tas, caisse, serres et décorations restent en place (déplace-les plutôt).`, 5000);
+}
+function storeAll() { storeThings(S.ents.filter(storable), Object.keys(S.belts)); }
+/** Reposer un bâtiment de la réserve : son fantôme se place comme un nouveau, gratuitement. */
+function startStock(i) {
+  const e = S.stock?.[i]; if (!e) return;
+  const p = S.player, o = e.o;
+  let best = null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (fits(e.name, e.stage, o, x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
+  if (!best) return toast("Plus de place dans l'atelier.");
+  ui.place = { key:e.name, stage:e.stage, o, x:best[0], y:best[1], cost:0, stock:e };
+  ui.build = null; if (ui.mode === "build") ui.mode = "hand"; closePanel(); ui.dirty = true;
 }
 function drawEdit() {
   const d = ui.edrag && (ui.edrag.dx || ui.edrag.dy) ? ui.edrag : null, dx = d ? d.dx : 0, dy = d ? d.dy : 0;
@@ -1582,7 +1601,7 @@ cv.addEventListener("pointerdown", (ev) => {
     ui.dirty = true; return;
   }
   if (ui.mode === "demolish") { const e = !S.belts[x + "," + y] && entAt(x, y); if (e) askDemolish(e); else demolish(x, y); ui.dirty = true; return; }
-  if (ui.mode === "edit") { editDown(x, y); ui.dirty = true; return; }
+  if (ui.mode === "edit" && !ui.place) { editDown(x, y); ui.dirty = true; return; }
   if (ui.place) { // on fait glisser le fantôme (en le saisissant, ou en touchant ailleurs pour l'y amener)
     const q = ui.place, f = footOf(q);
     if (x < q.x || y < q.y || x >= q.x + f[0] || y >= q.y + f[1]) { q.x = x; q.y = y; }
@@ -1663,13 +1682,13 @@ function renderUI() {
   for (const b of document.querySelectorAll("[data-page]")) b.classList.toggle("on", panel && b.dataset.page === ui.tab);
   const q = ui.place;
   $("placebar").hidden = !q;
-  if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !(q.belt || (q.id && (!["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind) || byId(q.id)?.quarry))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
+  if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !!q.stock || !(q.belt || (q.id && (!["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind) || byId(q.id)?.quarry))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
   $("beltdone").hidden = !(ui.mode === "build" && ui.build === "belt");
   { const ed = ui.mode === "edit" && !S.visit, n = eselSize(), sure = (w) => ui.econf?.what === w && Date.now() < ui.econf.until;
     $("editbar").hidden = !ed; $("editbtn").hidden = !!S.visit; document.body.classList.toggle("editing", ed);
     if (ed) {
-      $("erot").disabled = !editCanRotate(); $("edel").disabled = !n;
-      const t1 = sure("sel") ? "Sûr ? Démonter" : n ? `Démonter (${n})` : "Démonter", t2 = sure("all") ? "Sûr ? Tout démonter" : "Tout démonter";
+      $("erot").disabled = !editCanRotate(); $("edel").disabled = !n; $("eres").style.display = S.stock?.length ? "" : "none";
+      const t1 = n ? `Ranger (${n})` : "Ranger", t2 = sure("all") ? "Sûr ? Tout ranger" : "Tout ranger";
       if ($("edel").textContent !== t1) $("edel").textContent = t1; if ($("eall").textContent !== t2) $("eall").textContent = t2;
     } }
   // sac
@@ -1717,6 +1736,17 @@ function renderUI() {
       : ms.map((m) => `<div class="card"><div class="row"><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">${m.stage ? "étape " + m.stage : "pas d'usine"}</span>${m.stage ? `<button class="btn sm" data-visit="${m.id}" data-name="${m.name.replace(/"/g, "&quot;")}">Visiter</button>` : ""}<button class="btn sm or" data-gift="${m.id}">Offrir</button></div></div>`).join("");
   }
   if (ui.tab === "construire") {
+    if (S.stock?.length) { // la réserve : ce qu'on a rangé, à reposer gratuitement (un bouton par sorte, avec le nombre)
+      const groups = new Map();
+      S.stock.forEach((e, i) => { const k = e.quarry ? "quarry" : e.name; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
+      h += `<h3>${icon("sac")} Réserve · à reposer gratuitement</h3><div class="grid">`;
+      for (const [k, idx] of groups) {
+        const e = S.stock[idx[0]], sp = sprOf(e.name, e.stage, e.o);
+        const pic = `<span class="pic" style="background-image:url(usine/etape-${e.stage}/${sp.file});width:${sp.frame[0]}px;height:${sp.frame[1]}px;transform:scale(${Math.min(1, 56 / sp.frame[1])})"></span>`;
+        h += `<button class="btn tile" data-stock="${idx[0]}"><span class="picbox">${pic}</span><span>${k === "quarry" ? "Carrière" : nameOf(e.name)}</span><small>× ${idx.length}</small></button>`;
+      }
+      h += `</div>`;
+    }
     h += `<h3>${icon("marteau")} Construire</h3><div class="grid">`;
     for (let s = 1; s <= 5; s++) for (const [key] of BUILD[s]) {
       if (UPGRADED.has(key)) continue; // s'obtient en améliorant une machine
@@ -1859,6 +1889,7 @@ $("panel").addEventListener("click", (ev) => {
   const b = ev.target.closest("button");
   if (!b || b.disabled) return;
   const e = byId(ui.sel), d = b.dataset;
+  if (d.stock != null) { startStock(+d.stock); return; }
   if (d.build) { // tapis : on trace jusqu'à « Terminé » ; le reste se pose avec le fantôme
     if (d.build.startsWith("belt")) { ui.build = "belt"; ui.beltK = d.build.split("_")[1] || "bois"; ui.mode = "build"; closePanel(); } else startNew(d.build);
   }
@@ -1939,6 +1970,7 @@ $("beltdone").addEventListener("click", () => setMode("hand"));
 $("erot").addEventListener("click", editRotate);
 $("edel").addEventListener("click", () => editAsk("sel"));
 $("eall").addEventListener("click", () => editAsk("all"));
+$("eres").addEventListener("click", () => page("construire"));
 $("edone").addEventListener("click", () => setMode("hand"));
 $("zin").addEventListener("click", () => zoomStep(1));
 $("zout").addEventListener("click", () => zoomStep(-1)); // jusqu'à 0,5 : toute l'usine à l'écran
@@ -1994,7 +2026,7 @@ const TUTO = [
   { t:"Ta serre de l'usine : plante, attends 2 h, et récolte 3 fleurs. Tu peux les offrir aux autres joueurs.", ent:() => firstOf("flowerbed"), go:() => { const b = firstOf("flowerbed"); if (b) select(b); } },
   { t:"Ton sac, en bas : tout ce que ton lutin porte. Plein ? Range dans un coffre, ou pose une poubelle (Construire) pour le vider.", hi:"#bagwrap", go:() => closePanel() },
   { t:"Appui long sur un objet pour le déplacer et le tourner. Garde le doigt sur le sol pour marcher.", go:() => closePanel() },
-  { t:"Pour tout réarranger, le bouton main passe en mode édition : fais glisser bâtiments et tapis (même toute une zone), et « Tout démonter » repart de zéro, remboursé.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
+  { t:"Pour tout réarranger, le bouton main passe en mode édition : fais glisser bâtiments et tapis (même toute une zone), et « Tout ranger » met tout de côté pour repartir de zéro.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
   { t:"Glisse à deux doigts pour regarder ailleurs, pince pour zoomer (sur ordinateur : molette et clic droit). Le bouton − va jusqu'à montrer toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
   { t:"Pour démonter, touche deux fois l'objet (mode Démonter, ou bouton de sa fiche) : la moitié du prix revient, et ce que contenait une machine retourne dans ton sac. Un coffre se vide d'abord.", go:() => closePanel() },
   { t:"Le menu ☰ : le zoom et toutes les pages.", hi:"#menubtn", go:() => { closePanel(); setIcons(true); } },
@@ -2075,7 +2107,7 @@ const NEWS = [
   { v:2, min:3, t:"Nouveaux prix : la guirlande se vend 11, l'étoile dorée 6. La machine à couronnes à tapis fait la couronne décorée (même recette), vendue 26 ; la couronne simple reste à 15.", go:() => closePanel() },
   { v:2, min:3, t:"Chaque carrière coûte 1,5 fois plus que la précédente, et une seule peut donner des sapins.", go:() => page("construire") },
   { v:3, t:"Mode édition (bouton main) : fais glisser bâtiments et tapis pour les déplacer, gratuitement ; touche-les encore pour les tourner. Glisse sur le sol pour prendre toute une zone.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
-  { v:3, t:"Et pour repartir de zéro : « Tout démonter », dans le mode édition. Machines, tapis et énergie partent, tout est remboursé, et leur contenu va dans ton sac.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
+  { v:3, t:"Pour repartir de zéro : « Tout ranger », dans le mode édition. Les machines vont dans la réserve (en haut de Construire), telles quelles, et se reposent gratuitement ; les tapis sont remboursés.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
 ];
 const TOURS = { start:TUTO, ...STAGE_TOURS };
 /** Les bulles d'une visite (les nouveautés : seulement celles des étapes atteintes). */
