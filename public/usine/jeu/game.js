@@ -73,6 +73,7 @@ const PLANCHE = { id:"planche", name:"Planches", in:{ bois:2 }, out:{ planche:2 
 const GONE = ["sciure"];
 function dropGone(st) {
   if (!st) return;
+  st.stock ||= []; // la réserve (bâtiments rangés depuis le mode édition)
   const clean = (box) => { if (box) for (const it of GONE) delete box[it]; };
   st.bag = (st.bag || []).map((sl) => (sl && GONE.includes(sl.it) ? null : sl));
   for (const e of st.ents || []) { clean(e.inb); clean(e.outb); clean(e.res); clean(e.store); }
@@ -135,9 +136,9 @@ const UPGRADE = {
 };
 const UPGRADED = new Set(Object.values(UPGRADE));
 const QUARRY_COST = 2500;   // la première ; chaque carrière déjà posée rend la suivante 1,5 fois plus chère
-const quarryCost = () => Math.round(QUARRY_COST * 1.5 ** S.ents.filter((e) => e.quarry).length / 5) * 5;
+const quarryCost = () => Math.round(QUARRY_COST * 1.5 ** [...S.ents, ...(S.stock || [])].filter((e) => e.quarry).length / 5) * 5; // (la réserve compte)
 /** Une seule carrière à sapins : c'est la matière la plus rentable, en multiplier les tas emballait toute l'économie. */
-const sapinQuarryTaken = (self) => S.ents.some((e) => e.quarry && e !== self && e.gives === "sapin_brut");
+const sapinQuarryTaken = (self) => [...S.ents].some((e) => e.quarry && e !== self && e.gives === "sapin_brut");
 const SWITCH_FILTERS = ["sable", "bois", "fil", "branche", "sapin_brut", "pigment_rouge", "pigment_vert", "pigment_or", "pigment_bleu",
   "verre", "perles", "planche", "crochet", "boule_transparente", "@peinture", "@boule_peinte", "@boule_finie", "etoile_bois", "etoile_doree", "ruban", "guirlande", "couronne", "couronne_deco", "sapin_decore"];
 
@@ -594,9 +595,14 @@ function machineLaneControls(m, pt) {
 /** Pourquoi une machine est sans énergie (phrase à afficher). */
 function whyNoPower(m) {
   const pw = MACH[m.name].power;
-  if (pw === "steam") return "il faut une chaudière avec du bois à 4 cases.";
+  if (pw === "steam") {
+    const near = S.ents.filter((c) => c.kind === "boiler" && entDist(m, c) <= BOILER_R);
+    if (!near.length) return `pose une chaudière à ${BOILER_R} cases au plus.`;
+    if (near.every((c) => c.fuel <= 0)) return "la chaudière à côté n'a plus de bois.";
+    return `les chaudières à côté font déjà tourner ${BOILER_N} machines chacune : ajoutes-en une.`;
+  }
   if (pw === "elec") return `il faut un poteau à ${POLE_R} cases et un générateur avec du bois.`;
-  const near = S.ents.filter((c) => c.kind === "crank" && distTo(m, c.x, c.y) <= CRANK_R);
+  const near = S.ents.filter((c) => c.kind === "crank" && entDist(m, c) <= CRANK_R);
   if (!near.length) return `pose une manivelle à ${CRANK_R} cases au plus.`;
   if (near.every((c) => c.reserve <= 0)) return "remonte la manivelle à côté.";
   return `les manivelles à côté font déjà tourner ${CRANK_M} machines chacune : ajoutes-en une.`;
@@ -616,28 +622,52 @@ const laneRoom = (b, lane, at) => b.lanes[lane].every((o) => Math.abs(o.p - at) 
 let powered = new Set();
 /** Alimenté par le réseau électrique : calculé dans computePower (générateurs avec du bois, 6 appareils chacun, reliés par des poteaux). */
 const elecPowered = (e) => powered.has("e" + e.id);
+/** Distance en cases entre deux objets (de bord à bord : une chaudière 2 × 2 porte aussi loin de chaque côté). */
+function entDist(a, b) { let d = 1e9; for (const [x, y] of tilesOf(b)) d = Math.min(d, distTo(a, x, y)); return d; }
+/**
+ * Répartit les machines entre les sources d'énergie (manivelles, chaudières), `cap` machines chacune, au mieux :
+ * avant, chaque source prenait ses plus proches l'une après l'autre, et une machine qu'une seule source pouvait atteindre
+ * restait à l'arrêt si cette source était déjà prise par des machines qu'une autre aurait pu faire tourner.
+ */
+function matchPower(ms, ps, cap, range) {
+  const load = new Map(ps.map((p) => [p, []])), adj = new Map();
+  for (const m of ms) adj.set(m, ps.map((p) => [entDist(m, p), p]).filter(([d]) => d <= range).sort((a, b) => a[0] - b[0] || a[1].id - b[1].id).map(([, p]) => p));
+  const tryM = (m, seen) => {
+    for (const p of adj.get(m)) {
+      if (seen.has(p)) continue; seen.add(p);
+      const L = load.get(p);
+      if (L.length < cap) { L.push(m); return true; }
+      for (const o of [...L]) if (tryM(o, seen)) { L.splice(L.indexOf(o), 1); L.push(m); return true; }
+    }
+    return false;
+  };
+  // d'abord celles qui ont le moins de choix ; ensuite, la plus proche gagne
+  for (const m of [...ms].sort((a, b) => adj.get(a).length - adj.get(b).length || a.id - b.id)) if (adj.get(m).length) tryM(m, new Set());
+  return load;
+}
+/** Une machine consomme (bois) seulement quand elle fabrique. */
+const working = (m) => m.kind === "extractor" || !!m.craft;
 function computePower() {
   powered = new Set();
-  for (const c of S.ents) {
-    if (c.kind !== "crank") continue;
-    c.load = 0;
-    if (c.reserve <= 0) continue;
-    const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === true && !powered.has("m" + m.id))
-      .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, CRANK_M);
-    const bs = Object.values(S.belts).filter((b) => (b.k || "bois") === "bois" && !powered.has("b" + b.x + "," + b.y))
-      .filter((b) => Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)) <= CRANK_R);
-    for (const [, m] of ms) powered.add("m" + m.id);
-    for (const b of bs) powered.add("b" + b.x + "," + b.y);
-    c.load = ms.length + bs.length; c.machines = ms.length;
+  const cranks = S.ents.filter((c) => c.kind === "crank");
+  for (const c of cranks) { c.load = 0; c.machines = 0; c.powers = []; }
+  const live = cranks.filter((c) => c.reserve > 0);
+  for (const [c, ms] of matchPower(S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === true), live, CRANK_M, CRANK_R)) {
+    for (const m of ms) powered.add("m" + m.id);
+    c.machines = ms.length; c.powers = ms.map((m) => m.id);
   }
-  // vapeur : chaque chaudière qui a du bois alimente les BOILER_N machines à vapeur les plus proches (à BOILER_R cases)
-  for (const c of S.ents) {
-    if (c.kind !== "boiler") continue;
-    c.load = 0; if (c.fuel <= 0) continue;
-    const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam" && !powered.has("m" + m.id))
-      .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= BOILER_R).sort((a, b) => a[0] - b[0]).slice(0, BOILER_N);
-    for (const [, m] of ms) powered.add("m" + m.id);
-    c.load = ms.length;
+  for (const c of live) { // les tapis en bois à portée tournent tous
+    const bs = Object.values(S.belts).filter((b) => (b.k || "bois") === "bois" && Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)) <= CRANK_R);
+    for (const b of bs) powered.add("b" + b.x + "," + b.y);
+    c.load = c.machines + bs.length;
+  }
+  // vapeur : chaque chaudière qui a du bois fait tourner BOILER_N machines à vapeur (à BOILER_R cases de son bord), réparties au mieux ;
+  // elle ne brûle du bois que pour celles qui fabriquent vraiment.
+  const boilers = S.ents.filter((c) => c.kind === "boiler");
+  for (const c of boilers) { c.load = 0; c.linked = 0; c.powers = []; }
+  for (const [c, ms] of matchPower(S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam"), boilers.filter((c) => c.fuel > 0), BOILER_N, BOILER_R)) {
+    for (const m of ms) powered.add("m" + m.id);
+    c.linked = ms.length; c.load = ms.filter(working).length; c.powers = ms.map((m) => m.id);
   }
   // électricité : un seul réseau ; GEN_N appareils par générateur qui a du bois ; un appareil est relié s'il a un poteau à POLE_R cases
   const gens = S.ents.filter((g) => g.kind === "generator" && g.fuel > 0), poles = S.ents.filter((q) => q.kind === "pole");
@@ -645,7 +675,8 @@ function computePower() {
   const cap = gens.reduce((n, g) => n + (g.cap || GEN_N), 0); // g.cap : seulement pour la démo
   users.slice(0, cap).forEach((e) => powered.add("e" + e.id));
   const used = Math.min(users.length, cap);
-  for (const g of S.ents) if (g.kind === "generator") g.load = g.fuel > 0 ? used / gens.length : 0;
+  const busy = users.slice(0, cap).filter(working).length; // le bois ne brûle que pour ce qui tourne vraiment
+  for (const g of S.ents) if (g.kind === "generator") { g.linked = g.fuel > 0 ? used / gens.length : 0; g.load = g.fuel > 0 ? busy / gens.length : 0; }
 }
 function beltInput(b) {
   const [dx, dy] = DIRS[b.d], back = S.belts[(b.x - dx) + "," + (b.y - dy)];
@@ -1108,10 +1139,156 @@ function confirmPlace() {
   if (!q || !placeOk()) return toast(S.coins < (q?.cost ?? 0) ? "Pas assez de pièces" : "Pas la place ici.");
   if (q.belt) { const b = S.belts[q.belt]; delete S.belts[q.belt]; Object.assign(b, { x:q.x, y:q.y, d:q.o }); S.belts[q.x + "," + q.y] = b; }
   else if (q.id) { const e = byId(q.id); Object.assign(e, { x:q.x, y:q.y, o:q.o }); invalidate(); }
+  else if (q.stock) {
+    if (q.stock.quarry && q.stock.gives === "sapin_brut" && sapinQuarryTaken(q.stock)) { q.stock.gives = "sable"; q.stock.name = "source_sable"; q.stock.stock = 0; toast("Une carrière donne déjà des sapins : celle-ci repart sur le sable."); }
+    S.stock = S.stock.filter((e) => e !== q.stock); Object.assign(q.stock, { x:q.x, y:q.y, o:q.o }); S.ents.push(q.stock); invalidate(); computePower(); save();
+  }
   else place(q.key, ROT.indexOf(q.o), q.x, q.y);
   ui.place = null; ui.dirty = true;
 }
 function cancelPlace() { ui.place = null; ui.dirty = true; }
+// ---- Mode édition (bouton main) : on arrange l'usine sans marcher ni rien payer. Glisser un bâtiment ou un tapis le déplace
+// (avec ses réglages et ce qu'il contient) ; le toucher une seconde fois le tourne ; glisser sur le sol sélectionne une zone,
+// qu'on déplace ensuite d'un bloc (une ligne entière, tapis compris). « Tout ranger » met tout dans la réserve, pour repartir de zéro.
+const editable = (e) => !!e && MOVABLE.includes(e.kind);
+function eselClear() { ui.esel = { ents:new Set(), belts:new Set() }; ui.econf = null; }
+const eselSize = () => ui.esel.ents.size + ui.esel.belts.size;
+function editDown(x, y) {
+  const e = entAt(x, y), bk = !e && S.belts[x + "," + y] ? x + "," + y : null;
+  if (e && !editable(e)) return;
+  if (e || bk) {
+    const was = e ? ui.esel.ents.has(e.id) : ui.esel.belts.has(bk), single = was && eselSize() === 1;
+    if (!was) { eselClear(); if (e) ui.esel.ents.add(e.id); else ui.esel.belts.add(bk); }
+    ui.edrag = { x0:x, y0:y, dx:0, dy:0, single, was, id:e?.id, bk };
+  } else ui.erect = { x0:x, y0:y, x1:x, y1:y };
+}
+function editMove(x, y) {
+  if (ui.edrag) { ui.edrag.dx = x - ui.edrag.x0; ui.edrag.dy = y - ui.edrag.y0; ui.dirty = true; return true; }
+  if (ui.erect) { ui.erect.x1 = x; ui.erect.y1 = y; ui.dirty = true; return true; }
+  return false;
+}
+function editUp() {
+  const d = ui.edrag, r = ui.erect; ui.edrag = null; ui.erect = null; ui.dirty = true;
+  if (d) {
+    if (d.dx || d.dy) { if (!editMoveSel(d.dx, d.dy)) toast("Pas la place ici."); }
+    else if (d.single) editRotate();
+    else if (d.was) { eselClear(); if (d.id) ui.esel.ents.add(d.id); else ui.esel.belts.add(d.bk); } // touché dans une sélection : lui seul
+  }
+  if (r) {
+    eselClear();
+    const xa = Math.min(r.x0, r.x1), xb = Math.max(r.x0, r.x1), ya = Math.min(r.y0, r.y1), yb = Math.max(r.y0, r.y1), inR = (x, y) => x >= xa && x <= xb && y >= ya && y <= yb;
+    if (xa === xb && ya === yb) return; // simple toucher du sol : on désélectionne
+    for (const e of S.ents) if (editable(e) && tilesOf(e).some(([x, y]) => inR(x, y))) ui.esel.ents.add(e.id);
+    for (const b of Object.values(S.belts)) if (inR(b.x, b.y)) ui.esel.belts.add(b.x + "," + b.y);
+    if (eselSize()) toast(`${eselSize()} sélectionné${eselSize() > 1 ? "s" : ""} : fais-les glisser pour les déplacer.`);
+  }
+}
+/** La sélection tient-elle décalée de (dx, dy) ? (les cases qu'elle libère comptent comme libres) */
+function editFits(dx, dy) {
+  const taken = new Set();
+  const free = (x, y) => { // (le lutin ne gêne pas : s'il se retrouve dessous, il est poussé à côté)
+    const k = x + "," + y, o = entAt(x, y);
+    if (!inFloor(x, y) || taken.has(k) || (o && !ui.esel.ents.has(o.id)) || (S.belts[k] && !ui.esel.belts.has(k))) return false;
+    taken.add(k); return true;
+  };
+  for (const id of ui.esel.ents) { const e = byId(id); if (e) for (const [x, y] of tilesOf(e)) if (!free(x + dx, y + dy)) return false; }
+  for (const k of ui.esel.belts) { const b = S.belts[k]; if (b && !free(b.x + dx, b.y + dy)) return false; }
+  return true;
+}
+function editMoveSel(dx, dy) {
+  if (!editFits(dx, dy)) return false;
+  for (const id of ui.esel.ents) { const e = byId(id); if (e) { e.x += dx; e.y += dy; } }
+  const belts = [...ui.esel.belts].map((k) => S.belts[k]).filter(Boolean);
+  for (const b of belts) delete S.belts[b.x + "," + b.y];
+  ui.esel.belts = new Set();
+  for (const b of belts) { b.x += dx; b.y += dy; S.belts[b.x + "," + b.y] = b; ui.esel.belts.add(b.x + "," + b.y); }
+  invalidate(); unstuck(); save(); return true;
+}
+/** Le lutin s'est retrouvé sous un bâtiment : on le pose sur la case libre la plus proche. */
+function unstuck() {
+  const p = S.player; if (walkable(p.x, p.y)) return;
+  let best = null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walkable(x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
+  if (best) { p.x = p.px = best[0]; p.y = p.py = best[1]; p.path = []; p.job = null; }
+}
+const editCanRotate = () => {
+  if (eselSize() !== 1) return false;
+  const [bk] = ui.esel.belts; if (bk) return true;
+  const e = byId([...ui.esel.ents][0]); return !!e?.o && e.kind !== "extractor";
+};
+function editRotate() {
+  if (!editCanRotate()) return;
+  const [bk] = ui.esel.belts;
+  if (bk) { const b = S.belts[bk]; b.d = BROT[(BROT.indexOf(b.d) + 1) % 4]; save(); ui.dirty = true; return; }
+  const e = byId([...ui.esel.ents][0]), o = ROT[(ROT.indexOf(e.o) + 1) % 4];
+  if (!fits(e.name, e.stage, o, e.x, e.y, e)) return toast("Pas la place pour la tourner ici.");
+  e.o = o; invalidate(); save(); ui.dirty = true;
+}
+/** Ranger (2 touches) : la sélection, ou tout. Les bâtiments vont dans la réserve, tels quels (réglages et contenu compris),
+ *  et se reposent gratuitement depuis la page Construire. Les tapis sont remboursés en entier, comme toujours. */
+function editAsk(what) {
+  if (what === "sel") return storeSel(); // la sélection : rien ne se perd, pas besoin de confirmer
+  if (ui.econf?.what === what && Date.now() < ui.econf.until) { ui.econf = null; return storeAll(); }
+  ui.econf = { what, until:Date.now() + 4000 };
+  toast("Touche encore « Tout ranger » : machines et énergie vont dans la réserve (Construire), les tapis sont remboursés. Rien n'est vendu.", 5000);
+  setTimeout(() => { ui.dirty = true; }, 4100); ui.dirty = true;
+}
+// Ce qui se range : tout ce qui se construit, sauf coffres et serres (les coffres, tas, caisse, serres et décorations restent en place).
+const STORED = ["machine", "switch", "trash", "crank", "boiler", "generator", "pole", "extractor"];
+const storable = (e) => !!e && (!!e.quarry || STORED.includes(e.kind));
+/** Range ces bâtiments et ces tapis ; ce qui était sur les tapis va dans le sac, puis les coffres. */
+function storeThings(ents, beltKeys) {
+  const items = {}; let coins = 0;
+  (S.stock ||= []);
+  for (const e of ents) { S.stock.push(e); }
+  S.ents = S.ents.filter((e) => !ents.includes(e));
+  for (const k of beltKeys) { const b = S.belts[k]; if (!b) continue; coins += BELT_COST[b.k || "bois"]; for (const L of b.lanes) for (const o of L) items[o.it] = (items[o.it] || 0) + 1; delete S.belts[k]; }
+  invalidate(); computePower();
+  let lost = 0; const chests = S.ents.filter((c) => c.kind === "chest");
+  for (const [it, n] of Object.entries(items)) { let left = n - bagAdd(it, n); for (const c of chests) if (left > 0) left -= chestAdd(c, it, left); lost += left; }
+  S.coins += coins; eselClear(); ui.sel = null; save(); push(); ui.dirty = true;
+  const nb = ents.length, nt = beltKeys.length;
+  toast([nb && `${nb} bâtiment${nb > 1 ? "s" : ""} rangé${nb > 1 ? "s" : ""} dans la réserve (Construire)`, nt && `${nt} tapis remboursé${nt > 1 ? "s" : ""} (+${fmt(coins)})`].filter(Boolean).join(", ") + "."
+    + (lost ? ` Sac et coffres pleins : ${lost} objet${lost > 1 ? "s" : ""} perdu${lost > 1 ? "s" : ""}.` : ""), 6000);
+}
+function storeSel() {
+  const ents = [...ui.esel.ents].map(byId).filter(storable), skipped = ui.esel.ents.size - ents.length;
+  storeThings(ents, [...ui.esel.belts]);
+  if (skipped) toast(`Coffres, tas, caisse, serres et décorations restent en place (déplace-les plutôt).`, 5000);
+}
+function storeAll() { storeThings(S.ents.filter(storable), Object.keys(S.belts)); }
+/** Reposer un bâtiment de la réserve : son fantôme se place comme un nouveau, gratuitement. */
+function startStock(i) {
+  const e = S.stock?.[i]; if (!e) return;
+  const p = S.player, o = e.o;
+  let best = null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (fits(e.name, e.stage, o, x, y) && (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best[0] - p.x, best[1] - p.y))) best = [x, y];
+  if (!best) return toast("Plus de place dans l'atelier.");
+  ui.place = { key:e.name, stage:e.stage, o, x:best[0], y:best[1], cost:0, stock:e };
+  ui.build = null; if (ui.mode === "build") ui.mode = "hand"; closePanel(); ui.dirty = true;
+}
+function drawEdit() {
+  const d = ui.edrag && (ui.edrag.dx || ui.edrag.dy) ? ui.edrag : null, dx = d ? d.dx : 0, dy = d ? d.dy : 0;
+  const col = d ? (editFits(dx, dy) ? "#6cc46a" : "#d8382f") : "#ffd65a";
+  ctx.lineWidth = 1;
+  for (const id of ui.esel.ents) {
+    const e = byId(id); if (!e) continue; const f = fp(e);
+    if (d) { const sp = spr(e), i = stageImg(e.stage, sp.file), og = sp.origin || [0, 0]; ctx.globalAlpha = 0.6; if (i) ctx.drawImage(i, 0, 0, sp.frame[0], sp.frame[1], (e.x + dx) * T - og[0], (e.y + dy) * T - og[1], sp.frame[0], sp.frame[1]); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = col; ctx.strokeRect((e.x + dx) * T + 0.5, (e.y + dy) * T + 0.5, f.w * T - 1, f.h * T - 1);
+  }
+  for (const k of ui.esel.belts) {
+    const b = S.belts[k]; if (!b) continue;
+    if (d) { const bi = img(`usine/tapis/${b.k || "bois"}.png`); ctx.globalAlpha = 0.6; if (bi) ctx.drawImage(bi, 0, BELT_ROWS.indexOf(b.d) * 32, 32, 32, (b.x + dx) * T, (b.y + dy) * T, 32, 32); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = col; ctx.strokeRect((b.x + dx) * T + 0.5, (b.y + dy) * T + 0.5, T - 1, T - 1);
+  }
+  const r = ui.erect;
+  if (r) {
+    const xa = Math.min(r.x0, r.x1), xb = Math.max(r.x0, r.x1), ya = Math.min(r.y0, r.y1), yb = Math.max(r.y0, r.y1);
+    ctx.strokeStyle = "#ffd65a"; ctx.setLineDash([4, 3]); ctx.strokeRect(xa * T + 0.5, ya * T + 0.5, (xb - xa + 1) * T - 1, (yb - ya + 1) * T - 1); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(255,214,90,.12)"; ctx.fillRect(xa * T, ya * T, (xb - xa + 1) * T, (yb - ya + 1) * T);
+  }
+}
 function expand() {
   const n = nextExpand();
   if (!n) return;
@@ -1342,6 +1519,7 @@ function draw(time) {
     ctx.globalAlpha = 1;
     const f = key === "belt" ? [1, 1] : sprOf(key, stageOf(key), ROT[ui.rot]).footprint;
     ctx.strokeStyle = ok ? "#6cc46a" : "#d8382f"; ctx.lineWidth = 1; ctx.strokeRect(hx * T + 0.5, hy * T + 0.5, f[0] * T - 1, f[1] * T - 1);
+    if (key === "boiler") { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((hx - BOILER_R) * T, (hy - BOILER_R) * T, (2 + 2 * BOILER_R) * T, (2 + 2 * BOILER_R) * T); ctx.setLineDash([]); }
     if (key === "crank") { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((hx - CRANK_R) * T, (hy - CRANK_R) * T, (2 * CRANK_R + 1) * T, (2 * CRANK_R + 1) * T); ctx.setLineDash([]); }
     if (MACH[key] && MACH[key].power) {
       const pt = portsOf({ name:key, stage:stageOf(key), o:ROT[ui.rot], x:hx, y:hy });
@@ -1364,7 +1542,16 @@ function draw(time) {
     if (i) ctx.drawImage(i, 0, 0, sp.frame[0], sp.frame[1], q.x * T - (sp.origin || [0, 0])[0], q.y * T - (sp.origin || [0, 0])[1], sp.frame[0], sp.frame[1]);
     ctx.globalAlpha = 1;
     ctx.strokeStyle = ok ? "#6cc46a" : "#d8382f"; ctx.lineWidth = 1; ctx.strokeRect(q.x * T + 0.5, q.y * T + 0.5, f[0] * T - 1, f[1] * T - 1);
+    const R = q.key === "boiler" ? BOILER_R : q.key === "crank" ? CRANK_R : 0; // portée de ce qu'on pose
+    if (R) { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((q.x - R) * T, (q.y - R) * T, (f[0] + 2 * R) * T, (f[1] + 2 * R) * T); ctx.setLineDash([]); }
   }
+  if (ui.mode === "edit") drawEdit();
+  { const c = byId(ui.sel); // chaudière ou manivelle choisie : sa portée (bleu) et les machines qu'elle fait tourner (vert)
+    if (c && (c.kind === "boiler" || c.kind === "crank")) {
+      const R = c.kind === "boiler" ? BOILER_R : CRANK_R, f = fp(c);
+      ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((c.x - R) * T, (c.y - R) * T, (f.w + 2 * R) * T, (f.h + 2 * R) * T); ctx.setLineDash([]);
+      ctx.strokeStyle = "#6cc46a"; for (const id of c.powers || []) { const m = byId(id); if (m) { const g = fp(m); ctx.strokeRect(m.x * T + 1.5, m.y * T + 1.5, g.w * T - 3, g.h * T - 3); } }
+    } }
   if (ui.hover && ui.mode === "demolish") { ctx.strokeStyle = "#d8382f"; ctx.strokeRect(ui.hover[0] * T + 0.5, ui.hover[1] * T + 0.5, T - 1, T - 1); }
   { const c = ui.confirmDemol && byId(ui.confirmDemol.id); // bâtiment en attente de confirmation : cadre rouge qui clignote
     if (c && confirming(c) && Math.floor(time * 4) % 2) { const f = fp(c); ctx.strokeStyle = "#d8382f"; ctx.lineWidth = 2; ctx.strokeRect(c.x * T + 1, c.y * T + 1, f.w * T - 2, f.h * T - 2); ctx.lineWidth = 1; } }
@@ -1373,7 +1560,7 @@ function draw(time) {
 }
 
 // ---------------------------------------------------------------- entrées
-const ui = { mode:"hand", build:null, rot:0, sel:null, hover:null, target:null, dirty:true, tab:"commandes", drag:null, hold:null, holdT:0, harvest:0 };
+const ui = { esel:{ ents:new Set(), belts:new Set() }, edrag:null, erect:null, econf:null, mode:"hand", build:null, rot:0, sel:null, hover:null, target:null, dirty:true, tab:"commandes", drag:null, hold:null, holdT:0, harvest:0 };
 function tileAt(ev) {
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / zoom + cam.x, y = (ev.clientY - r.top) / zoom + cam.y;
   return [Math.floor(x / T), Math.floor(y / T)];
@@ -1387,7 +1574,7 @@ function startPinch() {
   pinch = { d:Math.hypot(a.x - b.x, a.y - b.y) || 1, wx:cam.x + mx / zoom, wy:cam.y + my / zoom, z:zoom };
   // le geste à un doigt commencé juste avant (marcher, appui long, tracé de tapis) s'arrête
   if (ui.press) clearTimeout(ui.press.timer);
-  ui.press = null; ui.follow = null; ui.hold = null; ui.drag = null; ui.placeDrag = null;
+  ui.press = null; ui.follow = null; ui.hold = null; ui.drag = null; ui.placeDrag = null; ui.edrag = null; ui.erect = null;
   camFree = true;
 }
 function movePinch() {
@@ -1407,6 +1594,7 @@ cv.addEventListener("pointermove", (ev) => {
   if (pan) { cam.x = pan.cx - (ev.clientX - pan.x) / zoom; cam.y = pan.cy - (ev.clientY - pan.y) / zoom; camFree = true; return; }
   if (pinch) return; // un doigt reste après un pincement : il ne fait rien de plus
   const [x, y] = tileAt(ev); ui.hover = [x, y];
+  if (ui.mode === "edit" && editMove(x, y)) return;
   // appui long : un mouvement l'annule (c'était un glissé)
   if (ui.press && !ui.press.fired && Math.hypot(ev.clientX - ui.press.x, ev.clientY - ui.press.y) > 8) { clearTimeout(ui.press.timer); ui.press = null; }
   if (ui.follow) { ui.follow.cx = ev.clientX; ui.follow.cy = ev.clientY; }
@@ -1431,6 +1619,7 @@ const release = (ev) => {
     return;
   }
   if (pan) { if (!ptrs.size) pan = null; return; }
+  if (ui.mode === "edit") editUp();
   ui.drag = null; ui.hold = null; ui.placeDrag = null; ui.follow = null;
   // appui court sur un objet déplaçable : son menu s'ouvre au relâché (un appui long l'a pris en main à la place)
   const p = ui.press; ui.press = null;
@@ -1451,6 +1640,7 @@ cv.addEventListener("pointerdown", (ev) => {
     ui.dirty = true; return;
   }
   if (ui.mode === "demolish") { const e = !S.belts[x + "," + y] && entAt(x, y); if (e) askDemolish(e); else demolish(x, y); ui.dirty = true; return; }
+  if (ui.mode === "edit" && !ui.place) { editDown(x, y); ui.dirty = true; return; }
   if (ui.place) { // on fait glisser le fantôme (en le saisissant, ou en touchant ailleurs pour l'y amener)
     const q = ui.place, f = footOf(q);
     if (x < q.x || y < q.y || x >= q.x + f[0] || y >= q.y + f[1]) { q.x = x; q.y = y; }
@@ -1472,7 +1662,7 @@ cv.addEventListener("pointerdown", (ev) => {
 });
 window.addEventListener("keydown", (ev) => {
   if (ev.target.tagName === "SELECT" || ev.target.tagName === "INPUT") return;
-  if (ev.key === "r" || ev.key === "R") { if (ui.place) rotatePlace(); else { ui.rot = (ui.rot + 1) % 4; ui.dirty = true; } }
+  if (ev.key === "r" || ev.key === "R") { if (ui.place) rotatePlace(); else if (ui.mode === "edit") editRotate(); else { ui.rot = (ui.rot + 1) % 4; ui.dirty = true; } }
   if (ui.place && ev.key === "Enter") confirmPlace();
   if (ui.place && ev.key === "Escape") return cancelPlace();
   if (ev.key === "Escape") setMode("hand");
@@ -1495,7 +1685,12 @@ function togglePanel(tab) {
   if (tab === "visiter") loadMembers(); if (document.body.classList.contains("panel") && ui.tab === tab) closePanel(); else { ui.tab = tab; openPanel(); } ui.dirty = true; }
 function toggleIcons() { const on = !document.body.classList.contains("menu"); document.body.classList.toggle("menu", on); $("menubtn").textContent = on ? "✕" : "☰"; if (!on) closePanel(); }
 function select(e, quiet) { ui.sel = e.id; if (!quiet || ui.tab === "selection") ui.tab = "selection"; if (!quiet) openPanel(); ui.dirty = true; }
-function setMode(m) { ui.mode = m; if (m !== "build") ui.build = null; if (m === "build") { ui.tab = "construire"; openPanel(); } else closePanel(); ui.dirty = true; }
+function setMode(m) {
+  if (m === "edit" && ui.mode === "edit") m = "hand"; // le bouton main ouvre et ferme le mode édition
+  if (ui.mode === "edit" && m !== "edit") { eselClear(); ui.edrag = null; ui.erect = null; }
+  if (m === "edit") { if (S.visit) return; ui.place = null; S.player.path = S.player.path.slice(0, 1); ui.target = null;
+    toast("Mode édition : fais glisser un bâtiment ou un tapis pour le déplacer, touche-le encore pour le tourner. Glisse sur le sol pour en prendre plusieurs.", 6000); }
+  ui.mode = m; if (m !== "build") ui.build = null; if (m === "build") { ui.tab = "construire"; openPanel(); } else closePanel(); ui.dirty = true; }
 let toastT = 0;
 function toast(msg, ms = 3500) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), ms); }
 const fmtTime = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`; };
@@ -1526,8 +1721,15 @@ function renderUI() {
   for (const b of document.querySelectorAll("[data-page]")) b.classList.toggle("on", panel && b.dataset.page === ui.tab);
   const q = ui.place;
   $("placebar").hidden = !q;
-  if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !(q.belt || (q.id && (!["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind) || byId(q.id)?.quarry))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
+  if (q) { $("prot").hidden = !q.o || q.key.startsWith("extractor"); $("pdel").hidden = !!q.stock || !(q.belt || (q.id && (!["source", "crate", "deco", "rug"].includes(byId(q.id)?.kind) || byId(q.id)?.quarry))); /* ce qui se démonte */ $("pok").disabled = !placeOk(); const ok = q.cost ? `✓ ${icon("piece")}${fmt(q.cost)}` : "✓ Poser"; if ($("pok").dataset.h !== ok) { $("pok").innerHTML = ok; $("pok").dataset.h = ok; } }
   $("beltdone").hidden = !(ui.mode === "build" && ui.build === "belt");
+  { const ed = ui.mode === "edit" && !S.visit, n = eselSize(), sure = (w) => ui.econf?.what === w && Date.now() < ui.econf.until;
+    $("editbar").hidden = !ed; $("editbtn").hidden = !!S.visit; document.body.classList.toggle("editing", ed);
+    if (ed) {
+      $("erot").disabled = !editCanRotate(); $("edel").disabled = !n; $("eres").style.display = S.stock?.length ? "" : "none";
+      const t1 = n ? `Ranger (${n})` : "Ranger", t2 = sure("all") ? "Sûr ? Tout ranger" : "Tout ranger";
+      if ($("edel").textContent !== t1) $("edel").textContent = t1; if ($("eall").textContent !== t2) $("eall").textContent = t2;
+    } }
   // sac
   let bag = "";
   for (let i = 0; i < BAG; i++) { const s = S.bag[i]; bag += `<div class="slot">${s ? itemHTML(s.it, s.n) : ""}</div>`; }
@@ -1573,6 +1775,17 @@ function renderUI() {
       : ms.map((m) => `<div class="card"><div class="row"><span>${m.name.replace(/</g, "&lt;")}</span><span class="grow"></span><span class="muted">${m.stage ? "étape " + m.stage : "pas d'usine"}</span>${m.stage ? `<button class="btn sm" data-visit="${m.id}" data-name="${m.name.replace(/"/g, "&quot;")}">Visiter</button>` : ""}<button class="btn sm or" data-gift="${m.id}">Offrir</button></div></div>`).join("");
   }
   if (ui.tab === "construire") {
+    if (S.stock?.length) { // la réserve : ce qu'on a rangé, à reposer gratuitement (un bouton par sorte, avec le nombre)
+      const groups = new Map();
+      S.stock.forEach((e, i) => { const k = e.quarry ? "quarry" : e.name; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
+      h += `<h3>${icon("sac")} Réserve · à reposer gratuitement</h3><div class="grid">`;
+      for (const [k, idx] of groups) {
+        const e = S.stock[idx[0]], sp = sprOf(e.name, e.stage, e.o);
+        const pic = `<span class="pic" style="background-image:url(usine/etape-${e.stage}/${sp.file});width:${sp.frame[0]}px;height:${sp.frame[1]}px;transform:scale(${Math.min(1, 56 / sp.frame[1])})"></span>`;
+        h += `<button class="btn tile" data-stock="${idx[0]}"><span class="picbox">${pic}</span><span>${k === "quarry" ? "Carrière" : nameOf(e.name)}</span><small>× ${idx.length}</small></button>`;
+      }
+      h += `</div>`;
+    }
     h += `<h3>${icon("marteau")} Construire</h3><div class="grid">`;
     for (let s = 1; s <= 5; s++) for (const [key] of BUILD[s]) {
       if (UPGRADED.has(key)) continue; // s'obtient en améliorant une machine
@@ -1681,7 +1894,8 @@ function renderUI() {
       const boil = e.kind === "boiler", cap = boil ? BOILER_N : GEN_N, burn = (e.load || 0) * FUEL_RATE[e.kind];
       h += `<h3>${boil ? "Chaudière" : "Générateur"}</h3>`;
       h += `<p class="muted">Brûle du bois.</p>`;
-      h += `<div class="row">${itemHTML("bois")}<span>${Math.floor(e.fuel)} / ${FUEL_CAP}</span><span class="grow"></span><span class="muted">${fmtN(e.load || 0)} / ${cap} en marche</span></div>${gauge(e.fuel / FUEL_CAP, e.fuel < 3 ? "rouge" : "or")}`;
+      h += `<div class="row">${itemHTML("bois")}<span>${Math.floor(e.fuel)} / ${FUEL_CAP}</span><span class="grow"></span><span class="muted">${fmtN(e.linked || 0)} / ${cap} reliée${(e.linked || 0) > 1 ? "s" : ""} · ${fmtN(e.load || 0)} en marche</span></div>${gauge(e.fuel / FUEL_CAP, e.fuel < 3 ? "rouge" : "or")}`;
+      if (boil) h += `<p class="muted">Fait tourner ${BOILER_N} machines à vapeur à ${BOILER_R} cases au plus de son bord (cadre bleu). ${fmtN(FUEL_RATE.boiler * 60)} bois/min par machine qui fabrique : une machine à l'arrêt ne brûle rien.</p>`;
       if (burn > 0) h += `<p class="muted">Réserve pour ${fmtTime(e.fuel / burn)} (${fmtN(burn * 60)} bois/min).</p>`;
       if (e.fuel <= 0) h += `<p class="bad">${icon("eclair")} Plus de bois : tout est à l'arrêt.</p>`;
     } else if (e.kind === "pole") {
@@ -1715,6 +1929,7 @@ $("panel").addEventListener("click", (ev) => {
   const b = ev.target.closest("button");
   if (!b || b.disabled) return;
   const e = byId(ui.sel), d = b.dataset;
+  if (d.stock != null) { startStock(+d.stock); return; }
   if (d.build) { // tapis : on trace jusqu'à « Terminé » ; le reste se pose avec le fantôme
     if (d.build.startsWith("belt")) { ui.build = "belt"; ui.beltK = d.build.split("_")[1] || "bois"; ui.mode = "build"; closePanel(); } else startNew(d.build);
   }
@@ -1792,6 +2007,11 @@ $("pok").addEventListener("click", confirmPlace);
 $("pno").addEventListener("click", cancelPlace);
 $("pdel").addEventListener("click", removePlace);
 $("beltdone").addEventListener("click", () => setMode("hand"));
+$("erot").addEventListener("click", editRotate);
+$("edel").addEventListener("click", () => editAsk("sel"));
+$("eall").addEventListener("click", () => editAsk("all"));
+$("eres").addEventListener("click", () => page("construire"));
+$("edone").addEventListener("click", () => setMode("hand"));
 $("zin").addEventListener("click", () => zoomStep(1));
 $("zout").addEventListener("click", () => zoomStep(-1)); // jusqu'à 0,5 : toute l'usine à l'écran
 
@@ -1846,6 +2066,7 @@ const TUTO = [
   { t:"Ta serre de l'usine : plante, attends 2 h, et récolte 3 fleurs. Tu peux les offrir aux autres joueurs.", ent:() => firstOf("flowerbed"), go:() => { const b = firstOf("flowerbed"); if (b) select(b); } },
   { t:"Ton sac, en bas : tout ce que ton lutin porte. Plein ? Range dans un coffre, ou pose une poubelle (Construire) pour le vider.", hi:"#bagwrap", go:() => closePanel() },
   { t:"Appui long sur un objet pour le déplacer et le tourner. Garde le doigt sur le sol pour marcher.", go:() => closePanel() },
+  { t:"Pour tout réarranger, le bouton main passe en mode édition : fais glisser bâtiments et tapis (même toute une zone), et « Tout ranger » met tout de côté pour repartir de zéro.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
   { t:"Glisse à deux doigts pour regarder ailleurs, pince pour zoomer (sur ordinateur : molette et clic droit). Le bouton − va jusqu'à montrer toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
   { t:"Pour démonter, touche deux fois l'objet (mode Démonter, ou bouton de sa fiche) : la moitié du prix revient, et ce que contenait une machine retourne dans ton sac. Un coffre se vide d'abord.", go:() => closePanel() },
   { t:"Le menu ☰ : le zoom et toutes les pages.", hi:"#menubtn", go:() => { closePanel(); setIcons(true); } },
@@ -1910,7 +2131,7 @@ const STAGE_TOURS = {
 // Nouveautés, montrées une fois à ceux qui avaient déjà fait la visite du début (min : étape à partir de laquelle ça compte).
 // Pour annoncer une prochaine mise à jour : augmenter NEWS_V et ajouter ses bulles avec v:NEWS_V.
 // Au lancement, un joueur ne voit que les bulles plus récentes que sa dernière visite ; le menu les montre toutes.
-const NEWS_V = 2;
+const NEWS_V = 3;
 const NEWS = [
   { v:0, t:"Du nouveau à l'usine ! Voici ce qui a changé, en quelques bulles.", go:() => closePanel() },
   { t:"La vue bouge : glisse à deux doigts, pince pour zoomer (molette et clic droit sur ordinateur). Le bouton − montre toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
@@ -1925,6 +2146,8 @@ const NEWS = [
   { v:2, min:3, t:"Une carrière peut verser de plusieurs côtés, chacun sur la voie de ton choix. Et une machine à tapis pose ce qu'elle fait sur la voie choisie dans sa fiche.", go:() => closePanel() },
   { v:2, min:3, t:"Nouveaux prix : la guirlande se vend 11, l'étoile dorée 6. La machine à couronnes à tapis fait la couronne décorée (même recette), vendue 26 ; la couronne simple reste à 15.", go:() => closePanel() },
   { v:2, min:3, t:"Chaque carrière coûte 1,5 fois plus que la précédente, et une seule peut donner des sapins.", go:() => page("construire") },
+  { v:3, t:"Mode édition (bouton main) : fais glisser bâtiments et tapis pour les déplacer, gratuitement ; touche-les encore pour les tourner. Glisse sur le sol pour prendre toute une zone.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
+  { v:3, t:"Pour repartir de zéro : « Tout ranger », dans le mode édition. Les machines vont dans la réserve (en haut de Construire), telles quelles, et se reposent gratuitement ; les tapis sont remboursés.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
 ];
 const TOURS = { start:TUTO, ...STAGE_TOURS };
 /** Les bulles d'une visite (les nouveautés : seulement celles des étapes atteintes). */

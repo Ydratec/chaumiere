@@ -36,6 +36,15 @@ const run = (sec, dt = OFF_DT) => { for (let i = 0; i < sec / dt; i++) step(dt);
 const fresh = (stage) => { newState(); S.stage = stage; S.area = { w:W, h:H }; S.ents = S.ents.filter((e) => e.kind === "crate"); invalidate(); };
 const out = {};
 
+// vapeur, répartition : B1 atteint les 4 machines, B2 seulement m4 (qui est aussi tout près de B1). Avant, B1 prenait ses
+// 3 plus proches (dont m4) et m3 restait à l'arrêt ; maintenant B2 prend m4 et B1 les trois autres.
+fresh(4);
+const B1 = addEnt({ kind:"boiler", name:"boiler", stage:4, x:2, y:8, o:"e", fuel:30 });
+const SM = (x, y) => addEnt({ kind:"machine", name:"steam_furnace", stage:4, x, y, o:"e" });
+const m4 = SM(4, 8), m1 = SM(0, 10), m2 = SM(0, 11), m3 = SM(0, 12);
+const B2 = addEnt({ kind:"boiler", name:"boiler", stage:4, x:6, y:6, o:"e", fuel:30 });
+computePower();
+out.match = { all:[m1, m2, m3, m4].every((m) => powered.has("m" + m.id)), b1:B1.linked, b2:B2.linked, why:(B2.fuel = 0, computePower(), whyNoPower(m3)) };
 // vapeur : chaudière avec du bois à côté d'un four à vapeur rempli de sable
 fresh(4);
 const boil = addEnt({ kind:"boiler", name:"boiler", stage:4, x:2, y:8, o:"e", fuel:30 });
@@ -43,6 +52,8 @@ const fur = addEnt({ kind:"machine", name:"steam_furnace", stage:4, x:5, y:8, o:
 fur.inb.sable = 8;
 run(60);
 out.steam = { powered:powered.has("m" + fur.id), produced:Object.values(fur.outb).reduce((a, b) => a + b, 0) + (fur.inb.verre || 0) + (fur.craft ? 1 : 0), fuelUsed:30 - boil.fuel };
+// la chaudière ne brûle que pendant les fabrications : une machine sans ingrédient ne coûte rien
+const fuelIdle = boil.fuel; run(60); out.steamIdle = { burnt:fuelIdle - boil.fuel, idle:!fur.craft };
 boil.fuel = 0; run(2);
 out.steamOff = { stalled:!!fur.stalled || !powered.has("m" + fur.id) };
 
@@ -197,6 +208,26 @@ ow.recipe = "couronne"; ow.craft = { id:"couronne", t:0, dur:1 }; ow.queue = ["c
 dropGone(S); const cw = addEnt({ kind:"crank", name:"crank", stage:3, x:5, y:11 }); cw.reserve = CRANK_MAX; computePower();
 run(3);
 out.oldWreath = { recipe:ow.recipe, made:ow.outb.couronne_deco || 0 };
+// mode édition : on déplace d'un bloc une machine et ses tapis ; une case prise bloque ; on tourne ; « Tout démonter » rembourse tout
+fresh(3); S.coins = 0; S.player.x = 1; S.player.y = 14;
+const em = addEnt({ kind:"machine", name:"kiln_belt", stage:3, x:5, y:9, o:"e" });
+em.outb = { boule_transparente:3 };
+S.belts["4,9"] = { x:4, y:9, d:"E", k:"bois", lanes:[[{ it:"sable", p:0.5 }], []], on:true };
+S.belts["7,9"] = { x:7, y:9, d:"E", k:"bois", lanes:[[], []], on:true };
+setMode("edit");
+editDown(3, 8); editMove(8, 10); editUp();                      // depuis le sol vide : on sélectionne la zone (3..8, 8..10)
+const selN = eselSize();
+const blocker = addEnt({ kind:"crank", name:"crank", stage:3, x:8, y:13 });
+const blocked = !editFits(1, 4);                                  // la manivelle est sur le chemin
+editDown(5, 9); editMove(5, 11); editUp();                        // deux cases plus bas : libre
+const movedTo = [em.x, em.y, !!S.belts["4,11"], !!S.belts["7,11"], !S.belts["4,9"], S.belts["4,11"]?.lanes[0].length];
+editDown(5, 11); editUp(); editDown(5, 11); editUp();             // toucher la machine : elle seule ; encore : elle tourne
+const rotated = em.o === ROT[(ROT.indexOf("e") + 1) % 4];
+const c0e = S.coins; editAsk("all"); editAsk("all");                  // tout ranger : machines dans la réserve, tapis remboursés
+const stored = { stock:S.stock.length, coins:S.coins - c0e, left:S.ents.filter((e) => e.kind === "machine" || e.kind === "crank").length, belts:Object.keys(S.belts).length, sand:bagCount("sable") };
+startStock(S.stock.findIndex((e) => e === em)); const q = ui.place; q.x = 3; q.y = 9; confirmPlace();   // on repose le four : tel quel, gratuit
+out.edit = { selN, blocked, movedTo, rotated, ...stored, back:S.ents.includes(em), at:[em.x, em.y], kept:em.outb.boule_transparente, paid:S.coins - c0e, stockAfter:S.stock.length };
+setMode("hand");
 // couronnes : la table simple fait la couronne (15), la machine à tapis la couronne décorée (26), même recette qu'avant
 out.wreath = { simple:RECIPES.wreath_table[0].out, belt:{ ...RECIPES.wreath_table_belt[0].out }, beltIn:{ ...RECIPES.wreath_table_belt[0].in }, steam:RECIPES.steam_wreath[0].out.couronne_deco, elec:RECIPES.elec_wreath[0].out.couronne_deco,
   price:[PRICE.couronne, PRICE.couronne_deco, PRICE.guirlande, PRICE.etoile_doree], sold3:SELL[3].includes("couronne_deco"), icon:ITEMS.indexOf("couronne_deco"), name:NAMES.couronne_deco };
@@ -297,7 +328,9 @@ console.log(JSON.stringify(out, null, 1));
 
 assert.ok(out.steam.powered, "la chaudière alimente le four à vapeur");
 assert.ok(out.steam.produced > 0, "le four à vapeur fabrique");
-assert.ok(out.steam.fuelUsed > 1 && out.steam.fuelUsed < 3, "la chaudière brûle environ 2 bois par minute pour une machine");
+assert.ok(out.steam.fuelUsed > 0 && out.steam.fuelUsed < 2, "la chaudière brûle au plus 2 bois par minute pour une machine, seulement quand elle fabrique");
+assert.deepEqual({ ...out.steamIdle }, { burnt:0, idle:true }, "machine à l'arrêt : pas de bois brûlé");
+assert.deepEqual({ ...out.match }, { all:true, b1:3, b2:1, why:"les chaudières à côté font déjà tourner 3 machines chacune : ajoutes-en une." }, "chaudières : machines réparties au mieux");
 assert.ok(out.steamOff.stalled, "sans bois, le four s'arrête");
 assert.ok(out.elec.powered, "l'extracteur est sur le réseau électrique");
 assert.ok(out.elec.inChest >= 20, "l'extracteur remplit le coffre par le tapis en métal");
@@ -328,7 +361,8 @@ assert.deepEqual(out.chuteOut.below, "0/1", "goulotte tournée vers le bas, voie
 assert.equal(out.tour3done, "··✓·✓✓✓✓······", "étape 3 faite : toutes ses missions sont cochées");
 assert.deepEqual(JSON.parse(JSON.stringify(out.quarry2)), { qCosts:[2500, 3750, 5625], refund3:2813, next:5625, sapinOther:true, sapinSelf:false }, "carrières : prix qui monte, remboursement de la moitié payée, une seule à sapins");
 assert.deepEqual({ ...out.oldWreath }, { recipe:"couronne_deco", made:1 }, "ancienne recette de couronne reprise");
+assert.equal(JSON.stringify(out.edit), JSON.stringify({ selN:3, blocked:true, movedTo:[5, 11, true, true, true, 1], rotated:true, stock:2, coins:10, left:0, belts:0, sand:1, back:true, at:[3, 9], kept:3, paid:10, stockAfter:1 }), "mode édition : déplacer en bloc, tourner, tout ranger puis reposer");
 assert.equal(JSON.stringify(out.wreath), JSON.stringify({ simple:{ couronne:1 }, belt:{ couronne_deco:1 }, beltIn:{ branche:4, ruban:1, "@boule_finie":2 }, steam:1, elec:1, price:[15, 26, 11, 6], sold3:true, icon:37, name:"Couronne décorée" }), "couronnes séparées");
-assert.deepEqual({ ...out.news }, { news1:6, news3:13, newsSince1:4, total:13 }, "nouveautés : filtrées selon l'étape atteinte");
+assert.deepEqual({ ...out.news }, { news1:8, news3:15, newsSince1:6, total:15 }, "nouveautés : filtrées selon l'étape atteinte");
 for (const st of [2, 3, 4, 5]) assert.ok(!out.tours[st].includes("✓"), `étape ${st} : une usine vide n'a encore fait aucune mission (${out.tours[st]})`);
 console.log(`OK — 24 h d'absence calculées en ${out.offline.ms} ms`);
