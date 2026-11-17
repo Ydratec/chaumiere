@@ -599,6 +599,7 @@ function whyNoPower(m) {
     const near = S.ents.filter((c) => c.kind === "boiler" && entDist(m, c) <= BOILER_R);
     if (!near.length) return `pose une chaudière à ${BOILER_R} cases au plus.`;
     if (near.every((c) => c.fuel <= 0)) return "la chaudière à côté n'a plus de bois.";
+    if (near.every((c) => c.pick)) return "les chaudières à côté sont réglées sur d'autres machines (coche-la dans leur fiche).";
     return `les chaudières à côté font déjà tourner ${BOILER_N} machines chacune : ajoutes-en une.`;
   }
   if (pw === "elec") return `il faut un poteau à ${POLE_R} cases et un générateur avec du bois.`;
@@ -645,6 +646,8 @@ function matchPower(ms, ps, cap, range) {
   for (const m of [...ms].sort((a, b) => adj.get(a).length - adj.get(b).length || a.id - b.id)) if (adj.get(m).length) tryM(m, new Set());
   return load;
 }
+/** Les machines à vapeur à portée d'une chaudière, de la plus proche à la plus lointaine. */
+const inReach = (c) => S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam" && entDist(m, c) <= BOILER_R).sort((a, b) => entDist(a, c) - entDist(b, c) || a.id - b.id);
 /** Une machine consomme (bois) seulement quand elle fabrique. */
 const working = (m) => m.kind === "extractor" || !!m.craft;
 function computePower() {
@@ -663,12 +666,13 @@ function computePower() {
   }
   // vapeur : chaque chaudière qui a du bois fait tourner BOILER_N machines à vapeur (à BOILER_R cases de son bord), réparties au mieux ;
   // elle ne brûle du bois que pour celles qui fabriquent vraiment.
-  const boilers = S.ents.filter((c) => c.kind === "boiler");
+  // Une chaudière « au choix » (c.pick : les machines cochées dans sa fiche) ne fait tourner que celles-là ; les autres se partagent le reste.
+  const boilers = S.ents.filter((c) => c.kind === "boiler"), steam = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam");
   for (const c of boilers) { c.load = 0; c.linked = 0; c.powers = []; }
-  for (const [c, ms] of matchPower(S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam"), boilers.filter((c) => c.fuel > 0), BOILER_N, BOILER_R)) {
-    for (const m of ms) powered.add("m" + m.id);
-    c.linked = ms.length; c.load = ms.filter(working).length; c.powers = ms.map((m) => m.id);
-  }
+  const feed = (c, ms) => { for (const m of ms) powered.add("m" + m.id); c.powers.push(...ms.map((m) => m.id)); c.linked = c.powers.length; c.load = c.powers.map(byId).filter((m) => m && working(m)).length; };
+  for (const c of boilers) if (c.pick && c.fuel > 0)
+    feed(c, c.pick.map(byId).filter((m) => m && steam.includes(m) && !powered.has("m" + m.id) && entDist(m, c) <= BOILER_R).slice(0, BOILER_N));
+  for (const [c, ms] of matchPower(steam.filter((m) => !powered.has("m" + m.id)), boilers.filter((c) => !c.pick && c.fuel > 0), BOILER_N, BOILER_R)) feed(c, ms);
   // électricité : un seul réseau ; GEN_N appareils par générateur qui a du bois ; un appareil est relié s'il a un poteau à POLE_R cases
   const gens = S.ents.filter((g) => g.kind === "generator" && g.fuel > 0), poles = S.ents.filter((q) => q.kind === "pole");
   const users = S.ents.filter((e) => ((e.kind === "machine" && MACH[e.name].power === "elec") || e.kind === "extractor") && poles.some((q) => distTo(e, q.x, q.y) <= POLE_R));
@@ -1551,6 +1555,7 @@ function draw(time) {
       const R = c.kind === "boiler" ? BOILER_R : CRANK_R, f = fp(c);
       ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((c.x - R) * T, (c.y - R) * T, (f.w + 2 * R) * T, (f.h + 2 * R) * T); ctx.setLineDash([]);
       ctx.strokeStyle = "#6cc46a"; for (const id of c.powers || []) { const m = byId(id); if (m) { const g = fp(m); ctx.strokeRect(m.x * T + 1.5, m.y * T + 1.5, g.w * T - 3, g.h * T - 3); } }
+      if (c.kind === "boiler") inReach(c).forEach((m, i) => { const g = fp(m); text(String(i + 1), (m.x + g.w / 2) * T, m.y * T + 12, (c.powers || []).includes(m.id) ? "#6cc46a" : "#ffd65a"); }); // les numéros de sa fiche
     } }
   if (ui.hover && ui.mode === "demolish") { ctx.strokeStyle = "#d8382f"; ctx.strokeRect(ui.hover[0] * T + 0.5, ui.hover[1] * T + 0.5, T - 1, T - 1); }
   { const c = ui.confirmDemol && byId(ui.confirmDemol.id); // bâtiment en attente de confirmation : cadre rouge qui clignote
@@ -1897,6 +1902,19 @@ function renderUI() {
       h += `<div class="row">${itemHTML("bois")}<span>${Math.floor(e.fuel)} / ${FUEL_CAP}</span><span class="grow"></span><span class="muted">${fmtN(e.linked || 0)} / ${cap} reliée${(e.linked || 0) > 1 ? "s" : ""} · ${fmtN(e.load || 0)} en marche</span></div>${gauge(e.fuel / FUEL_CAP, e.fuel < 3 ? "rouge" : "or")}`;
       if (boil) h += `<p class="muted">Fait tourner ${BOILER_N} machines à vapeur à ${BOILER_R} cases au plus de son bord (cadre bleu). ${fmtN(FUEL_RATE.boiler * 60)} bois/min par machine qui fabrique : une machine à l'arrêt ne brûle rien.</p>`;
       if (burn > 0) h += `<p class="muted">Réserve pour ${fmtTime(e.fuel / burn)} (${fmtN(burn * 60)} bois/min).</p>`;
+      if (boil) { // les machines à vapeur à portée : on coche celles qu'elle doit faire tourner
+        const near = inReach(e);
+        h += `<h3>${icon("eclair")} Machines à portée</h3>`;
+        if (!near.length) h += `<p class="muted">Aucune machine à vapeur à ${BOILER_R} cases.</p>`;
+        else {
+          h += `<div class="row"><span class="muted">${e.pick ? "Au choix : seulement les machines cochées." : "Automatique : les machines sont réparties entre les chaudières."}</span><span class="grow"></span><button class="btn sm ${e.pick ? "" : "on"}" data-bauto="1">Auto</button></div>`;
+          h += `<div class="card">${near.map((m, i) => {
+            const here = (e.powers || []).includes(m.id), other = !here && powered.has("m" + m.id), on = e.pick ? e.pick.includes(m.id) : here;
+            const st = here ? (m.craft ? "en marche" : "à l'arrêt (rien à faire)") : other ? "par une autre chaudière" : on && e.fuel <= 0 ? "pas de bois" : "non alimentée";
+            return `<div class="row"><b>${i + 1}</b><span>${MACH[m.name].name}</span><span class="grow"></span><span class="muted">${st}</span><button class="btn sm ${on ? "vert" : ""}" data-bpick="${m.id}">${on ? "✓" : "＋"}</button></div>`;
+          }).join("")}</div><p class="muted">Les numéros sont sur les machines. ${BOILER_N} au plus.</p>`;
+        }
+      }
       if (e.fuel <= 0) h += `<p class="bad">${icon("eclair")} Plus de bois : tout est à l'arrêt.</p>`;
     } else if (e.kind === "pole") {
       h += `<h3>Poteau électrique</h3><p class="muted">Portée : ${POLE_R} cases.</p>`;
@@ -1953,6 +1971,14 @@ $("panel").addEventListener("click", (ev) => {
   }
   else if (d.mlane != null && e && e.kind === "machine") e.outLane = d.mlane === "b" ? "b" : +d.mlane; // la fabrication en cours se termine, la suivante suit la nouvelle recette
   else if (d.filter != null && e && e.kind === "switch") e.filter = d.filter || null;
+  else if (d.bauto && e && e.kind === "boiler") { e.pick = null; computePower(); }
+  else if (d.bpick && e && e.kind === "boiler") {
+    const id = +d.bpick, pick = e.pick ? [...e.pick] : [...(e.powers || [])];
+    if (pick.includes(id)) pick.splice(pick.indexOf(id), 1);
+    else if (pick.length >= BOILER_N) toast(`${BOILER_N} machines au plus par chaudière : décoche-en une.`);
+    else pick.push(id);
+    e.pick = pick; computePower();
+  }
   else if (d.qgives && e && e.quarry) { if (d.qgives === "sapin_brut" && sapinQuarryTaken(e)) toast("Une seule carrière peut donner des sapins."); else if (e.gives !== d.qgives) { e.gives = d.qgives; e.name = SRC_FILE[d.qgives] || "source_" + d.qgives; e.stock = 0; } }
   else if (d.gives && e) { e.gives = d.gives; e.name = "extractor_" + (SRC_FILE[d.gives] || "source_" + d.gives).replace("source_", ""); }
   else if (d.craft && e) {
@@ -2131,7 +2157,7 @@ const STAGE_TOURS = {
 // Nouveautés, montrées une fois à ceux qui avaient déjà fait la visite du début (min : étape à partir de laquelle ça compte).
 // Pour annoncer une prochaine mise à jour : augmenter NEWS_V et ajouter ses bulles avec v:NEWS_V.
 // Au lancement, un joueur ne voit que les bulles plus récentes que sa dernière visite ; le menu les montre toutes.
-const NEWS_V = 3;
+const NEWS_V = 4;
 const NEWS = [
   { v:0, t:"Du nouveau à l'usine ! Voici ce qui a changé, en quelques bulles.", go:() => closePanel() },
   { t:"La vue bouge : glisse à deux doigts, pince pour zoomer (molette et clic droit sur ordinateur). Le bouton − montre toute l'usine.", hi:"#zout", go:() => { closePanel(); setIcons(true); } },
@@ -2148,6 +2174,7 @@ const NEWS = [
   { v:2, min:3, t:"Chaque carrière coûte 1,5 fois plus que la précédente, et une seule peut donner des sapins.", go:() => page("construire") },
   { v:3, t:"Mode édition (bouton main) : fais glisser bâtiments et tapis pour les déplacer, gratuitement ; touche-les encore pour les tourner. Glisse sur le sol pour prendre toute une zone.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
   { v:3, t:"Pour repartir de zéro : « Tout ranger », dans le mode édition. Les machines vont dans la réserve (en haut de Construire), telles quelles, et se reposent gratuitement ; les tapis sont remboursés.", hi:"#editbtn", go:() => { closePanel(); setIcons(true); } },
+  { v:4, min:4, t:"Chaudières : touche-en une pour voir sa portée et les machines qu'elle fait tourner. Dans sa fiche, coche les machines à alimenter (ou « Auto »). Et elle ne brûle du bois que pour celles qui fabriquent.", ent:() => firstOf("boiler"), go:() => closePanel() },
 ];
 const TOURS = { start:TUTO, ...STAGE_TOURS };
 /** Les bulles d'une visite (les nouveautés : seulement celles des étapes atteintes). */
