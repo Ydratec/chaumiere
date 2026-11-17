@@ -595,9 +595,14 @@ function machineLaneControls(m, pt) {
 /** Pourquoi une machine est sans énergie (phrase à afficher). */
 function whyNoPower(m) {
   const pw = MACH[m.name].power;
-  if (pw === "steam") return "il faut une chaudière avec du bois à 4 cases.";
+  if (pw === "steam") {
+    const near = S.ents.filter((c) => c.kind === "boiler" && entDist(m, c) <= BOILER_R);
+    if (!near.length) return `pose une chaudière à ${BOILER_R} cases au plus.`;
+    if (near.every((c) => c.fuel <= 0)) return "la chaudière à côté n'a plus de bois.";
+    return `les chaudières à côté font déjà tourner ${BOILER_N} machines chacune : ajoutes-en une.`;
+  }
   if (pw === "elec") return `il faut un poteau à ${POLE_R} cases et un générateur avec du bois.`;
-  const near = S.ents.filter((c) => c.kind === "crank" && distTo(m, c.x, c.y) <= CRANK_R);
+  const near = S.ents.filter((c) => c.kind === "crank" && entDist(m, c) <= CRANK_R);
   if (!near.length) return `pose une manivelle à ${CRANK_R} cases au plus.`;
   if (near.every((c) => c.reserve <= 0)) return "remonte la manivelle à côté.";
   return `les manivelles à côté font déjà tourner ${CRANK_M} machines chacune : ajoutes-en une.`;
@@ -617,28 +622,52 @@ const laneRoom = (b, lane, at) => b.lanes[lane].every((o) => Math.abs(o.p - at) 
 let powered = new Set();
 /** Alimenté par le réseau électrique : calculé dans computePower (générateurs avec du bois, 6 appareils chacun, reliés par des poteaux). */
 const elecPowered = (e) => powered.has("e" + e.id);
+/** Distance en cases entre deux objets (de bord à bord : une chaudière 2 × 2 porte aussi loin de chaque côté). */
+function entDist(a, b) { let d = 1e9; for (const [x, y] of tilesOf(b)) d = Math.min(d, distTo(a, x, y)); return d; }
+/**
+ * Répartit les machines entre les sources d'énergie (manivelles, chaudières), `cap` machines chacune, au mieux :
+ * avant, chaque source prenait ses plus proches l'une après l'autre, et une machine qu'une seule source pouvait atteindre
+ * restait à l'arrêt si cette source était déjà prise par des machines qu'une autre aurait pu faire tourner.
+ */
+function matchPower(ms, ps, cap, range) {
+  const load = new Map(ps.map((p) => [p, []])), adj = new Map();
+  for (const m of ms) adj.set(m, ps.map((p) => [entDist(m, p), p]).filter(([d]) => d <= range).sort((a, b) => a[0] - b[0] || a[1].id - b[1].id).map(([, p]) => p));
+  const tryM = (m, seen) => {
+    for (const p of adj.get(m)) {
+      if (seen.has(p)) continue; seen.add(p);
+      const L = load.get(p);
+      if (L.length < cap) { L.push(m); return true; }
+      for (const o of [...L]) if (tryM(o, seen)) { L.splice(L.indexOf(o), 1); L.push(m); return true; }
+    }
+    return false;
+  };
+  // d'abord celles qui ont le moins de choix ; ensuite, la plus proche gagne
+  for (const m of [...ms].sort((a, b) => adj.get(a).length - adj.get(b).length || a.id - b.id)) if (adj.get(m).length) tryM(m, new Set());
+  return load;
+}
+/** Une machine consomme (bois) seulement quand elle fabrique. */
+const working = (m) => m.kind === "extractor" || !!m.craft;
 function computePower() {
   powered = new Set();
-  for (const c of S.ents) {
-    if (c.kind !== "crank") continue;
-    c.load = 0;
-    if (c.reserve <= 0) continue;
-    const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === true && !powered.has("m" + m.id))
-      .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= CRANK_R).sort((a, b) => a[0] - b[0]).slice(0, CRANK_M);
-    const bs = Object.values(S.belts).filter((b) => (b.k || "bois") === "bois" && !powered.has("b" + b.x + "," + b.y))
-      .filter((b) => Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)) <= CRANK_R);
-    for (const [, m] of ms) powered.add("m" + m.id);
-    for (const b of bs) powered.add("b" + b.x + "," + b.y);
-    c.load = ms.length + bs.length; c.machines = ms.length;
+  const cranks = S.ents.filter((c) => c.kind === "crank");
+  for (const c of cranks) { c.load = 0; c.machines = 0; c.powers = []; }
+  const live = cranks.filter((c) => c.reserve > 0);
+  for (const [c, ms] of matchPower(S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === true), live, CRANK_M, CRANK_R)) {
+    for (const m of ms) powered.add("m" + m.id);
+    c.machines = ms.length; c.powers = ms.map((m) => m.id);
   }
-  // vapeur : chaque chaudière qui a du bois alimente les BOILER_N machines à vapeur les plus proches (à BOILER_R cases)
-  for (const c of S.ents) {
-    if (c.kind !== "boiler") continue;
-    c.load = 0; if (c.fuel <= 0) continue;
-    const ms = S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam" && !powered.has("m" + m.id))
-      .map((m) => [distTo(m, c.x, c.y), m]).filter(([d]) => d <= BOILER_R).sort((a, b) => a[0] - b[0]).slice(0, BOILER_N);
-    for (const [, m] of ms) powered.add("m" + m.id);
-    c.load = ms.length;
+  for (const c of live) { // les tapis en bois à portée tournent tous
+    const bs = Object.values(S.belts).filter((b) => (b.k || "bois") === "bois" && Math.max(Math.abs(b.x - c.x), Math.abs(b.y - c.y)) <= CRANK_R);
+    for (const b of bs) powered.add("b" + b.x + "," + b.y);
+    c.load = c.machines + bs.length;
+  }
+  // vapeur : chaque chaudière qui a du bois fait tourner BOILER_N machines à vapeur (à BOILER_R cases de son bord), réparties au mieux ;
+  // elle ne brûle du bois que pour celles qui fabriquent vraiment.
+  const boilers = S.ents.filter((c) => c.kind === "boiler");
+  for (const c of boilers) { c.load = 0; c.linked = 0; c.powers = []; }
+  for (const [c, ms] of matchPower(S.ents.filter((m) => m.kind === "machine" && MACH[m.name].power === "steam"), boilers.filter((c) => c.fuel > 0), BOILER_N, BOILER_R)) {
+    for (const m of ms) powered.add("m" + m.id);
+    c.linked = ms.length; c.load = ms.filter(working).length; c.powers = ms.map((m) => m.id);
   }
   // électricité : un seul réseau ; GEN_N appareils par générateur qui a du bois ; un appareil est relié s'il a un poteau à POLE_R cases
   const gens = S.ents.filter((g) => g.kind === "generator" && g.fuel > 0), poles = S.ents.filter((q) => q.kind === "pole");
@@ -646,7 +675,8 @@ function computePower() {
   const cap = gens.reduce((n, g) => n + (g.cap || GEN_N), 0); // g.cap : seulement pour la démo
   users.slice(0, cap).forEach((e) => powered.add("e" + e.id));
   const used = Math.min(users.length, cap);
-  for (const g of S.ents) if (g.kind === "generator") g.load = g.fuel > 0 ? used / gens.length : 0;
+  const busy = users.slice(0, cap).filter(working).length; // le bois ne brûle que pour ce qui tourne vraiment
+  for (const g of S.ents) if (g.kind === "generator") { g.linked = g.fuel > 0 ? used / gens.length : 0; g.load = g.fuel > 0 ? busy / gens.length : 0; }
 }
 function beltInput(b) {
   const [dx, dy] = DIRS[b.d], back = S.belts[(b.x - dx) + "," + (b.y - dy)];
@@ -1489,6 +1519,7 @@ function draw(time) {
     ctx.globalAlpha = 1;
     const f = key === "belt" ? [1, 1] : sprOf(key, stageOf(key), ROT[ui.rot]).footprint;
     ctx.strokeStyle = ok ? "#6cc46a" : "#d8382f"; ctx.lineWidth = 1; ctx.strokeRect(hx * T + 0.5, hy * T + 0.5, f[0] * T - 1, f[1] * T - 1);
+    if (key === "boiler") { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((hx - BOILER_R) * T, (hy - BOILER_R) * T, (2 + 2 * BOILER_R) * T, (2 + 2 * BOILER_R) * T); ctx.setLineDash([]); }
     if (key === "crank") { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((hx - CRANK_R) * T, (hy - CRANK_R) * T, (2 * CRANK_R + 1) * T, (2 * CRANK_R + 1) * T); ctx.setLineDash([]); }
     if (MACH[key] && MACH[key].power) {
       const pt = portsOf({ name:key, stage:stageOf(key), o:ROT[ui.rot], x:hx, y:hy });
@@ -1511,8 +1542,16 @@ function draw(time) {
     if (i) ctx.drawImage(i, 0, 0, sp.frame[0], sp.frame[1], q.x * T - (sp.origin || [0, 0])[0], q.y * T - (sp.origin || [0, 0])[1], sp.frame[0], sp.frame[1]);
     ctx.globalAlpha = 1;
     ctx.strokeStyle = ok ? "#6cc46a" : "#d8382f"; ctx.lineWidth = 1; ctx.strokeRect(q.x * T + 0.5, q.y * T + 0.5, f[0] * T - 1, f[1] * T - 1);
+    const R = q.key === "boiler" ? BOILER_R : q.key === "crank" ? CRANK_R : 0; // portée de ce qu'on pose
+    if (R) { ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((q.x - R) * T, (q.y - R) * T, (f[0] + 2 * R) * T, (f[1] + 2 * R) * T); ctx.setLineDash([]); }
   }
   if (ui.mode === "edit") drawEdit();
+  { const c = byId(ui.sel); // chaudière ou manivelle choisie : sa portée (bleu) et les machines qu'elle fait tourner (vert)
+    if (c && (c.kind === "boiler" || c.kind === "crank")) {
+      const R = c.kind === "boiler" ? BOILER_R : CRANK_R, f = fp(c);
+      ctx.strokeStyle = "rgba(154,216,255,.6)"; ctx.setLineDash([3, 3]); ctx.strokeRect((c.x - R) * T, (c.y - R) * T, (f.w + 2 * R) * T, (f.h + 2 * R) * T); ctx.setLineDash([]);
+      ctx.strokeStyle = "#6cc46a"; for (const id of c.powers || []) { const m = byId(id); if (m) { const g = fp(m); ctx.strokeRect(m.x * T + 1.5, m.y * T + 1.5, g.w * T - 3, g.h * T - 3); } }
+    } }
   if (ui.hover && ui.mode === "demolish") { ctx.strokeStyle = "#d8382f"; ctx.strokeRect(ui.hover[0] * T + 0.5, ui.hover[1] * T + 0.5, T - 1, T - 1); }
   { const c = ui.confirmDemol && byId(ui.confirmDemol.id); // bâtiment en attente de confirmation : cadre rouge qui clignote
     if (c && confirming(c) && Math.floor(time * 4) % 2) { const f = fp(c); ctx.strokeStyle = "#d8382f"; ctx.lineWidth = 2; ctx.strokeRect(c.x * T + 1, c.y * T + 1, f.w * T - 2, f.h * T - 2); ctx.lineWidth = 1; } }
@@ -1855,7 +1894,8 @@ function renderUI() {
       const boil = e.kind === "boiler", cap = boil ? BOILER_N : GEN_N, burn = (e.load || 0) * FUEL_RATE[e.kind];
       h += `<h3>${boil ? "Chaudière" : "Générateur"}</h3>`;
       h += `<p class="muted">Brûle du bois.</p>`;
-      h += `<div class="row">${itemHTML("bois")}<span>${Math.floor(e.fuel)} / ${FUEL_CAP}</span><span class="grow"></span><span class="muted">${fmtN(e.load || 0)} / ${cap} en marche</span></div>${gauge(e.fuel / FUEL_CAP, e.fuel < 3 ? "rouge" : "or")}`;
+      h += `<div class="row">${itemHTML("bois")}<span>${Math.floor(e.fuel)} / ${FUEL_CAP}</span><span class="grow"></span><span class="muted">${fmtN(e.linked || 0)} / ${cap} reliée${(e.linked || 0) > 1 ? "s" : ""} · ${fmtN(e.load || 0)} en marche</span></div>${gauge(e.fuel / FUEL_CAP, e.fuel < 3 ? "rouge" : "or")}`;
+      if (boil) h += `<p class="muted">Fait tourner ${BOILER_N} machines à vapeur à ${BOILER_R} cases au plus de son bord (cadre bleu). ${fmtN(FUEL_RATE.boiler * 60)} bois/min par machine qui fabrique : une machine à l'arrêt ne brûle rien.</p>`;
       if (burn > 0) h += `<p class="muted">Réserve pour ${fmtTime(e.fuel / burn)} (${fmtN(burn * 60)} bois/min).</p>`;
       if (e.fuel <= 0) h += `<p class="bad">${icon("eclair")} Plus de bois : tout est à l'arrêt.</p>`;
     } else if (e.kind === "pole") {

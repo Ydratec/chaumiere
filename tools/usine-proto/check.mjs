@@ -36,6 +36,15 @@ const run = (sec, dt = OFF_DT) => { for (let i = 0; i < sec / dt; i++) step(dt);
 const fresh = (stage) => { newState(); S.stage = stage; S.area = { w:W, h:H }; S.ents = S.ents.filter((e) => e.kind === "crate"); invalidate(); };
 const out = {};
 
+// vapeur, répartition : B1 atteint les 4 machines, B2 seulement m4 (qui est aussi tout près de B1). Avant, B1 prenait ses
+// 3 plus proches (dont m4) et m3 restait à l'arrêt ; maintenant B2 prend m4 et B1 les trois autres.
+fresh(4);
+const B1 = addEnt({ kind:"boiler", name:"boiler", stage:4, x:2, y:8, o:"e", fuel:30 });
+const SM = (x, y) => addEnt({ kind:"machine", name:"steam_furnace", stage:4, x, y, o:"e" });
+const m4 = SM(4, 8), m1 = SM(0, 10), m2 = SM(0, 11), m3 = SM(0, 12);
+const B2 = addEnt({ kind:"boiler", name:"boiler", stage:4, x:6, y:6, o:"e", fuel:30 });
+computePower();
+out.match = { all:[m1, m2, m3, m4].every((m) => powered.has("m" + m.id)), b1:B1.linked, b2:B2.linked, why:(B2.fuel = 0, computePower(), whyNoPower(m3)) };
 // vapeur : chaudière avec du bois à côté d'un four à vapeur rempli de sable
 fresh(4);
 const boil = addEnt({ kind:"boiler", name:"boiler", stage:4, x:2, y:8, o:"e", fuel:30 });
@@ -43,6 +52,8 @@ const fur = addEnt({ kind:"machine", name:"steam_furnace", stage:4, x:5, y:8, o:
 fur.inb.sable = 8;
 run(60);
 out.steam = { powered:powered.has("m" + fur.id), produced:Object.values(fur.outb).reduce((a, b) => a + b, 0) + (fur.inb.verre || 0) + (fur.craft ? 1 : 0), fuelUsed:30 - boil.fuel };
+// la chaudière ne brûle que pendant les fabrications : une machine sans ingrédient ne coûte rien
+const fuelIdle = boil.fuel; run(60); out.steamIdle = { burnt:fuelIdle - boil.fuel, idle:!fur.craft };
 boil.fuel = 0; run(2);
 out.steamOff = { stalled:!!fur.stalled || !powered.has("m" + fur.id) };
 
@@ -317,7 +328,9 @@ console.log(JSON.stringify(out, null, 1));
 
 assert.ok(out.steam.powered, "la chaudière alimente le four à vapeur");
 assert.ok(out.steam.produced > 0, "le four à vapeur fabrique");
-assert.ok(out.steam.fuelUsed > 1 && out.steam.fuelUsed < 3, "la chaudière brûle environ 2 bois par minute pour une machine");
+assert.ok(out.steam.fuelUsed > 0 && out.steam.fuelUsed < 2, "la chaudière brûle au plus 2 bois par minute pour une machine, seulement quand elle fabrique");
+assert.deepEqual({ ...out.steamIdle }, { burnt:0, idle:true }, "machine à l'arrêt : pas de bois brûlé");
+assert.deepEqual({ ...out.match }, { all:true, b1:3, b2:1, why:"les chaudières à côté font déjà tourner 3 machines chacune : ajoutes-en une." }, "chaudières : machines réparties au mieux");
 assert.ok(out.steamOff.stalled, "sans bois, le four s'arrête");
 assert.ok(out.elec.powered, "l'extracteur est sur le réseau électrique");
 assert.ok(out.elec.inChest >= 20, "l'extracteur remplit le coffre par le tapis en métal");
