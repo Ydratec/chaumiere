@@ -14,62 +14,84 @@
    LAYOUT: accueil en cartes de jeux, puis réglages, puis HUD fin + scène + réponses */
 :root{color-scheme:dark;--bg:#050506;--panel:#111114;--panel2:#18181d;--line:#26262c;--ink:#f4f4f6;--mute:#9a9aa6;--acc:#4da3ff;--ok:#33d17a;--ko:#ff4d5e;--land:#ececf0}
 *{box-sizing:border-box;min-width:0}
-html,body{min-height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overscroll-behavior:none}
 h1,h2,h3,.big{font-family:Archivo,Inter,sans-serif;letter-spacing:-.01em;margin:0}
-.app{max-width:820px;margin:0 auto;min-height:100vh;padding:clamp(14px,3vw,28px) max(4vw,14px);display:flex;flex-direction:column;gap:16px}
+.app{max-width:820px;margin:0 auto;height:100%;height:100dvh;overflow:hidden;padding:12px max(4vw,14px);display:flex;flex-direction:column}
+.app>section{flex:1;min-height:0}
 section[hidden]{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
 .lead{color:var(--mute);margin:6px 0 0;max-width:62ch}
 .err{color:var(--ko);font-size:14px}
 
-/* Accueil */
-#home{display:flex;flex-direction:column;gap:22px}
-.top h1{font-size:clamp(36px,7vw,52px);line-height:1.05;font-weight:800}
-.daily{position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:#000;min-height:190px;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;text-align:left}
+/* Accueil : tout sur un écran, les jeux rangés en pages qui glissent horizontalement */
+#home{display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex:none}
+.top h1{font-size:clamp(26px,6vw,34px);line-height:1.05;font-weight:800}
+.top .sub{color:var(--mute);font-size:13px;white-space:nowrap}
+.daily{flex:none;position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:#000;height:clamp(108px,19vh,160px);padding:14px 16px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;text-align:left}
 .daily svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
 .daily .wd{fill:#2c2c34;stroke:none}
 .daily>*:not(svg){position:relative}
-.daily h2{font-size:clamp(24px,5vw,32px);font-weight:800;line-height:1.1}
-.daily p{margin:0;color:#c9c9d2;max-width:46ch}
-.daily .go{align-self:flex-start;background:#fff;color:#000;border:0;border-radius:12px;padding:12px 18px;font-weight:700;min-height:46px}
-#groups{display:flex;flex-direction:column;gap:20px}
-.grp h3{font-size:15px;font-weight:700;color:var(--mute);margin:0 0 8px;font-family:Inter}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:left;min-height:96px;display:flex;flex-direction:column;gap:4px;transition:border-color .15s,transform .1s}
+.daily h2{font-size:clamp(20px,5vw,26px);font-weight:800;line-height:1.1}
+.daily p{margin:0;color:#c9c9d2;font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:46ch}
+.daily .go{position:absolute!important;right:14px;top:14px;background:#fff;color:#000;border-radius:99px;padding:6px 14px;font-weight:700;font-size:14px}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none;padding:1px}
+.tabs::-webkit-scrollbar,.pages::-webkit-scrollbar{display:none}
+.tabs button{flex:none;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:7px 14px;min-height:38px;font-size:14px;font-weight:600;color:var(--mute)}
+.tabs.fill button{flex:1 1 auto;padding:7px 8px}
+.tabs button[aria-pressed=true]{background:#fff;color:#000;border-color:#fff}
+.pages{position:relative;flex:1;min-height:0;display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.pages>[hidden]{display:none!important}
+.page{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:10px;min-height:0}
+.page.odd>.card:first-child{grid-column:span 2}
+.card{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;text-align:left;min-height:0;display:flex;flex-direction:column;gap:3px;transition:border-color .15s,transform .1s}
 .card:hover{border-color:#4a4a55}.card:active{transform:scale(.98)}
-.card b{font-family:Archivo;font-size:18px;font-weight:700;line-height:1.15}
-.card span{color:var(--mute);font-size:14px;line-height:1.35}
-.card small{margin-top:auto;color:#6f6f7b;font-size:12px}
-.soon{border-style:dashed;cursor:default;opacity:.7}
+.card>*{position:relative}
+.card b{font-family:Archivo;font-size:17px;font-weight:700;line-height:1.15}
+.card span{color:var(--mute);font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card small{margin-top:auto;color:#7d7d89;font-size:12px}
+.card .ill{position:absolute;right:-4%;bottom:-6%;width:56%;height:72%;opacity:.16;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:none}
+.card .ill svg{width:100%;height:100%}.card .ill path{fill:#fff}
+.card .ill img{width:80%;border-radius:4px;opacity:.9}
+.card .ill .yr{font:800 clamp(28px,8vw,46px)/1 Archivo,Inter,sans-serif;color:#fff;padding:0 10px 8px 0}
+.soon{border-style:dashed;cursor:default;opacity:.65}
+.credit{flex:none;color:#55555f;font-size:11px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 
-/* Réglages */
-#setup{display:flex;flex-direction:column;gap:18px}
-.back{align-self:flex-start;background:none;border:0;color:var(--mute);padding:8px 0;font-weight:600;min-height:44px}
-.hero{position:relative;aspect-ratio:16/8;max-height:34vh;width:100%;border-radius:18px;background:radial-gradient(60% 70% at 50% 50%,#17171c,#050506 75%);border:1px solid var(--line);overflow:hidden}
+/* Réglages : un seul écran, l'illustration prend la place qui reste */
+#setup{display:flex;flex-direction:column;gap:10px}
+.shead{display:flex;align-items:flex-start;gap:10px;flex:none}
+.back{flex:none;width:44px;height:44px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:20px;line-height:1;padding:0}
+#setup h2{font-size:clamp(22px,5.6vw,30px);line-height:1.1;font-weight:800;text-wrap:balance}
+#setup .lead{font-size:13px;line-height:1.35;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hero{position:relative;flex:1;min-height:0;width:100%;border-radius:18px;background:radial-gradient(60% 70% at 50% 50%,#17171c,#050506 75%);border:1px solid var(--line);overflow:hidden}
 .hero svg{position:absolute;inset:8%;width:84%;height:84%}
 .hero .sil path{fill:#fff;filter:drop-shadow(0 0 18px rgba(255,255,255,.22))}
 .hero .wd{fill:var(--land);stroke:#050506;stroke-width:.4px;vector-effect:non-scaling-stroke}
-.hero .flagbox{position:absolute;inset:14%;display:flex;align-items:center;justify-content:center}
+.hero .flagbox{position:absolute;inset:12%;display:flex;align-items:center;justify-content:center}
 .hero .flagbox img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
-#setup h2{font-size:clamp(30px,6vw,44px);line-height:1.05;font-weight:800;text-wrap:balance}
-.opt h4{margin:0 0 8px;font-size:14px;color:var(--mute);font-weight:600}
-.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-.seg button{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;min-height:52px}
-.seg button b{display:block;font-family:Archivo;font-size:17px}
-.seg button span{color:var(--mute);font-size:13px}
+.opt{flex:none}
+.opt h4{margin:0 0 5px;font-size:12px;color:var(--mute);font-weight:600}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
+.seg button{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:7px 11px;text-align:left;min-height:48px}
+.seg button b{display:block;font-family:Archivo;font-size:16px;line-height:1.2}
+.seg button span{display:block;color:var(--mute);font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .seg button[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:8px 14px;min-height:40px;font-size:14px;font-weight:600;color:var(--mute)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:7px 13px;min-height:38px;font-size:14px;font-weight:600;color:var(--mute)}
 .chips button[aria-pressed=true]{background:#fff;color:#000;border-color:#fff}
-.cta{background:#fff;color:#000;border:0;border-radius:14px;padding:16px;font-family:Archivo;font-weight:800;font-size:19px;min-height:56px}
+.cta{background:#fff;color:#000;border:0;border-radius:14px;padding:14px;font-family:Archivo;font-weight:800;font-size:19px;min-height:52px}
 .cta:disabled{opacity:.45;cursor:wait}
-.ghost{background:transparent;border:1px solid var(--line);border-radius:14px;padding:14px;min-height:56px;font-weight:600}
-.meta{color:var(--mute);font-size:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:14px;padding:12px;min-height:52px;font-weight:600}
+.sgo{flex:none;display:flex;flex-direction:column;gap:5px}
+.meta{color:var(--mute);font-size:13px;display:flex;justify-content:space-between;gap:12px}
+.meta span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Jeu */
-#play{flex:1;display:flex;flex-direction:column;gap:12px}
+#play{display:flex;flex-direction:column;gap:10px}
+#play>*:not(.stage){flex:none}
 .hud{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
 .hud .score{font-family:Archivo;font-weight:800;font-size:28px;line-height:1}
 .hud .score small{display:block;font:500 13px Inter;color:var(--mute)}
@@ -80,7 +102,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:100%;background:var(--acc);transform-origin:left;border-radius:6px}
 .bar.low i{background:var(--ko)}
-.stage{position:relative;flex:1;min-height:clamp(220px,40vh,460px);border-radius:18px;background:radial-gradient(55% 60% at 50% 48%,#141418,#000 78%);border:1px solid var(--line);overflow:hidden}
+.stage{position:relative;flex:1;min-height:120px;border-radius:18px;background:radial-gradient(55% 60% at 50% 48%,#141418,#000 78%);border:1px solid var(--line);overflow:hidden}
 .stage>*{display:none}
 .stage>.tag,.stage>.reveal{display:block}
 .tag{position:absolute;left:14px;top:12px;font-size:13px;color:var(--mute);z-index:4;max-width:calc(100% - 28px)}
@@ -170,12 +192,15 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .hint b{color:var(--ink)}
 
 /* Fin, passage de relais */
-#end,#hand{display:flex;flex-direction:column;gap:16px;justify-content:center}
+#hand{display:flex;flex-direction:column;gap:16px;justify-content:center}
+#end{display:flex;flex-direction:column;gap:10px}
+#end>*:not(.pages){flex:none}
+.epage{flex:0 0 100%;scroll-snap-align:start;overflow-y:auto;min-height:0;scrollbar-width:thin}
 .final{text-align:center}
-.final .big{font-size:clamp(56px,14vw,96px);font-weight:800;line-height:1}
+.final .big{font-size:clamp(48px,12vw,80px);font-weight:800;line-height:1}
 .final p{margin:6px 0 0;color:var(--mute)}
 .endmap[hidden]{display:none}
-.endmap{width:100%;max-height:44vh;background:#000;border:1px solid var(--line);border-radius:14px}
+.endmap{display:block;width:100%;height:100%;background:#000;border:1px solid var(--line);border-radius:14px}
 .recap{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;padding:0;margin:0;list-style:none}
 .recap li{background:#000;border:1px solid var(--line);border-radius:12px;padding:10px 8px 8px;text-align:center;font-size:13px;line-height:1.25}
 .recap li.ok{border-color:rgba(51,209,122,.55)}.recap li.ko{border-color:rgba(255,77,94,.55)}
@@ -198,11 +223,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .board li.me{background:rgba(77,163,255,.12);font-weight:700}
 .board li span:last-child{font-variant-numeric:tabular-nums;font-weight:700}
 #board .ghost{width:100%}
+.boardT{margin-top:2px}
 .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.names[hidden]{display:none!important}
 .names{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .names input{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--ink);font:16px Inter;min-height:46px}
-.credit{color:#5d5d68;font-size:12px;text-align:center;margin:8px 0 0}
-@media(max-width:420px){.choice{font-size:15px;min-height:54px}.cards{grid-template-columns:1fr 1fr}.card{min-height:88px;padding:12px}.card b{font-size:16px}}
+@media(max-width:420px){.choice{font-size:15px;min-height:52px}}
+@media(max-height:620px){.daily p{display:none}.card span{-webkit-line-clamp:1}.qtext{font-size:20px}}
 @media(prefers-reduced-motion:reduce){.pinb.drop{animation:none}.in #sil,.in #flag,.in #scale,.in #cmp,.in #big{animation:none}*{transition:none!important}}
 </style>
 </head>
@@ -214,30 +241,27 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 </defs></svg>
 <main class="app">
   <section id="home">
-    <div class="top">
-      <h1>Géo Quiz</h1>
-      <p class="lead">Quinze jeux de géographie et d’histoire, plus un défi du jour à la QuizUp : réponds vite, la dernière question compte double.</p>
-    </div>
+    <div class="top"><h1>Géo Quiz</h1><span class="sub">16 jeux · réponds vite</span></div>
     <button class="daily" id="daily">
       <svg id="dailyMap" aria-hidden="true"></svg>
+      <span class="go">Jouer</span>
       <h2 id="dailyT">Défi du jour</h2>
-      <p id="dailyP">Sept questions mêlées, les mêmes pour tout le groupe aujourd'hui. Compare vos scores.</p>
-      <span class="go">Jouer le défi</span>
+      <p id="dailyP">Sept questions mêlées, les mêmes pour tout le groupe aujourd'hui.</p>
     </button>
-    <div id="groups"></div>
+    <nav class="tabs fill" id="gtabs" aria-label="Thèmes"></nav>
+    <div class="pages" id="groups"></div>
     <p class="err" id="err" hidden></p>
+    <p class="credit">Cartes : Natural Earth 1:10m (domaine public) · drapeaux : country-flag-icons (MIT) · population et PIB : Natural Earth, 2019</p>
   </section>
 
   <section id="setup" hidden>
-    <button class="back" id="back">← Tous les jeux</button>
+    <div class="shead"><button class="back" id="back" aria-label="Tous les jeux">←</button><div><h2 id="sTitle"></h2><p class="lead" id="sLead"></p></div></div>
     <div class="hero" id="hero"></div>
-    <div><h2 id="sTitle"></h2><p class="lead" id="sLead"></p></div>
     <div class="opt" id="optLevel"><h4>Niveau</h4><div class="seg" id="levels"></div></div>
     <div class="opt" id="optCat"><h4 id="catT">Catégorie</h4><div class="chips" id="cats"></div></div>
     <div class="opt"><h4>Format</h4><div class="seg" id="formats"></div></div>
-    <div class="names" id="names" hidden><input id="p1" value="Joueur 1" aria-label="Nom du joueur 1" maxlength="18"><input id="p2" value="Joueur 2" aria-label="Nom du joueur 2" maxlength="18"></div>
-    <button class="cta" id="go" disabled>Chargement…</button>
-    <div class="meta"><span id="best">Meilleur score : —</span><span id="fmtInfo"></span></div>
+    <div class="names opt" id="names" hidden><input id="p1" value="Joueur 1" aria-label="Nom du joueur 1" maxlength="18"><input id="p2" value="Joueur 2" aria-label="Nom du joueur 2" maxlength="18"></div>
+    <div class="sgo"><button class="cta" id="go" disabled>Chargement…</button><div class="meta"><span id="best">Meilleur score : —</span><span id="fmtInfo"></span></div></div>
   </section>
 
   <section id="play" hidden>
@@ -274,18 +298,19 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 
   <section id="end" hidden>
     <div class="final"><div class="big" id="fScore">0</div><p id="fLine"></p></div>
-    <div id="share" hidden><div class="share" id="shareT"></div></div>
-    <div id="board" hidden><h3 class="boardT">Défi du jour dans la salle</h3><ol class="board" id="boardL"></ol><button class="ghost" id="toBoard" type="button">Voir tous les classements</button></div>
-    <svg id="endMap" class="endmap" hidden aria-label="Récapitulatif sur la carte"></svg>
-    <table class="duo" id="duo" hidden></table>
-    <ul class="recap" id="recap"></ul>
+    <nav class="tabs fill" id="etabs" aria-label="Résultats"></nav>
+    <div class="pages" id="epages">
+      <div class="epage" id="pDuo" data-t="Duel"><table class="duo" id="duo"></table></div>
+      <div class="epage" id="pMap" data-t="Carte"><svg id="endMap" class="endmap" aria-label="Récapitulatif sur la carte"></svg></div>
+      <div class="epage" id="pRecap" data-t="Récap"><ul class="recap" id="recap"></ul></div>
+      <div class="epage" id="pRoom" data-t="Salle"><div id="board"><h3 class="boardT">Défi du jour dans la salle</h3><ol class="board" id="boardL"></ol><button class="ghost" id="toBoard" type="button">Voir tous les classements</button></div></div>
+      <div class="epage" id="pShare" data-t="Partager"><div class="share" id="shareT"></div><button class="ghost" id="copy" type="button" style="width:100%;margin-top:10px">Copier le résultat</button></div>
+    </div>
     <div class="row">
       <button class="ghost" id="toHome">Tous les jeux</button>
       <button class="cta" id="again">Rejouer</button>
     </div>
-    <button class="ghost" id="copy" hidden>Copier le résultat</button>
   </section>
-  <p class="credit">Chaumière · cartes : Natural Earth 1:10m (domaine public) · drapeaux : country-flag-icons (MIT) · population et PIB : Natural Earth, 2019</p>
 </main>
 
 <script>
@@ -306,7 +331,7 @@ function showBoard() {
   fetch(`/api/quiz/${ROOM}?day=1`).then(r => r.ok ? r.json() : null).then(d => {
     if (!d || !d.rows || !d.rows.length) return;
     $('boardL').innerHTML = d.rows.map((r, i) => `<li class="${r.me ? 'me' : ''}"><span>${i + 1}</span><span>${esc(r.name)}</span><span>${r.score} pts</span></li>`).join('');
-    $('board').hidden = false;
+    $('pRoom').hidden = false; const s = SES; s.endPager = pager($('etabs'), $('epages')); s.endPager(0);
   }).catch(() => {});
 }
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -321,13 +346,13 @@ const GAMES = [
   { id: 'cap', g: 'Reconnaître', name: 'Capitales', desc: 'Un pays, quatre capitales.', lead: 'Un pays, quatre capitales. En Expert, les fausses réponses sont des capitales voisines.' },
   { id: 'reveal', g: 'Reconnaître', name: 'Pays mystère', desc: 'La silhouette se dévoile peu à peu.', lead: 'La silhouette apparaît case par case. Trouve le pays avant qu’elle soit complète : plus tôt tu réponds, plus tu marques.' },
   { id: 'scale', g: 'Reconnaître', name: 'À l’échelle', desc: 'Le pays posé sur la France, même échelle.', lead: 'La silhouette est dessinée à la même échelle que la France (en pointillés). La taille est un indice… parfois trompeur.' },
-  { id: 'neighbor', g: 'Comparer et relier', name: 'Voisins', desc: 'Lequel touche ce pays ?', lead: 'Un pays s’affiche : trouve, parmi quatre, celui qui partage une frontière terrestre avec lui.' },
-  { id: 'cmp', g: 'Comparer et relier', name: 'Plus grand ?', desc: 'Superficie, population ou PIB.', lead: 'Deux pays, une question : lequel est le plus grand, le plus peuplé ou le plus riche ? En Expert, les écarts sont serrés.', cats: { tout: 'Mélange', a: 'Superficie', pop: 'Population', gdp: 'PIB' }, catT: 'Critère' },
-  { id: 'route', g: 'Comparer et relier', name: 'Itinéraire', desc: 'Relie deux pays par la terre.', lead: 'Va d’un pays à l’autre en traversant des pays voisins. Chaque étape de trop coûte des points. 5 trajets, 45 s chacun.', n: 5 },
+  { id: 'neighbor', g: 'Comparer', name: 'Voisins', desc: 'Lequel touche ce pays ?', lead: 'Un pays s’affiche : trouve, parmi quatre, celui qui partage une frontière terrestre avec lui.' },
+  { id: 'cmp', g: 'Comparer', name: 'Plus grand ?', desc: 'Superficie, population ou PIB.', lead: 'Deux pays, une question : lequel est le plus grand, le plus peuplé ou le plus riche ? En Expert, les écarts sont serrés.', cats: { tout: 'Mélange', a: 'Superficie', pop: 'Population', gdp: 'PIB' }, catT: 'Critère' },
+  { id: 'route', g: 'Comparer', name: 'Itinéraire', desc: 'Relie deux pays par la terre.', lead: 'Va d’un pays à l’autre en traversant des pays voisins. Chaque étape de trop coûte des points. 5 trajets, 45 s chacun.', n: 5 },
   { id: 'place', g: 'Cartes', name: 'Placer en France', desc: 'Touche la ville sur la carte.', lead: 'Une ville s’affiche : touche la carte là où elle se trouve. Moins tu tombes loin, plus tu marques.' },
   { id: 'world', g: 'Cartes', name: 'Placer dans le monde', desc: 'Villes, massifs, déserts, fleuves…', lead: 'Pince la carte pour zoomer (molette sur ordinateur), puis touche pour placer. Pour une zone (massif, désert, fleuve), viser dedans vaut 0 km.', cats: WCATS },
   { id: 'touch', g: 'Cartes', name: 'Toucher le pays', desc: 'Trouve le pays sur la carte.', lead: 'Un nom de pays s’affiche : touche-le sur la carte du monde. Pince pour zoomer, glisse pour te déplacer.' },
-  { id: 'culture', g: 'Culture', name: 'Monnaies et co', desc: 'Monnaies, langues, indicatifs, domaines.', lead: 'Quelle monnaie au Malawi ? Quel pays derrière « .tv » ? Quatre familles de questions, à jouer séparément ou mélangées.', cats: { tout: 'Mélange', cur: 'Monnaies', lang: 'Langues', tel: 'Indicatifs', tld: 'Domaines internet' } },
+  { id: 'culture', g: 'Comparer', name: 'Monnaies et co', desc: 'Monnaies, langues, indicatifs, domaines.', lead: 'Quelle monnaie au Malawi ? Quel pays derrière « .tv » ? Quatre familles de questions, à jouer séparément ou mélangées.', cats: { tout: 'Mélange', cur: 'Monnaies', lang: 'Langues', tel: 'Indicatifs', tld: 'Domaines internet' } },
 ];
 WCAT1.histoire = 'évènement historique';
 GAMES.push(
@@ -336,7 +361,7 @@ GAMES.push(
   { id: 'chrono', g: 'Histoire', name: 'Chronologie', desc: 'Remets 4 évènements dans l’ordre.', lead: 'Touche les quatre évènements du plus ancien au plus récent. Touche à nouveau un choix pour l’annuler. 20 secondes par série.' }
 );
 const SOON = [{ name: 'Départements', desc: 'Placer un département, retrouver un numéro.' }, { name: 'Régions du monde', desc: 'États américains, Länder, provinces…' }];
-const FORMATS = { normal: { b: 'Normal', s: '7 questions, dernière ×2' }, survie: { b: 'Survie', s: 'Jusqu’à la première erreur' }, duel: { b: 'Duel', s: '2 joueurs, mêmes questions' } };
+const FORMATS = { normal: { b: 'Normal', s: '7 questions' }, survie: { b: 'Survie', s: '1 erreur = fin' }, duel: { b: 'Duel', s: 'À deux' } };
 const fmtY = e => (e.ap ? 'vers ' : '') + (e.y < 0 ? -e.y + ' av. J.-C.' : e.y);
 const byGame = Object.fromEntries(GAMES.map(g => [g.id, g]));
 
@@ -787,18 +812,19 @@ function finish() {
   show('end');
   const prev = +store.get(bestKey()) || 0, best = Math.max(prev, SES.score);
   if (SES.format !== 'duel') store.set(bestKey(), best);
-  $('share').hidden = true; $('board').hidden = true; $('copy').hidden = true; $('duo').hidden = true; $('endMap').setAttribute('hidden', '');
+  ['pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
   const goods = SES.log.filter(l => l.good).length;
   if (SES.format === 'duel') {
     SES.results.push({ score: SES.score, log: SES.log });
     const [a, b] = SES.results, [n1, n2] = SES.names;
     $('fScore').textContent = `${a.score} – ${b.score}`;
     $('fLine').textContent = a.score === b.score ? 'Égalité parfaite !' : `${a.score > b.score ? n1 : n2} gagne le duel`;
-    $('duo').hidden = false;
+    $('pDuo').hidden = false;
     $('duo').innerHTML = `<tr><th>Question</th><th class="n">${esc(n1)}</th><th class="n">${esc(n2)}</th></tr>` +
       a.log.map((l, i) => `<tr><td>${esc(qTitle(l.q))}</td><td class="n">${l.pts}</td><td class="n">${b.log[i] ? b.log[i].pts : '—'}</td></tr>`).join('') +
       `<tr class="tot"><td>Total</td><td class="n">${a.score}</td><td class="n">${b.score}</td></tr>`;
     $('recap').innerHTML = '';
+    SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
     return;
   }
   $('fScore').textContent = SES.score;
@@ -806,29 +832,56 @@ function finish() {
     : `${goods}/${SES.log.length} réussies · ${SES.score > prev ? 'nouveau record !' : 'record : ' + best + ' pts'} · max 160`;
   const maps = SES.log.filter(l => l.q.type === 'map' && l.q.map !== 'touch');
   if (!SES.daily && maps.length === SES.log.length && maps.length) {
-    const svg = $('endMap'); svg.removeAttribute('hidden');
+    const svg = $('endMap'); $('pMap').hidden = false;
     if (maps[0].q.map === 'fr') { frBase(svg); maps.forEach(l => frMarks(svg, l, false)); } else { wBase(svg); maps.forEach(l => wMarks(svg, l, false)); }
   }
+  $('pRecap').hidden = false;
   $('recap').innerHTML = recapHTML(SES.log);
   if (SES.daily) {
     const d = new Date(), txt = `Géo Quiz · Défi du ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}\n${SES.score} pts · ${SES.log.map(l => l.good ? '🟩' : l.pts ? '🟨' : '🟥').join('')}`;
-    $('shareT').textContent = txt; $('share').hidden = false; $('copy').hidden = false; $('copy').dataset.t = txt;
+    $('shareT').textContent = txt; $('pShare').hidden = false; $('copy').dataset.t = txt;
   }
+  SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
   postScore().then(() => { if (SES.daily) showBoard(); });
   $('again').focus();
 }
 function qTitle(q) { return q.type === 'order' ? 'Chronologie : ' + q.items.slice().sort((a, b) => a.y - b.y).map(e => e.y).join(', ') : q.type === 'choice' ? (q.title || q.opts[q.ok]) : q.type === 'route' ? `${S.by[q.from].n} → ${S.by[q.to].n}` : q.map === 'fr' ? q.city[0] : q.map === 'world' ? q.item[0] : q.c.n; }
 
 /* ================= Accueil et réglages ================= */
+/* Pages horizontales avec onglets synchronisés (accueil et fin de partie) */
+function pager(tabsEl, pagesEl, key) {
+  const pages = () => [...pagesEl.children].filter(p => !p.hidden);
+  const paint = () => {
+    const list = pages(), x = pagesEl.scrollLeft;
+    let i = 0; list.forEach((p, k) => { if (Math.abs(p.offsetLeft - x) < Math.abs(list[i].offsetLeft - x)) i = k; });
+    [...tabsEl.children].forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+    if (key) store.set(key, i);
+  };
+  tabsEl.innerHTML = pages().map((p, k) => `<button type="button" data-i="${k}">${esc(p.dataset.t)}</button>`).join('');
+  tabsEl.onclick = e => { const b = e.target.closest('button'); if (b) { const p = pages()[+b.dataset.i]; pagesEl.scrollTo({ left: p.offsetLeft, behavior: 'smooth' }); } };
+  pagesEl.onscroll = () => { cancelAnimationFrame(pagesEl._r); pagesEl._r = requestAnimationFrame(paint); };
+  return (i = 0) => { const p = pages()[i] || pages()[0]; pagesEl.scrollLeft = p ? p.offsetLeft : 0; paint(); };
+}
+const ILL = { geo: 'IT', reveal: 'MX', scale: 'CL', neighbor: 'DE', cmp: 'BR', route: 'RU', cap: 'GB', place: 'FR', world: 'AU', touch: 'IN', hplace: 'GR', culture: 'JP' };
+function illHTML(id) {
+  if (id === 'flag') return `<span class="ill">${flagHTML('JP')}</span>`;
+  if (id === 'hdate' || id === 'chrono') return `<span class="ill"><span class="yr">${id === 'hdate' ? '1789' : '1066'}</span></span>`;
+  const c = S.by[ILL[id]]; return c ? `<span class="ill">${silSVG(c)}</span>` : '';
+}
 function renderHome() {
   const groups = [...new Set(GAMES.map(g => g.g))];
-  $('groups').innerHTML = groups.map(gr => `<div class="grp"><h3>${gr}</h3><div class="cards">${GAMES.filter(g => g.g === gr).map(g => {
-    const b = store.get(`chaumiere-geoquiz-${g.id}-facile-normal-${g.cats ? 'tout' : ''}`);
-    return `<button class="card" data-g="${g.id}"><b>${g.name}</b><span>${g.desc}</span>${b ? `<small>Record classique : ${b} pts</small>` : ''}</button>`;
-  }).join('')}${gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span>${s.desc}</span><small>Bientôt (données à ajouter)</small></div>`).join('') : ''}</div></div>`).join('');
+  $('groups').innerHTML = groups.map(gr => {
+    const cards = GAMES.filter(g => g.g === gr).map(g => {
+      const b = store.get(`chaumiere-geoquiz-${g.id}-facile-normal-${g.cats ? 'tout' : ''}`);
+      return `<button class="card" data-g="${g.id}">${illHTML(g.id)}<b>${g.name}</b><span>${g.desc}</span>${b ? `<small>Record : ${b} pts</small>` : ''}</button>`;
+    }).concat(gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span>${s.desc}</span><small>Bientôt</small></div>`) : []);
+    return `<div class="page${cards.length % 2 ? ' odd' : ''}" data-t="${gr}">${cards.join('')}</div>`;
+  }).join('');
+  const go = pager($('gtabs'), $('groups'), 'chaumiere-geoquiz-page');
+  requestAnimationFrame(() => go(+store.get('chaumiere-geoquiz-page') || 0));
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
   $('dailyT').textContent = 'Défi du ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-  $('dailyP').textContent = done ? `Ton score du jour : ${done} pts. Rejoue pour t’entraîner, ou partage-le au groupe.` : 'Sept questions mêlées, les mêmes pour tout le groupe aujourd’hui. Compare vos scores.';
+  $('dailyP').textContent = done ? `Ton score du jour : ${done} pts. Rejoue pour t’entraîner.` : 'Sept questions mêlées, les mêmes pour tout le groupe aujourd’hui.';
 }
 function seg(el, map, val, on) { el.innerHTML = Object.entries(map).map(([k, v]) => `<button data-v="${k}" aria-pressed="${k === val}"><b>${v.b}</b><span>${v.s}</span></button>`).join(''); el.onclick = e => { const b = e.target.closest('button'); if (b) on(b.dataset.v); }; }
 function counts(gid, L) {
@@ -983,6 +1036,7 @@ Promise.all(['countries.json', 'france.json', 'world.json', 'history.json'].map(
     S.H = hi; S.C = c; S.by = Object.fromEntries(c.map(x => [x.id, x])); S.FRM = fr; S.WRD = w;
     S.wHTML = Object.entries(w.c).map(([id, d]) => `<path class="wd" data-id="${id}" d="${d}"/>`).join('');
     const dm = $('dailyMap'); wBase(dm); dm.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    if (!$('home').hidden) renderHome();
     if (!$('setup').hidden) renderSetup();
   })
   .catch(e => { console.error(e); $('err').hidden = false; $('err').textContent = 'Impossible de charger les données. Recharge la page.'; });

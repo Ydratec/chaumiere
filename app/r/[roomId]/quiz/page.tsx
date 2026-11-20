@@ -10,11 +10,15 @@ export default async function QuizPage({ params }: { params: Promise<{ roomId: s
   if (!ctx) redirect("/");
   if (!quizVisible(ctx.user)) redirect(`/r/${roomId}`);
   return (
+    <>
+    {/* fond sombre sur tout l'écran (en-tête et dessous de la barre d'onglets compris) : le jeu se prolonge jusqu'en bas */}
+    <div aria-hidden className="fixed inset-0 z-[8] bg-[#050506]" />
     <iframe
       src={`/quiz/index.html?room=${roomId}`}
       title="Géo Quiz"
       className="fixed inset-x-0 top-0 z-[9] w-full border-0 bg-[#050506]"
       style={{ height: "calc(100dvh - 5.5rem - env(safe-area-inset-bottom))" }}
     />
+    </>
   );
 }
