@@ -10,6 +10,7 @@ import { ScratchTeaser } from "@/src/modules/scratch/teaser";
 import { getMyRooms, getRoomContext } from "@/src/modules/rooms/context";
 import { RoomSwitcher } from "@/src/modules/rooms/room-switcher";
 import { NewsPopup } from "@/src/modules/news/popup";
+import { quizVisible } from "@/src/modules/quiz/access";
 
 export default async function RoomLayout({
   children,
@@ -41,8 +42,8 @@ export default async function RoomLayout({
       <ScratchTeaser roomId={roomId} />
       <NewsPopup roomId={roomId} />
       {trims?.[0] && <TrimNotice roomId={roomId} page={trims[0].page} />}
-      <TabBar roomId={roomId} />
-      <SwipeNav roomId={roomId} />
+      <TabBar roomId={roomId} quiz={quizVisible(ctx.user)} />
+      <SwipeNav roomId={roomId} quiz={quizVisible(ctx.user)} />
     </div>
   );
 }
