@@ -72,6 +72,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .hero .flagbox{position:absolute;inset:12%;display:flex;align-items:center;justify-content:center}
 .hero .flagbox img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
 .opt{flex:none}
+.opt[hidden]{display:none!important}
 .opt h4{margin:0 0 5px;font-size:12px;color:var(--mute);font-weight:600}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
 .seg button{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:7px 11px;text-align:left;min-height:48px}
@@ -241,7 +242,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 </defs></svg>
 <main class="app">
   <section id="home">
-    <div class="top"><h1>Géo Quiz</h1><span class="sub">16 jeux · réponds vite</span></div>
+    <div class="top"><h1>Géo Quiz</h1><span class="sub" id="homeSub">Réponds vite</span></div>
     <button class="daily" id="daily">
       <svg id="dailyMap" aria-hidden="true"></svg>
       <span class="go">Jouer</span>
@@ -257,6 +258,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
   <section id="setup" hidden>
     <div class="shead"><button class="back" id="back" aria-label="Tous les jeux">←</button><div><h2 id="sTitle"></h2><p class="lead" id="sLead"></p></div></div>
     <div class="hero" id="hero"></div>
+    <div class="opt" id="optVar"><h4>Version</h4><div class="chips" id="vars"></div></div>
     <div class="opt" id="optLevel"><h4>Niveau</h4><div class="seg" id="levels"></div></div>
     <div class="opt" id="optCat"><h4 id="catT">Catégorie</h4><div class="chips" id="cats"></div></div>
     <div class="opt"><h4>Format</h4><div class="seg" id="formats"></div></div>
@@ -341,11 +343,11 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const WCATS = { tout: 'Tout', ville: 'Villes', montagne: 'Montagnes', desert: 'Déserts', eau: 'Lacs et mers', fleuve: 'Fleuves', ile: 'Îles', monument: 'Monuments' };
 const WCAT1 = { ville: 'ville', montagne: 'montagne, massif ou volcan', desert: 'désert', eau: 'lac ou mer', fleuve: 'fleuve', ile: 'île ou archipel', monument: 'monument ou merveille' };
 const GAMES = [
-  { id: 'geo', g: 'Reconnaître', name: 'Frontières', desc: 'Une silhouette, quatre pays.', lead: 'Une silhouette, quatre pays, dix secondes. Plus tu réponds vite, plus tu marques.' },
+  { id: 'geo', g: 'Reconnaître', v: 'Silhouette', vars: ['geo', 'reveal', 'scale'], name: 'Frontières', desc: 'Silhouette, pays mystère ou à l’échelle.', lead: 'Une silhouette, quatre pays, dix secondes. Plus tu réponds vite, plus tu marques.' },
   { id: 'flag', g: 'Reconnaître', name: 'Drapeaux', desc: 'À quel pays est ce drapeau ?', lead: 'Un drapeau, quatre pays. En Expert, les choix viennent de la même région.' },
   { id: 'cap', g: 'Reconnaître', name: 'Capitales', desc: 'Un pays, quatre capitales.', lead: 'Un pays, quatre capitales. En Expert, les fausses réponses sont des capitales voisines.' },
-  { id: 'reveal', g: 'Reconnaître', name: 'Pays mystère', desc: 'La silhouette se dévoile peu à peu.', lead: 'La silhouette apparaît case par case. Trouve le pays avant qu’elle soit complète : plus tôt tu réponds, plus tu marques.' },
-  { id: 'scale', g: 'Reconnaître', name: 'À l’échelle', desc: 'Le pays posé sur la France, même échelle.', lead: 'La silhouette est dessinée à la même échelle que la France (en pointillés). La taille est un indice… parfois trompeur.' },
+  { id: 'reveal', g: 'Reconnaître', parent: 'geo', v: 'Mystère', name: 'Pays mystère', desc: 'La silhouette se dévoile peu à peu.', lead: 'La silhouette apparaît case par case. Trouve le pays avant qu’elle soit complète : plus tôt tu réponds, plus tu marques.' },
+  { id: 'scale', g: 'Reconnaître', parent: 'geo', v: 'À l’échelle', name: 'À l’échelle', desc: 'Le pays posé sur la France, même échelle.', lead: 'La silhouette est dessinée à la même échelle que la France (en pointillés). La taille est un indice… parfois trompeur.' },
   { id: 'neighbor', g: 'Comparer', name: 'Voisins', desc: 'Lequel touche ce pays ?', lead: 'Un pays s’affiche : trouve, parmi quatre, celui qui partage une frontière terrestre avec lui.' },
   { id: 'cmp', g: 'Comparer', name: 'Plus grand ?', desc: 'Superficie, population ou PIB.', lead: 'Deux pays, une question : lequel est le plus grand, le plus peuplé ou le plus riche ? En Expert, les écarts sont serrés.', cats: { tout: 'Mélange', a: 'Superficie', pop: 'Population', gdp: 'PIB' }, catT: 'Critère' },
   { id: 'route', g: 'Comparer', name: 'Itinéraire', desc: 'Relie deux pays par la terre.', lead: 'Va d’un pays à l’autre en traversant des pays voisins. Chaque étape de trop coûte des points. 5 trajets, 45 s chacun.', n: 5 },
@@ -871,12 +873,13 @@ function illHTML(id) {
 function renderHome() {
   const groups = [...new Set(GAMES.map(g => g.g))];
   $('groups').innerHTML = groups.map(gr => {
-    const cards = GAMES.filter(g => g.g === gr).map(g => {
+    const cards = GAMES.filter(g => g.g === gr && !g.parent).map(g => {
       const b = store.get(`chaumiere-geoquiz-${g.id}-facile-normal-${g.cats ? 'tout' : ''}`);
       return `<button class="card" data-g="${g.id}">${illHTML(g.id)}<b>${g.name}</b><span>${g.desc}</span>${b ? `<small>Record : ${b} pts</small>` : ''}</button>`;
     }).concat(gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span>${s.desc}</span><small>Bientôt</small></div>`) : []);
     return `<div class="page${cards.length % 2 ? ' odd' : ''}" data-t="${gr}">${cards.join('')}</div>`;
   }).join('');
+  $('homeSub').textContent = `${GAMES.filter(g => !g.parent).length} jeux · réponds vite`;
   const go = pager($('gtabs'), $('groups'), 'chaumiere-geoquiz-page');
   requestAnimationFrame(() => go(+store.get('chaumiere-geoquiz-page') || 0));
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
@@ -900,7 +903,13 @@ function counts(gid, L) {
 }
 function renderSetup() {
   const g = byGame[sel.game]; if (!g.cats) delete sel.cat[g.id]; else if (!sel.cat[g.id]) sel.cat[g.id] = 'tout';
-  $('sTitle').textContent = g.name; $('sLead').textContent = g.lead + ' La dernière question compte double.';
+  const root = byGame[g.parent || g.id];
+  $('sTitle').textContent = root.name; $('sLead').textContent = g.lead + ' La dernière question compte double.';
+  $('optVar').hidden = !root.vars;
+  if (root.vars) {
+    $('vars').innerHTML = root.vars.map(id => `<button data-v="${id}" aria-pressed="${id === g.id}">${byGame[id].v}</button>`).join('');
+    $('vars').onclick = e => { const b = e.target.closest('button'); if (b) { sel.game = b.dataset.v; renderSetup(); } };
+  }
   const ready = S.C.length && S.FRM && S.WRD;
   seg($('levels'), { facile: { b: 'Classique', s: ready ? counts(g.id, 'facile') : '' }, expert: { b: 'Expert', s: ready ? counts(g.id, 'expert') : '' } }, sel.level, v => { sel.level = v; renderSetup(); });
   seg($('formats'), FORMATS, sel.format, v => { sel.format = v; renderSetup(); });
