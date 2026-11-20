@@ -42,7 +42,7 @@ alter publication supabase_realtime add table quiz_match_players;
 -- Opérations atomiques (appelées seulement par le serveur, avec la clé serveur).
 
 -- Rejoindre : refuse si la partie a commencé ou est complète ; un duel démarre dès que le 2e joueur arrive.
-create function quiz_join(m uuid, u uuid) returns text language plpgsql as $$
+create function quiz_join(m uuid, u uuid) returns text language plpgsql set search_path = public as $$
 declare mt quiz_matches; c int;
 begin
   select * into mt from quiz_matches where id = m for update;
@@ -59,7 +59,7 @@ begin
 end $$;
 
 -- Répondre : une seule réponse par question et par joueur ; le score suit.
-create function quiz_answer(m uuid, u uuid, a jsonb) returns boolean language plpgsql as $$
+create function quiz_answer(m uuid, u uuid, a jsonb) returns boolean language plpgsql set search_path = public as $$
 begin
   update quiz_match_players
     set answers = answers || jsonb_build_array(a), score = score + coalesce((a->>'pts')::int, 0)
@@ -69,7 +69,7 @@ begin
 end $$;
 
 -- Fin anticipée d'une question (tous les joueurs en lice ont répondu) : notée une seule fois.
-create function quiz_mark_end(m uuid, i int) returns void language sql as $$
+create function quiz_mark_end(m uuid, i int) returns void language sql set search_path = public as $$
   update quiz_matches set ends = ends || jsonb_build_object(i::text, now())
   where id = m and not (ends ? i::text);
 $$;
