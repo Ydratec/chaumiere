@@ -63,27 +63,28 @@ export function TabBar({ roomId, quiz = false }: { roomId: string; quiz?: boolea
   const tabs = roomTabs(roomId, quiz);
   const active = (href: string) => path === href || (href !== base && path.startsWith(href));
   const dots = useBadges(roomId, path);
+  const dark = path.startsWith(`${base}/quiz`); // sur le quiz (fond noir), la barre passe en sombre pour se fondre dans le jeu
   const badge: Record<string, number | boolean> = { [`${base}/question`]: dots.question, [`${base}/games`]: dots.games, [`${base}/farm`]: dots.farm };
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-md rounded-full bg-white/90 p-1.5 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] backdrop-blur-md">
+      <div className={`mx-auto flex max-w-md rounded-full p-1.5 backdrop-blur-md ${dark ? "bg-zinc-900/90 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.8)] ring-1 ring-white/10" : "bg-white/90 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)]"}`}>
         {tabs.map((t) => (
           <Link
             key={t.href}
             href={t.href}
             aria-current={active(t.href) ? "page" : undefined}
             className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 text-[10px] font-medium transition-colors ${
-              active(t.href) ? "bg-indigo-600 text-white" : "text-zinc-500 hover:text-zinc-800"
+              active(t.href) ? (dark ? "bg-white text-zinc-950" : "bg-indigo-600 text-white") : dark ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-800"
             }`}
           >
             <span className="relative">
               <Icon name={t.icon} size={20} />
               {!active(t.href) && !!badge[t.href] && (typeof badge[t.href] === "number" ? (
-                <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white">
+                <span className={`absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ${dark ? "ring-zinc-900" : "ring-white"}`}>
                   {badge[t.href] as number}
                 </span>
               ) : (
-                <span className="absolute -right-1 -top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                <span className={`absolute -right-1 -top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ${dark ? "ring-zinc-900" : "ring-white"}`} />
               ))}
             </span>
             {t.label}
