@@ -20,12 +20,12 @@ const MIN_DX = 50;
  * Balayer gauche/droite change d'onglet. Les balayages partant des bords sont neutralisés
  * pour éviter le retour/avance de page du navigateur, qui fait sortir de l'app par accident.
  */
-export function SwipeNav({ roomId }: { roomId: string }) {
+export function SwipeNav({ roomId, quiz = false }: { roomId: string; quiz?: boolean }) {
   const router = useRouter();
   const path = usePathname();
 
   useEffect(() => {
-    const tabs = roomTabs(roomId);
+    const tabs = roomTabs(roomId, quiz);
     const i = tabs.findIndex((t) => t.href === path); // pas de swipe sur les sous-pages (ex. partie en cours)
     let x0 = 0, y0 = 0, ignore = false, done = false;
     // Précharge les onglets voisins : le balayage n'attend plus le réseau.
@@ -55,7 +55,7 @@ export function SwipeNav({ roomId }: { roomId: string }) {
       window.removeEventListener("touchstart", start);
       window.removeEventListener("touchmove", move);
     };
-  }, [roomId, path, router]);
+  }, [roomId, quiz, path, router]);
 
   return null;
 }

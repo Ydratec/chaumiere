@@ -18,6 +18,7 @@ import { questionLabel } from "@/src/modules/questions/themes";
 import { BalloonCard } from "@/src/modules/questions/balloon-scene";
 import { loadFlight } from "@/src/modules/questions/flight-data";
 import { getRoomContext } from "@/src/modules/rooms/context";
+import { quizVisible } from "@/src/modules/quiz/access";
 
 export default async function RoomHome({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;
@@ -91,6 +92,17 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
           <span className="text-zinc-400 transition group-hover:translate-x-0.5"><Icon name="arrow" size={18} /></span>
         </Link>
       </div>
+
+      {quizVisible(ctx.user) && (
+        <Link href={`/r/${roomId}/quiz`} className="group -mt-4 flex items-center gap-4">
+          <span className="flex size-12 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-sm"><Icon name="globe" size={26} /></span>
+          <span className="flex-1">
+            <span className="block font-semibold">Géo Quiz</span>
+            <span className="block text-sm text-zinc-500">En test · visible seulement par toi</span>
+          </span>
+          <span className="text-zinc-400 transition group-hover:translate-x-0.5"><Icon name="arrow" size={18} /></span>
+        </Link>
+      )}
 
       <QuestionShop roomId={roomId} price={price} coins={wallet?.qty ?? 0} />
 

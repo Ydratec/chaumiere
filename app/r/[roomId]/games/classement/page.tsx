@@ -6,6 +6,8 @@ import { adminDb } from "@/src/lib/db/server";
 import { GAME_TYPES } from "@/src/modules/games/labels";
 import { dailyStandings, standings, type DailyRow, type Played } from "@/src/modules/games/standings";
 import { getRoomContext } from "@/src/modules/rooms/context";
+import { quizVisible } from "@/src/modules/quiz/access";
+import { QUIZ_GAMES, dailyFirst, dailyWins, parisDay, records, type ScoreRow } from "@/src/modules/quiz/scores";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
@@ -14,14 +16,17 @@ export default async function StandingsPage({ params, searchParams }: { params: 
   const [{ roomId }, { jeu }] = await Promise.all([params, searchParams]);
   const ctx = await getRoomContext(roomId);
   if (!ctx) redirect("/");
-  const [{ data: games }, { data: daily }, { data: usine }] = await Promise.all([
+  const quiz = quizVisible(ctx.user);
+  const [{ data: games }, { data: daily }, { data: usine }, { data: quizRows }] = await Promise.all([
     ctx.sb.from("games").select("type, creator, opponent, state->winner").eq("room_id", roomId).eq("status", "finished"),
     adminDb().from("daily_challenges").select("user_id, day, score, solved_at").eq("room_id", roomId), // tous les défis : un seul jeu par jour
     // Usine de Noël : étoiles des contrats, puis étape, puis pièces gagnées (même ordre que dans le jeu)
     adminDb().from("usine_saves").select("user_id, stage:state->stage, stars:state->stars, earned:state->earned").eq("room_id", roomId),
+    // Géo Quiz (réservé à l'admin pendant les tests) : sans la migration 0033, la requête échoue et l'onglet reste vide
+    quiz ? adminDb().from("quiz_scores").select("user_id, game, level, format, cat, score, day, created_at").eq("room_id", roomId) : Promise.resolve({ data: null }),
   ]);
   const played = ((games ?? []) as unknown as Played[]);
-  const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }, { id: "usine", label: "Usine de Noël" }];
+  const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }, { id: "usine", label: "Usine de Noël" }, ...(quiz ? [{ id: "quiz", label: "Géo Quiz" }] : [])];
   const tab = tabs.find((t) => t.id === jeu) ?? tabs[0];
   const person = (id: string) => ctx.people[id];
   const who = (id: string) => (
@@ -46,7 +51,65 @@ export default async function StandingsPage({ params, searchParams }: { params: 
         ))}
       </nav>
 
-      {tab.id === "usine" ? (() => {
+      {tab.id === "quiz" ? (() => {
+        const rows = (quizRows ?? []) as ScoreRow[];
+        if (!rows.length) return <p className="text-sm text-zinc-500">Aucune partie de Géo Quiz enregistrée pour l&apos;instant.</p>;
+        const today = dailyFirst(rows, parisDay()), wins = dailyWins(rows), best = records(rows);
+        const rec = (game: string, format: string, level: string) => best.get(`${game}|${format}|${level}`);
+        const games = Object.keys(QUIZ_GAMES).filter((g) => g !== "daily" && ["normal", "survie"].some((f) => rec(g, f, "facile") || rec(g, f, "expert")));
+        const cell = (r: ScoreRow | undefined, unit: string) => r
+          ? <span className="block tabular-nums"><b>{r.score}</b> <span className="text-zinc-500">{unit}</span><span className="block truncate text-xs text-zinc-500">{person(r.user_id)?.name ?? "Ancien membre"}</span></span>
+          : <span className="text-zinc-300">—</span>;
+        return (
+          <>
+            <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+              <p className="mb-2 text-xs text-zinc-500">Défi du jour · aujourd&apos;hui (seule la première partie compte)</p>
+              {today.length ? (
+                <ol className="rows">
+                  {today.map((r, i) => (
+                    <li key={r.user_id} className="flex items-center gap-3 py-2.5 text-sm">
+                      <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                      {who(r.user_id)}
+                      <span className="text-right tabular-nums"><b>{r.score}</b> <span className="text-zinc-500">pts</span></span>
+                    </li>
+                  ))}
+                </ol>
+              ) : <p className="py-2 text-sm text-zinc-500">Personne n&apos;a encore joué le défi aujourd&apos;hui.</p>}
+            </section>
+            {!!wins.length && (
+              <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+                <p className="mb-2 text-xs text-zinc-500">Défis du jour gagnés · défis joués</p>
+                <ol className="rows">
+                  {wins.map((r, i) => (
+                    <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
+                      <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                      {who(r.user)}
+                      <span className="text-right tabular-nums"><b>{r.wins}</b> <span className="text-zinc-500">j.</span> · {r.played}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+            {!!games.length && (
+              <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+                <p className="mb-2 text-xs text-zinc-500">Records par jeu · 7 questions (survie : meilleure série)</p>
+                <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 text-sm">
+                  <span className="py-1.5 text-xs font-medium text-zinc-400">Jeu</span>
+                  <span className="py-1.5 text-xs font-medium text-zinc-400">Classique</span>
+                  <span className="py-1.5 text-xs font-medium text-zinc-400">Expert</span>
+                  {games.map((g) => (
+                    <div key={g} className="contents">
+                      <span className="border-t border-zinc-100 py-2 font-medium">{QUIZ_GAMES[g]}{(rec(g, "survie", "facile") || rec(g, "survie", "expert")) && !(rec(g, "normal", "facile") || rec(g, "normal", "expert")) ? <span className="block text-xs font-normal text-zinc-500">survie</span> : null}</span>
+                      <span className="border-t border-zinc-100 py-2">{cell(rec(g, "normal", "facile") ?? rec(g, "survie", "facile"), rec(g, "normal", "facile") ? "pts" : "d’affilée")}</span>
+                      <span className="border-t border-zinc-100 py-2">{cell(rec(g, "normal", "expert") ?? rec(g, "survie", "expert"), rec(g, "normal", "expert") ? "pts" : "d’affilée")}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        );
+      })() : tab.id === "usine" ? (() => {
         const rows = (usine ?? []).map((r) => ({ user: r.user_id as string, stage: Number(r.stage) || 0, stars: Number(r.stars) || 0, earned: Number(r.earned) || 0 }))
           .filter((r) => r.stage && person(r.user)).sort((a, b) => b.stars - a.stars || b.stage - a.stage || b.earned - a.earned);
         if (!rows.length) return <p className="text-sm text-zinc-500">Personne n&apos;a encore d&apos;usine.</p>;
