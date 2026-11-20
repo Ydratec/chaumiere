@@ -57,7 +57,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .card .ill img{width:80%;border-radius:4px;opacity:.9}
 .card .ill .yr{font:800 clamp(28px,8vw,46px)/1 Archivo,Inter,sans-serif;color:#fff;padding:0 10px 8px 0}
 .soon{border-style:dashed;cursor:default;opacity:.65}
-/* Accueil : une rangée par catégorie, jeux côte à côte */
+/* Accueil : un thème à la fois, on glisse pour changer */
+.chead{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.chead h3{margin:0;font:800 clamp(18px,4.8vw,22px) Archivo,Inter,sans-serif}
+.dots{display:flex;gap:6px;align-items:center}
+.dots button{width:8px;height:8px;padding:0;border:0;border-radius:99px;background:#3a3a43;font-size:0;transition:width .2s,background .2s}
+.dots button[aria-pressed=true]{width:22px;background:#fff}
+/* (anciennes rangées, non utilisées) */
 .cats{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
 .crow{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px}
 .crow h3{flex:none;margin:0;font:600 12px Inter,sans-serif;color:var(--mute)}
@@ -281,8 +287,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .names{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .names input{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--ink);font:16px Inter;min-height:46px}
 @media(max-width:420px){.choice{font-size:15px;min-height:52px}}
-@media(max-height:700px){.strip .card span,.strip .card small{display:none}.strip .card{justify-content:center}}
-@media(max-height:620px){.daily p{display:none}.card span{-webkit-line-clamp:1}.qtext{font-size:20px}}
+@media(max-height:640px){.page .card .ds{display:none}}
+@media(max-height:620px){.daily p{display:none}.card .ds{-webkit-line-clamp:1}.qtext{font-size:20px}}
 @media(prefers-reduced-motion:reduce){.pinb.drop{animation:none}.in #sil,.in #flag,.in #scale,.in #cmp,.in #big{animation:none}*{transition:none!important}}
 </style>
 </head>
@@ -301,7 +307,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
       <h2 id="dailyT">Défi du jour</h2>
       <p id="dailyP">Sept questions mêlées, les mêmes pour tout le groupe aujourd'hui.</p>
     </button>
-    <div class="cats" id="groups"></div>
+    <div class="chead"><h3 id="catName">Reconnaître</h3><nav class="dots" id="gdots" aria-label="Thèmes"></nav></div>
+    <div class="pages" id="groups"></div>
     <p class="err" id="err" hidden></p>
     <button class="online" id="onlineBtn"><span class="dot" id="onlineN">⇄</span><span class="tx"><b>Défier en ligne</b><span id="onlineSub">Duel ou partie avec la salle</span></span><span class="chev">›</span></button>
   </section>
@@ -1116,13 +1123,14 @@ function qTitle(q) { return q.type === 'order' ? 'Chronologie : ' + q.items.slic
 
 /* ================= Accueil et réglages ================= */
 /* Pages horizontales avec onglets synchronisés (accueil et fin de partie) */
-function pager(tabsEl, pagesEl, key) {
+function pager(tabsEl, pagesEl, key, onChange) {
   const pages = () => [...pagesEl.children].filter(p => !p.hidden);
   const paint = () => {
     const list = pages(), x = pagesEl.scrollLeft;
     let i = 0; list.forEach((p, k) => { if (Math.abs(p.offsetLeft - x) < Math.abs(list[i].offsetLeft - x)) i = k; });
     [...tabsEl.children].forEach((b, k) => b.setAttribute('aria-pressed', k === i));
     if (key) store.set(key, i);
+    if (onChange) onChange(list[i]);
   };
   tabsEl.innerHTML = pages().map((p, k) => `<button type="button" data-i="${k}">${esc(p.dataset.t)}</button>`).join('');
   tabsEl.onclick = e => { const b = e.target.closest('button'); if (b) { const p = pages()[+b.dataset.i]; pagesEl.scrollTo({ left: p.offsetLeft, behavior: 'smooth' }); } };
@@ -1140,10 +1148,13 @@ function renderHome() {
   $('groups').innerHTML = groups.map(gr => {
     const cards = GAMES.filter(g => g.g === gr && !g.parent).map(g => {
       const b = store.get(`chaumiere-geoquiz-${g.id}-facile-normal-${g.cats ? 'tout' : ''}`);
-      return `<button class="card" data-g="${g.id}">${illHTML(g.id)}<b>${g.name}</b><span>${g.desc}</span>${b ? `<small>Record : ${b} pts</small>` : ''}</button>`;
-    }).concat(gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span>${s.desc}</span><small>Bientôt</small></div>`) : []);
-    return `<div class="crow"><h3>${gr}</h3><div class="strip${cards.length > 3 ? ' many' : ''}">${cards.join('')}</div></div>`;
+      return `<button class="card" data-g="${g.id}">${illHTML(g.id)}<b>${g.name}</b><span class="ds">${g.desc}</span>${b ? `<small>Record : ${b} pts</small>` : ''}</button>`;
+    }).concat(gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span class="ds">${s.desc}</span><small>Bientôt</small></div>`) : []);
+    return `<div class="page${cards.length % 2 ? ' odd' : ''}" data-t="${gr}">${cards.join('')}</div>`;
   }).join('');
+  const go = pager($('gdots'), $('groups'), 'chaumiere-geoquiz-page', p => { if (p) $('catName').textContent = p.dataset.t; });
+  const page = +store.get('chaumiere-geoquiz-page') || 0;
+  requestAnimationFrame(() => go(page)); setTimeout(() => go(page), 150); // une 2e fois, une fois la mise en page stable
   $('homeSub').textContent = `${GAMES.filter(g => !g.parent).length} jeux · réponds vite`;
   renderOnline(); loadOnline();
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
