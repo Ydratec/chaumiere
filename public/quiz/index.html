@@ -129,6 +129,20 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .srow .mm span{display:block;color:var(--mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .srow small{flex:none;color:#7d7d89;font-size:12px}
 .srow.soon{opacity:.55;border-style:dashed}
+.spanel{touch-action:pan-y}
+.spanel.snap{transition:transform .2s ease-out}
+.spanel .grab{padding:6px 0;margin:-6px auto 2px;background-clip:content-box;height:16px;width:56px;cursor:grab}
+.conf{display:flex;flex-direction:column;gap:10px;padding:4px 0 2px}
+.conf .cinfo{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.conf .cinfo .sg{flex:none;width:64px;height:56px;display:grid;place-items:center;overflow:hidden}
+.conf .cinfo .sg .ill{position:static;width:64px;height:56px;opacity:.85;display:grid;place-items:center}
+.conf .cinfo .sg svg{width:100%;height:100%}.conf .cinfo .sg path{fill:#e6e6ea}.conf .cinfo .sg .ill img{width:100%;height:auto;max-height:100%;object-fit:contain;border-radius:4px}
+.conf .cinfo .sg .yr{font:800 22px Archivo,Inter,sans-serif;color:var(--th);padding:0}
+.conf .cinfo p{margin:0;color:var(--mute);font-size:14px;line-height:1.35}
+.conf .cinfo p b{color:var(--ink)}
+.conf .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cta.danger{background:var(--ko);color:#fff}
+.hud .quit{justify-self:start;width:38px;height:38px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--mute);font-size:18px;line-height:1;padding:0}
 @keyframes up{from{transform:translateY(40%);opacity:0}}
 @keyframes fade{from{opacity:0}}
 /* (anciennes rangées, non utilisées) */
@@ -191,7 +205,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 /* Jeu */
 #play{display:flex;flex-direction:column;gap:10px}
 #play>*:not(.stage){flex:none}
-.hud{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.hud{display:grid;grid-template-columns:auto 1fr auto 1fr;align-items:center;gap:10px}
 .hud .score{font-family:Archivo;font-weight:800;font-size:28px;line-height:1}
 .hud .score small{display:block;font:500 13px Inter;color:var(--mute)}
 .hud .qn{color:var(--mute);font-size:14px;text-align:center;white-space:nowrap}
@@ -402,6 +416,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 
   <section id="play" hidden>
     <div class="hud">
+      <button class="quit" id="quit" aria-label="Quitter la partie">✕</button>
       <div class="score"><span id="sc">0</span><small id="scL">points</small></div>
       <div class="qn" id="qn"></div>
       <div class="gain" id="gain">+0</div>
@@ -871,7 +886,9 @@ function settle(l, delay) {
   SES.score += l.pts; SES.log.push(l);
   $('sc').textContent = SES.score;
   $('gain').textContent = '+' + l.pts; $('gain').style.color = l.pts ? 'var(--ok)' : 'var(--ko)'; $('gain').className = 'gain on';
+  const ses = SES;
   setTimeout(() => {
+    if (ses.aborted || SES !== ses) return;
     SES.i++;
     if (surv ? !l.good : SES.i >= SES.n) finish(); else ask();
   }, delay);
@@ -1286,16 +1303,61 @@ function renderHome() {
 }
 function openTheme(k) {
   const th = THEMES[k], items = themeItems(th), plays = jget('chaumiere-geoquiz-plays', {});
-  $('sheet').style.setProperty('--th', th.c); $('shT').textContent = th.t;
   let html = '', last = '';
   for (const it of items) {
     if (it.sub !== last) { html += `<h4>${it.sub}</h4>`; last = it.sub; }
     const right = it.soon ? 'Bientôt' : it.demo ? 'Démo' : plays[it.id] ? `${plays[it.id]} partie${plays[it.id] > 1 ? 's' : ''}` : '';
     html += `<button class="srow${it.soon ? ' soon' : ''}" ${it.soon ? 'disabled' : it.demo ? `data-demo="${it.name}"` : `data-g="${it.id}"`}><span class="sg">${it.soon ? '' : glyph(it)}</span><span class="mm"><b>${it.name}</b><span>${it.desc}</span></span><small>${right}</small></button>`;
   }
+  sheetOpen(th.t, th.c, html);
+}
+function sheetOpen(title, color, html) {
+  const p = $('sheet').querySelector('.spanel'); p.style.transform = ''; p.classList.remove('snap');
+  $('sheet').style.setProperty('--th', color); $('shT').textContent = title;
   $('shL').innerHTML = html; $('shL').scrollTop = 0; $('sheet').hidden = false;
 }
 const closeTheme = () => { $('sheet').hidden = true; };
+/* Glisser le menu vers le bas pour le fermer (depuis la poignée, le titre, ou la liste quand elle est en haut) */
+(() => {
+  const sh = $('sheet'), p = sh.querySelector('.spanel'), list = $('shL');
+  let y0 = null, dy = 0, t = 0;
+  p.addEventListener('touchstart', e => {
+    if (list.contains(e.target) && list.scrollTop > 0) { y0 = null; return; }
+    y0 = e.touches[0].clientY; dy = 0; t = performance.now(); p.classList.remove('snap');
+  }, { passive: true });
+  p.addEventListener('touchmove', e => {
+    if (y0 === null) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy <= 0) { p.style.transform = ''; if (list.contains(e.target)) y0 = null; return; }
+    if (e.cancelable) e.preventDefault();
+    p.style.transform = `translateY(${dy}px)`;
+  }, { passive: false });
+  p.addEventListener('touchend', () => {
+    if (y0 === null) return; y0 = null;
+    const fast = dy / Math.max(1, performance.now() - t) > 0.6;
+    p.classList.add('snap');
+    if (dy > Math.min(140, p.offsetHeight * 0.25) || (fast && dy > 40)) { p.style.transform = 'translateY(110%)'; setTimeout(() => { closeTheme(); p.style.transform = ''; p.classList.remove('snap'); }, 200); }
+    else p.style.transform = '';
+  });
+})();
+/* Confirmation avant de lancer une partie depuis l'accueil */
+function confirmPlay(id) {
+  const g = byGame[id], L = lastOf(id), th = THEMES.find(t => themeItems(t).some(x => x.id === id)) || THEMES[0];
+  const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie, une erreur et c’est fini' : (g.n || N) + ' questions'}`;
+  const b = store.get(`chaumiere-geoquiz-${id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
+  sheetOpen(g.parent ? byGame[g.parent].name : g.name, th.c, `<div class="conf" data-id="${id}"><div class="cinfo"><span class="sg">${illHTML(id)}</span><p><b>${how}</b><br>${g.desc}${b ? `<br>Ton record : ${b}` : ''}</p></div><button class="cta" data-act="play">Jouer</button><button class="ghost" data-act="setup">Changer les réglages</button></div>`);
+}
+function confirmQuit() {
+  const online = SES && SES.online;
+  sheetOpen(online ? 'Quitter la partie en ligne ?' : 'Abandonner la partie ?', '#ff4d5e', `<div class="conf"><div class="cinfo"><p>${online ? 'Tu quittes la partie ; les autres joueurs continuent sans toi.' : 'Ton score de cette partie ne sera pas enregistré.'}</p></div><div class="row2"><button class="ghost" data-act="stay">Continuer</button><button class="cta danger" data-act="quit">${online ? 'Quitter' : 'Abandonner'}</button></div></div>`);
+}
+function abandon() {
+  closeTheme();
+  if (SES && SES.online) return leave();
+  if (SES) SES.aborted = true;
+  cancelAnimationFrame(raf); locked = true;
+  RNG = Math.random; renderHome(); show('home');
+}
 function seg(el, map, val, on) { el.innerHTML = Object.entries(map).map(([k, v]) => `<button data-v="${k}" aria-pressed="${k === val}"><b>${v.b}</b><span>${v.s}</span></button>`).join(''); el.onclick = e => { const b = e.target.closest('button'); if (b) on(b.dataset.v); }; }
 function counts(gid, L) {
   const c = sel.cat[gid];
@@ -1355,16 +1417,27 @@ $('groups').addEventListener('click', e => {
   const d = e.target.closest('.card[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`);
   const b = e.target.closest('.card[data-q]'); if (!b) return;
   if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
-  const id = b.dataset.q, L = lastOf(id);
-  Object.assign(sel, { game: id, level: L.level, format: L.format, from: 'home' }); if (L.cat) sel.cat[id] = L.cat; else if (byGame[id].cats) sel.cat[id] = 'tout';
-  startSel();
+  confirmPlay(b.dataset.q);
 });
 $('shL').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]');
+  if (a) {
+    const act = a.dataset.act;
+    if (act === 'stay') return closeTheme();
+    if (act === 'quit') return abandon();
+    const id = a.closest('.conf').dataset.id;
+    closeTheme(); if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
+    const L = lastOf(id);
+    Object.assign(sel, { game: id, level: L.level, format: L.format, from: 'home' }); if (L.cat) sel.cat[id] = L.cat; else if (byGame[id].cats) sel.cat[id] = 'tout';
+    if (act === 'setup') { renderSetup(); show('setup'); } else startSel();
+    return;
+  }
   const d = e.target.closest('[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`);
   const b = e.target.closest('[data-g]'); if (!b) return;
   closeTheme(); sel.game = b.dataset.g; sel.from = 'home'; renderSetup(); show('setup');
 });
-$('shX').addEventListener('click', closeTheme); $('shBg').addEventListener('click', closeTheme);
+$('shX').addEventListener('click', closeTheme);
+$('quit').addEventListener('click', confirmQuit); $('shBg').addEventListener('click', closeTheme);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) closeTheme(); });
 $('back').addEventListener('click', () => { renderHome(); show(sel.from || 'home'); });
 $('toHome').addEventListener('click', () => { mpClose(); renderHome(); show('home'); });
