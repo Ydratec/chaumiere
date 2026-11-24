@@ -64,54 +64,73 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .dots{display:flex;gap:6px;align-items:center}
 .dots button{width:8px;height:8px;padding:0;border:0;border-radius:99px;background:#3a3a43;font-size:0;transition:width .2s,background .2s}
 .dots button[aria-pressed=true]{width:22px;background:#fff}
-/* Jeu rapide : favoris et suggestions, le (+) ouvre tous les modes */
+/* Accueil : un thème par page, quelques modes et un (+) qui ouvre tous les modes du thème */
 .chead .hint{color:var(--mute);font-size:12px;white-space:nowrap}
-.quick{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 58px;grid-template-rows:minmax(0,1.25fr) minmax(0,1fr);gap:10px}
-.quick>.card:first-child{grid-column:1/3}
-.quick>.card:first-child b{font-size:clamp(20px,5.4vw,26px)}
-.quick>.card:first-child .ill{width:46%;height:92%;opacity:.2}
-.card .qtag{align-self:flex-start;font:700 11px Inter,sans-serif;font-style:normal;letter-spacing:.02em;color:#001;background:var(--acc);border-radius:99px;padding:2px 8px;margin-bottom:3px}
-.card .qtag.sug{background:transparent;color:#c9c9d2;box-shadow:inset 0 0 0 1px #4a4a55}
-.qplus{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--panel);border:1px dashed #4a4a55;border-radius:16px;padding:8px 0;color:var(--ink)}
-.qplus:active{transform:scale(.97)}
-.qplus .pl{width:38px;height:38px;border-radius:99px;background:#fff;color:#000;display:grid;place-items:center;font:800 26px/1 Archivo,Inter,sans-serif}
-.qplus .vt{writing-mode:vertical-rl;transform:rotate(180deg);font:600 13px Inter,sans-serif;color:#c9c9d2;white-space:nowrap}
-#all{display:flex;flex-direction:column;gap:10px}
-.page.l-rows{grid-template-columns:1fr 1fr;grid-auto-rows:auto;grid-template-rows:repeat(3,minmax(0,1fr)) auto}
-.page.l-rows>.card:not(.soon){grid-column:span 2}
-.page.l-rows>.card .ill{width:44%;height:118%;bottom:-10%}
-.page.l-rows>.soon{padding:8px 12px}.page.l-rows>.soon .ds{display:none}
-.page.l-side{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}
-.page.l-side>.card:first-child{grid-row:1/3}
-.page.l-side>.card:first-child .ill{width:100%;height:62%;right:-8%}
-.page.l-quad>.card .ill{width:70%;height:64%}
-.useg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px}
-.useg button{border:0;background:transparent;border-radius:9px;padding:7px 8px;font-weight:600;font-size:14px;color:var(--mute);min-height:36px}
-.useg button[aria-pressed=true]{background:#26262e;color:var(--ink)}
-.page[data-u=culture] .card{border-color:color-mix(in srgb,var(--th) 28%,var(--line))}
-.page[data-u=culture] .card .ill{opacity:.9;width:auto;height:auto;right:0;bottom:0}
-.page[data-u=culture] .card .ill .yr{color:var(--th);opacity:.35;font-size:clamp(30px,9vw,52px)}
-.page[data-u=culture] .qtag{color:var(--th);box-shadow:inset 0 0 0 1px var(--th)}
-.page.l-feature{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1.4fr) minmax(0,1fr)}
-.page.l-feature>.card:first-child{grid-column:1/4;background:linear-gradient(135deg,color-mix(in srgb,var(--th) 26%,var(--panel)),var(--panel) 65%)}
-.page.l-feature>.card:not(:first-child){padding:10px}
-.page.l-feature>.card:not(:first-child) b{font-size:15px}
-.page.l-feature>.card:not(:first-child) .ds{-webkit-line-clamp:3;font-size:12px}
-.page.l-feature>.card:not(:first-child) .ill .yr{font-size:clamp(22px,6vw,34px)}
-.page.l-duo{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr))}
-.page.l-duo>.card{justify-content:center;padding:16px 18px}
-.page.l-duo>.card b{font-size:clamp(22px,6vw,28px)}
-.page.l-duo>.card .ds{-webkit-line-clamp:3;max-width:70%}
-.page.l-duo>.card .ill .yr{font-size:clamp(60px,20vw,110px)!important;padding:0 18px 14px 0}
-.page.l-rows[data-u=culture]{grid-template-rows:repeat(3,minmax(0,1fr))}
-.page.l-list{display:flex;flex-direction:column;gap:8px}
-.page.l-list>.card{flex:1;min-height:0;flex-direction:row;align-items:center;gap:14px;padding:8px 14px}
-.page.l-list>.card .ill{position:static;order:-1;flex:none;width:66px;height:auto;display:grid;place-items:center}
-.page.l-list>.card .ill .yr{font-size:19px!important;opacity:.9!important;padding:0}
-.page.l-list>.card .qtag{display:none}
-.page.l-list>.card b{font-size:16px;flex:none;width:34%}
-.page.l-list>.card .ds{-webkit-line-clamp:2;font-size:12px}
-#all>*:not(.pages){flex:none}
+.card .qtag{align-self:flex-start;font:700 11px Inter,sans-serif;font-style:normal;letter-spacing:.02em;color:#001;background:var(--th,var(--acc));border-radius:99px;padding:2px 8px;margin-bottom:3px}
+.card .qtag.sug{background:transparent;color:var(--th,#c9c9d2);box-shadow:inset 0 0 0 1px var(--th,#4a4a55)}
+.page>.card{border-color:color-mix(in srgb,var(--th,#4a4a55) 30%,var(--line))}
+.page>.card small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.demo .ill{opacity:.9;width:auto;height:auto;right:0;bottom:0}
+.card.demo .ill .yr{color:var(--th);opacity:.35;font-size:clamp(30px,9vw,52px)}
+.tplus{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--panel);border:1px dashed color-mix(in srgb,var(--th,#4a4a55) 60%,#4a4a55);border-radius:16px;padding:8px;color:var(--ink);min-height:0}
+.tplus:active{transform:scale(.97)}
+.tplus .pl{flex:none;width:36px;height:36px;border-radius:99px;background:#fff;color:#000;display:grid;place-items:center;font:800 24px/1 Archivo,Inter,sans-serif}
+.tplus .vt{font:600 13px Inter,sans-serif;color:#c9c9d2;white-space:nowrap}
+/* Géographie : grande case, deux petites, (+) en colonne */
+.page.t-geo{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 58px;grid-template-rows:minmax(0,1.25fr) minmax(0,1fr)}
+.t-geo>.card:first-child{grid-column:1/3}
+.t-geo>.card:first-child b{font-size:clamp(20px,5.4vw,26px)}
+.t-geo>.card:first-child .ill{width:46%;height:92%;opacity:.2}
+.t-geo>.tplus{grid-column:3;grid-row:1/3;flex-direction:column;padding:8px 0}
+.t-geo>.tplus .vt{writing-mode:vertical-rl;transform:rotate(180deg)}
+/* Histoire : haute colonne, une case et le (+) empilés */
+.page.t-side{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:minmax(0,1.3fr) minmax(0,1fr)}
+.t-side>.card:first-child{grid-row:1/3}
+.t-side>.card:first-child .ill{width:100%;height:62%;right:-8%}
+.t-side>.tplus{flex-direction:column}
+/* Sciences : une case vedette, deux petites et le (+) */
+.page.t-feature{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1.4fr) minmax(0,1fr)}
+.t-feature>.card:first-child{grid-column:1/4;background:linear-gradient(135deg,color-mix(in srgb,var(--th) 26%,var(--panel)),var(--panel) 65%)}
+.t-feature>.card:first-child b{font-size:clamp(20px,5.4vw,26px)}
+.t-feature>.card:not(:first-child){padding:10px}
+.t-feature>.card:not(:first-child) b{font-size:15px}
+.t-feature>.card:not(:first-child) .ds{-webkit-line-clamp:3;font-size:12px}
+.t-feature>.card:not(:first-child) .ill .yr{font-size:clamp(22px,6vw,34px)}
+.t-feature>.tplus{flex-direction:column;gap:6px}
+/* Culture et loisirs : rangées avec symbole à gauche, (+) en barre */
+.page.t-rows{display:flex;flex-direction:column;gap:8px}
+.t-rows>.card{flex:1;min-height:0;flex-direction:row;align-items:center;gap:14px;padding:8px 14px}
+.t-rows>.card .ill{position:static;order:-1;flex:none;width:66px;height:auto;display:grid;place-items:center;opacity:.9}
+.t-rows>.card .ill .yr{font-size:22px;opacity:.9;padding:0}
+.t-rows>.card .qtag{display:none}
+.t-rows>.card .mm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.t-rows>.tplus{flex:none;min-height:50px}
+/* Menu du thème : tous les modes, rangés par sous-thème */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;justify-content:flex-end}
+.sheet[hidden]{display:none}
+.sheet .sbg{position:absolute;inset:0;background:rgba(0,0,0,.6);animation:fade .2s}
+.spanel{position:relative;max-height:82vh;display:flex;flex-direction:column;background:#0c0c0f;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:10px 14px calc(14px + env(safe-area-inset-bottom));animation:up .22s ease-out;max-width:720px;width:100%;margin:0 auto}
+.spanel .grab{width:40px;height:4px;border-radius:9px;background:#3a3a43;margin:0 auto 8px}
+.sh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.sh b{font:800 clamp(20px,5.4vw,24px) Archivo,Inter,sans-serif}
+.sh b::before{content:'';display:inline-block;width:10px;height:10px;border-radius:99px;background:var(--th);margin-right:8px;vertical-align:middle}
+.sh button{width:38px;height:38px;border-radius:99px;background:var(--panel);border:1px solid var(--line);font-size:20px;line-height:1}
+.slist{overflow-y:auto;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
+.slist h4{margin:8px 2px 0;font:600 12px Inter,sans-serif;color:var(--mute)}
+.srow{display:flex;align-items:center;gap:12px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;min-height:58px}
+.srow:active{transform:scale(.99)}
+.srow .sg{flex:none;position:relative;width:54px;height:40px;display:grid;place-items:center;overflow:hidden}
+.srow .sg .ill{position:static;width:54px;height:40px;opacity:.8;display:grid;place-items:center}
+.srow .sg .ill img{width:40px;border-radius:3px}
+.srow .sg svg{width:100%;height:100%}.srow .sg path{fill:#c9c9d2}
+.srow .sg .yr{font:800 15px Archivo,Inter,sans-serif;color:var(--th);padding:0}
+.srow .mm{flex:1;min-width:0}
+.srow .mm b{display:block;font:700 16px Archivo,Inter,sans-serif}
+.srow .mm span{display:block;color:var(--mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow small{flex:none;color:#7d7d89;font-size:12px}
+.srow.soon{opacity:.55;border-style:dashed}
+@keyframes up{from{transform:translateY(40%);opacity:0}}
+@keyframes fade{from{opacity:0}}
 /* (anciennes rangées, non utilisées) */
 .cats{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
 .crow{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px}
@@ -356,18 +375,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
       <h2 id="dailyT">Défi du jour</h2>
       <p id="dailyP">Sept questions mêlées, les mêmes pour tout le groupe aujourd'hui.</p>
     </button>
-    <div class="chead"><h3>Jeu rapide</h3><span class="hint">Un toucher, c’est parti</span></div>
-    <div class="quick" id="quick"></div>
+    <div class="chead"><h3 id="catName">Géographie</h3><nav class="dots" id="gdots" aria-label="Thèmes"></nav></div>
+    <div class="pages" id="groups"></div>
     <p class="err" id="err" hidden></p>
     <button class="online" id="onlineBtn"><span class="dot" id="onlineN">⇄</span><span class="tx"><b>Défier en ligne</b><span id="onlineSub">Duel ou partie avec la salle</span></span><span class="chev">›</span></button>
   </section>
-
-  <section id="all" hidden>
-    <div class="shead"><button class="back" id="allBack" aria-label="Retour">←</button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">Tous les modes</h2><p class="lead" id="allLead">Glisse pour changer de thème.</p></div></div>
-    <nav class="useg" id="univ" aria-label="Univers"></nav>
-    <nav class="tabs fill" id="gtabs" aria-label="Thèmes"></nav>
-    <div class="pages" id="groups"></div>
-  </section>
+  <div class="sheet" id="sheet" hidden><div class="sbg" id="shBg"></div><div class="spanel" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="grab"></div><div class="sh"><b id="shT"></b><button id="shX" aria-label="Fermer">×</button></div><div class="slist" id="shL"></div></div></div>
 
   <section id="online" hidden>
     <div class="shead"><button class="back" id="olBack" aria-label="Retour">←</button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">En ligne</h2><p class="lead">Rejoins une partie de la salle, ou lance la tienne.</p></div></div>
@@ -494,7 +507,6 @@ GAMES.push(
 );
 const SOON = [{ name: 'Départements', desc: 'Placer un département, retrouver un numéro.' }, { name: 'Régions du monde', desc: 'États américains, Länder, provinces…' }];
 /* Démo d'interface : thèmes de culture générale et mécaniques à venir (pas encore jouables) */
-const UNIVS = { geo: 'Géographie', culture: 'Culture générale' };
 const CULTURE = [
   { t: 'Sciences et espace', c: '#7c6cff', lay: 'l-feature', m: [
     ['Classique', 'Quatre choix, dix secondes.', 'ABCD'], ['Réponse libre', 'Tape la réponse, les fautes sont tolérées.', 'Aa_'],
@@ -510,6 +522,13 @@ const CULTURE = [
   { t: 'Langue française', c: '#4dd0e1', lay: 'l-list', m: [
     ['Orthographe', 'Quelle est la bonne écriture ?', 'é'], ['Définition', 'Un mot rare, quatre sens.', 'Déf'], ['Conjugaison', 'Passé simple, subjonctif…', 'eut'],
     ['Expressions', 'Complète l’expression.', '« »'], ['Anagramme', 'Remets les lettres dans l’ordre.', 'RMEA']] },
+];
+/* Les pages de l'accueil : quelques thèmes larges, chacun avec sa disposition. Les modes « démo » ne sont pas encore jouables. */
+const THEMES = [
+  { t: 'Géographie', c: '#4da3ff', lay: 't-geo', show: 3, geo: ['Reconnaître', 'Comparer', 'Cartes'] },
+  { t: 'Histoire', c: '#e0a33a', lay: 't-side', show: 2, geo: ['Histoire'], demo: [1] },
+  { t: 'Sciences et espace', c: '#7c6cff', lay: 't-feature', show: 3, demo: [0] },
+  { t: 'Culture et loisirs', c: '#ff6b8b', lay: 't-rows', show: 3, demo: [3, 4, 2] },
 ];
 const FORMATS = { normal: { b: 'Normal', s: '7 questions' }, survie: { b: 'Survie', s: '1 erreur = fin' }, multi: { b: 'À plusieurs', s: 'En ligne ou à deux' } };
 const MULTIS = { duel: 'Duel en ligne', points: 'Partie · points', elim: 'Partie · élimination', local: 'Même téléphone' };
@@ -794,7 +813,7 @@ function begin() {
   $('scL').textContent = SES.format === 'survie' ? 'série' : 'points';
   ask();
 }
-function show(id) { for (const s of ['home', 'all', 'online', 'setup', 'lobby', 'play', 'hand', 'end']) $(s).hidden = s !== id; window.scrollTo(0, 0); }
+function show(id) { for (const s of ['home', 'online', 'setup', 'lobby', 'play', 'hand', 'end']) $(s).hidden = s !== id; window.scrollTo(0, 0); }
 const qAt = i => { while (SES.qs.length <= i) SES.qs.push(makeQ(SES.qs.length)); return SES.qs[i]; };
 const curQ = () => qAt(SES.i);
 const isLast = () => SES.format !== 'survie' && SES.rules !== 'elim' && SES.i === SES.n - 1;
@@ -1218,62 +1237,65 @@ function illHTML(id) {
   if (id === 'hdate' || id === 'chrono') return `<span class="ill"><span class="yr">${id === 'hdate' ? '1789' : '1066'}</span></span>`;
   const c = S.by[ILL[id]]; return c ? `<span class="ill">${silSVG(c)}</span>` : '';
 }
-/* Jeu rapide : les modes que le joueur lance le plus, complétés par des suggestions qui changent chaque jour */
-let goAll = () => {};
-function setUniv(u, jump = true) {
-  if (!UNIVS[u]) u = 'geo';
-  store.set('chaumiere-geoquiz-univ', u);
-  $('univ').innerHTML = Object.entries(UNIVS).map(([k, v]) => `<button data-u="${k}" aria-pressed="${k === u}">${v}</button>`).join('');
-  for (const p of $('groups').children) p.hidden = p.dataset.u !== u;
-  goAll = pager($('gtabs'), $('groups'), 'chaumiere-geoquiz-page-' + u);
-  $('gtabs').classList.toggle('fill', u === 'geo');
-  if (jump) requestAnimationFrame(() => goAll(0));
-}
+/* Accueil : chaque page montre les modes du thème que le joueur lance le plus, puis des suggestions du jour, et un (+) */
 const jget = (k, d) => { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
 function notePlay(id, opt) {
   const plays = jget('chaumiere-geoquiz-plays', {}); plays[id] = (plays[id] || 0) + 1;
   store.set('chaumiere-geoquiz-plays', JSON.stringify(plays));
   if (opt.format === 'normal' || opt.format === 'survie') store.set('chaumiere-geoquiz-last-' + id, JSON.stringify({ level: opt.level, format: opt.format, cat: opt.cat || '' }));
 }
-function quickPicks() {
-  const plays = jget('chaumiere-geoquiz-plays', {});
-  const fav = Object.keys(plays).filter(id => byGame[id]).sort((a, b) => plays[b] - plays[a]).slice(0, 2);
-  const seed = [...dayKey()].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261), r = mulberry(seed ^ 0x51ed);
-  const rest = GAMES.filter(g => !fav.includes(g.id) && !(g.parent && fav.includes(g.parent))).map(g => [r(), g.id]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
-  return fav.map(id => ({ id, n: plays[id] })).concat(rest.slice(0, 3 - fav.length).map(id => ({ id })));
-}
 function lastOf(id) { return Object.assign({ level: 'facile', format: 'normal', cat: '' }, jget('chaumiere-geoquiz-last-' + id, {})); }
-function renderQuick() {
-  $('quick').innerHTML = quickPicks().map(({ id, n }, i) => {
-    const g = byGame[id], L = lastOf(id), name = g.parent ? `${byGame[g.parent].name} · ${g.v}` : g.name;
-    const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie' : (g.n || N) + (i ? ' q.' : ' questions')}`;
-    const b = store.get(`chaumiere-geoquiz-${id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
-    const tag = n ? `<i class="qtag">${i === 0 ? 'Ton favori' : 'Souvent joué'}</i>` : `<i class="qtag sug">À découvrir</i>`;
-    return `<button class="card" data-q="${id}">${illHTML(id)}${tag}<b>${name}</b>${i === 0 ? `<span class="ds">${g.desc}</span>` : ''}<small>${how}${b ? ` · record ${b}` : ''}</small></button>`;
-  }).join('') + `<button class="qplus" id="allBtn" aria-label="Tous les modes"><span class="pl">+</span><span class="vt">Tous les modes</span></button>`;
+function themeItems(th) {
+  const out = [];
+  for (const sub of th.geo || []) {
+    for (const g of GAMES.filter(g => g.g === sub && !g.parent)) out.push({ id: g.id, sub: sub === 'Histoire' ? 'Sur la carte et les dates' : sub, name: g.name, desc: g.desc });
+    if (sub === 'Cartes') for (const x of SOON) out.push({ soon: true, sub, name: x.name, desc: x.desc });
+  }
+  for (const k of th.demo || []) for (const [n, d, gl] of CULTURE[k].m) out.push({ demo: true, id: 'd:' + CULTURE[k].t + ':' + n, sub: CULTURE[k].t, name: n, desc: d, gl });
+  return out;
 }
-/* Chaque thème a sa propre disposition de cases */
-const LAYOUT = { 'Reconnaître': 'odd', 'Comparer': 'l-quad', 'Cartes': 'l-rows', 'Histoire': 'l-side' };
+function themePicks(th, items) {
+  const plays = jget('chaumiere-geoquiz-plays', {}), seed = [...dayKey() + th.t].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261), r = mulberry(seed);
+  const real = items.filter(x => !x.demo && !x.soon), fav = real.filter(x => plays[x.id]).sort((a, b) => plays[b.id] - plays[a.id]);
+  const rest = real.filter(x => !plays[x.id]).map(x => [r(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const demo = items.filter(x => x.demo).map(x => [r(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  return fav.map(x => ({ ...x, n: plays[x.id] })).concat(rest, demo).slice(0, th.show);
+}
+const glyph = it => it.demo ? `<span class="ill"><span class="yr">${it.gl}</span></span>` : illHTML(it.id);
+function homeCard(it, i, th) {
+  if (it.demo) return `<button class="card demo" data-demo="${it.name}">${glyph(it)}<i class="qtag sug">Démo</i>${th.lay === 't-rows' ? `<span class="mm"><b>${it.name}</b><span class="ds">${it.desc}</span></span>` : `<b>${it.name}</b><span class="ds">${it.desc}</span>`}</button>`;
+  const g = byGame[it.id], L = lastOf(it.id);
+  const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie' : (g.n || N) + ' q.'}`;
+  const b = store.get(`chaumiere-geoquiz-${it.id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
+  const tag = it.n ? `<i class="qtag">${i === 0 ? 'Ton favori' : 'Souvent joué'}</i>` : `<i class="qtag sug">À découvrir</i>`;
+  return `<button class="card" data-q="${it.id}">${illHTML(it.id)}${tag}<b>${it.name}</b>${i === 0 ? `<span class="ds">${it.desc}</span>` : ''}<small>${how}${b ? ` · record ${b}` : ''}</small></button>`;
+}
 function renderHome() {
-  const groups = [...new Set(GAMES.map(g => g.g))];
-  $('groups').innerHTML = groups.map(gr => {
-    const cards = GAMES.filter(g => g.g === gr && !g.parent).map(g => {
-      const b = store.get(`chaumiere-geoquiz-${g.id}-facile-normal-${g.cats ? 'tout' : ''}`);
-      return `<button class="card" data-g="${g.id}">${illHTML(g.id)}<b>${g.name}</b><span class="ds">${g.desc}</span>${b ? `<small>Record : ${b} pts</small>` : ''}</button>`;
-    }).concat(gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span class="ds">${s.desc}</span><small>Bientôt</small></div>`) : []);
-    const lay = LAYOUT[gr] || (cards.length % 2 ? 'odd' : '');
-    return `<div class="page ${lay}" data-u="geo" data-t="${gr}">${cards.join('')}</div>`;
-  }).join('') + CULTURE.map(th => `<div class="page ${th.lay}" data-u="culture" data-t="${th.t}" style="--th:${th.c}">${th.m.map(([n, d, gl]) =>
-    `<button class="card demo" data-demo="${n}"><span class="ill"><span class="yr">${gl}</span></span><i class="qtag sug">Démo</i><b>${n}</b><span class="ds">${d}</span></button>`).join('')}</div>`).join('');
-  setUniv(store.get('chaumiere-geoquiz-univ') || 'geo', false);
-  renderQuick();
-  $("allLead").textContent = `${GAMES.filter(g => !g.parent).length + CULTURE.reduce((n, t) => n + t.m.length, 0)} modes · glisse pour changer`;
+  $('groups').innerHTML = THEMES.map((th, k) => {
+    const items = themeItems(th), n = items.filter(x => !x.soon).length;
+    return `<div class="page ${th.lay}" data-t="${th.t}" style="--th:${th.c}">${themePicks(th, items).map((it, i) => homeCard(it, i, th)).join('')}<button class="tplus" data-th="${k}" aria-label="Tous les modes : ${th.t}"><span class="pl">+</span><span class="vt">${n} modes</span></button></div>`;
+  }).join('');
+  const go = pager($('gdots'), $('groups'), 'chaumiere-geoquiz-page', p => { if (p) { $('catName').textContent = p.dataset.t; $('catName').style.color = p.style.getPropertyValue('--th'); } });
+  const page = +store.get('chaumiere-geoquiz-page') || 0;
+  requestAnimationFrame(() => go(page)); setTimeout(() => go(page), 150);
   $('homeSub').textContent = `${GAMES.filter(g => !g.parent).length} jeux · réponds vite`;
   renderOnline(); loadOnline();
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
   $('dailyT').textContent = 'Défi du ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   $('dailyP').textContent = done ? `Ton score du jour : ${done} pts. Rejoue pour t’entraîner.` : 'Sept questions mêlées, les mêmes pour tout le groupe aujourd’hui.';
 }
+function openTheme(k) {
+  const th = THEMES[k], items = themeItems(th), plays = jget('chaumiere-geoquiz-plays', {});
+  $('sheet').style.setProperty('--th', th.c); $('shT').textContent = th.t;
+  let html = '', last = '';
+  for (const it of items) {
+    if (it.sub !== last) { html += `<h4>${it.sub}</h4>`; last = it.sub; }
+    const right = it.soon ? 'Bientôt' : it.demo ? 'Démo' : plays[it.id] ? `${plays[it.id]} partie${plays[it.id] > 1 ? 's' : ''}` : '';
+    html += `<button class="srow${it.soon ? ' soon' : ''}" ${it.soon ? 'disabled' : it.demo ? `data-demo="${it.name}"` : `data-g="${it.id}"`}><span class="sg">${it.soon ? '' : glyph(it)}</span><span class="mm"><b>${it.name}</b><span>${it.desc}</span></span><small>${right}</small></button>`;
+  }
+  $('shL').innerHTML = html; $('shL').scrollTop = 0; $('sheet').hidden = false;
+}
+const closeTheme = () => { $('sheet').hidden = true; };
 function seg(el, map, val, on) { el.innerHTML = Object.entries(map).map(([k, v]) => `<button data-v="${k}" aria-pressed="${k === val}"><b>${v.b}</b><span>${v.s}</span></button>`).join(''); el.onclick = e => { const b = e.target.closest('button'); if (b) on(b.dataset.v); }; }
 function counts(gid, L) {
   const c = sel.cat[gid];
@@ -1328,19 +1350,23 @@ function hero(g) {
 }
 
 /* ================= Évènements ================= */
-$('univ').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUniv(b.dataset.u); });
 $('groups').addEventListener('click', e => {
-  const d = e.target.closest('.card[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`); const b = e.target.closest('.card[data-g]'); if (!b) return; sel.game = b.dataset.g; sel.from = 'all'; renderSetup(); show('setup'); });
-$('back').addEventListener('click', () => { renderHome(); show(sel.from || 'home'); });
-$('quick').addEventListener('click', e => {
-  if (e.target.closest('#allBtn')) { sel.from = 'all'; show('all'); requestAnimationFrame(() => goAll(+store.get('chaumiere-geoquiz-page-' + (store.get('chaumiere-geoquiz-univ') || 'geo')) || 0)); return; }
+  const p = e.target.closest('.tplus'); if (p) return openTheme(+p.dataset.th);
+  const d = e.target.closest('.card[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`);
   const b = e.target.closest('.card[data-q]'); if (!b) return;
   if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
   const id = b.dataset.q, L = lastOf(id);
   Object.assign(sel, { game: id, level: L.level, format: L.format, from: 'home' }); if (L.cat) sel.cat[id] = L.cat; else if (byGame[id].cats) sel.cat[id] = 'tout';
   startSel();
 });
-$('allBack').addEventListener('click', () => { sel.from = 'home'; renderHome(); show('home'); });
+$('shL').addEventListener('click', e => {
+  const d = e.target.closest('[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`);
+  const b = e.target.closest('[data-g]'); if (!b) return;
+  closeTheme(); sel.game = b.dataset.g; sel.from = 'home'; renderSetup(); show('setup');
+});
+$('shX').addEventListener('click', closeTheme); $('shBg').addEventListener('click', closeTheme);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) closeTheme(); });
+$('back').addEventListener('click', () => { renderHome(); show(sel.from || 'home'); });
 $('toHome').addEventListener('click', () => { mpClose(); renderHome(); show('home'); });
 $('go').addEventListener('click', () => startSel());
 async function startSel() {
