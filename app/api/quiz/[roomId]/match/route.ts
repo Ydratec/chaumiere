@@ -7,8 +7,9 @@
 import { adminDb } from "@/src/lib/db/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { QUIZ_OPEN, quizVisible } from "@/src/modules/quiz/access";
-import { allAnswered, COUNTDOWN_MS, MAX_PLAYERS, readAnswer, readNewMatch, type MatchPlayer, type Rules } from "@/src/modules/quiz/match";
-import { QUIZ_GAMES } from "@/src/modules/quiz/scores";
+import { allAnswered, COUNTDOWN_MS, MAX_PLAYERS, ranking, readAnswer, readNewMatch, type MatchPlayer, type Rules } from "@/src/modules/quiz/match";
+import { onlineReward } from "@/src/modules/quiz/rewards";
+import { parisDay, QUIZ_GAMES } from "@/src/modules/quiz/scores";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
 export const dynamic = "force-dynamic";
@@ -122,7 +123,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
     }
     case "done": {
       if (mine && match.status === "playing") await db.from("quiz_matches").update({ status: "done" }).eq("id", id).eq("status", "playing");
-      return Response.json({ now: now(), ok: true });
+      // pièces : 50 pour la partie, 100 de plus pour la victoire (une fois par partie, limites dans quiz_grant)
+      let coins = 0;
+      if (mine && !mine.left_game && mine.answers.length && players.length >= 2) {
+        const list = players.map((p) => ({ user_id: p.user_id, answers: p.answers, left: p.left_game }));
+        const rank = ranking(match.rules as Rules, list, match.n), top = rank[0];
+        const won = match.rules === "elim" ? top?.user === me : (top?.score ?? 0) > 0 && rank.find((x) => x.user === me)?.score === top?.score;
+        const opp = players.length === 2 ? players.find((p) => p.user_id !== me)?.user_id ?? null : null;
+        const { data } = await db.rpc("quiz_grant", { r: roomId, u: me, d: parisDay(), k: "online", g: match.game, base: onlineReward(won), m: id, opp });
+        coins = typeof data === "number" ? data : 0;
+      }
+      return Response.json({ now: now(), ok: true, coins });
     }
   }
   return fail("Action inconnue");

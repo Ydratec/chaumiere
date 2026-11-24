@@ -573,6 +573,11 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 .card.demo .qtag{color:var(--mute)!important}
 .page.later .tplus{filter:grayscale(1);opacity:.45}
 .srow.soon[data-demo]{cursor:default}
+.top .sub .coin{color:var(--acc);font-weight:600;letter-spacing:.04em}
+.final .coins{margin:10px auto 0;font:500 14px var(--fm);color:var(--mute)}
+.final .coins.on{color:var(--acc)}.final .coins b{font-size:20px;font-weight:600}
+.conf .rw{font:500 12px var(--fm);color:var(--acc)}
+#best .rw{color:var(--acc)}
 /* Fin de partie */
 #fScore{font-family:var(--fd);font-weight:400}
 .vs .vh .p strong{font-weight:600}
@@ -671,7 +676,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
   </section>
 
   <section id="end" hidden>
-    <div class="final"><div class="big" id="fScore">0</div><p id="fLine"></p></div>
+    <div class="final"><div class="big" id="fScore">0</div><p id="fLine"></p><p class="coins" id="fCoins" hidden></p></div>
     <nav class="tabs fill" id="etabs" aria-label="Résultats"></nav>
     <div class="pages" id="epages">
       <div class="epage" id="pRank" data-t="Classement"><table class="duo" id="rankT"></table></div>
@@ -698,8 +703,32 @@ const ROOM = new URLSearchParams(location.search).get('room');
 // Chaumière : envoie le score d'une partie terminée à la salle (les duels restent sur le téléphone).
 function postScore() {
   if (!ROOM || SES.format === 'duel') return Promise.resolve();
-  const body = { game: SES.daily ? 'daily' : SES.game, level: SES.level, format: SES.format, cat: SES.cat || '', score: SES.score };
-  return fetch(`/api/quiz/${ROOM}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+  const body = { game: SES.daily ? 'daily' : SES.game, level: SES.level, format: SES.format, cat: SES.cat || '', score: SES.score, goods: SES.log.filter(l => l.good).length };
+  return fetch(`/api/quiz/${ROOM}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.ok ? r.json() : null).then(d => { if (d) showCoins(d.coins); loadWallet(); }).catch(() => {});
+}
+/* ---- Pièces : solde, gains de la partie, ce que rapporte encore un jeu aujourd'hui ---- */
+let WALLET = null;
+const fmtN = n => Number(n || 0).toLocaleString('fr-FR');
+function loadWallet() {
+  if (!ROOM) return Promise.resolve();
+  return fetch(`/api/quiz/${ROOM}?wallet=1`).then(r => r.ok ? r.json() : null).then(d => { if (d) { WALLET = d; paintWallet(); } }).catch(() => {});
+}
+function paintWallet() {
+  if (!WALLET) return;
+  $('homeSub').innerHTML = `<b class="coin">${fmtN(WALLET.coins)}</b> pièces`;
+  if (!WALLET.daily && !store.get('chaumiere-geoquiz-daily-' + dayKey())) $('dailyP').textContent = 'Sept questions mêlées, les mêmes pour toute la salle · 300 à 500 pièces à gagner.';
+}
+function showCoins(n) {
+  $('fCoins').innerHTML = n > 0 ? `<b>+${fmtN(n)}</b> pièces` : 'Pas de pièces pour cette partie';
+  $('fCoins').className = 'coins' + (n > 0 ? ' on' : ''); $('fCoins').hidden = false;
+}
+/* Gain prévu pour un jeu solo, d'après mes parties du jour (rien hors de Chaumière) */
+function rewardHint(id) {
+  if (!ROOM || !WALLET) return '';
+  if (WALLET.earned >= WALLET.cap) return 'Plafond de pièces atteint pour aujourd’hui';
+  const n = (WALLET.plays || {})[id] || 0, share = [1, .5, .25][n] ?? 0;
+  return share === 1 ? '10 pièces par bonne réponse' : share ? `Rapporte encore ${share * 100} % des pièces` : 'Ne rapporte plus de pièces aujourd’hui : essaie un autre jeu';
 }
 function showBoard() {
   if (!ROOM) return;
@@ -1466,7 +1495,8 @@ function mpRanking() {
 }
 function mpFinish() {
   MP.finished = true; clearInterval(MP.loop);
-  api('POST', { action: 'done', id: MP.id }).catch(() => {});
+  $('fCoins').hidden = true;
+  api('POST', { action: 'done', id: MP.id }).then(d => { if (d && ROOM) { showCoins(d.coins || 0); loadWallet(); } }).catch(() => {});
   mpLoad().catch(() => {}).finally(() => {
     clearInterval(MP.poll);
     show('end'); $('end').scrollTop = 0;
@@ -1612,7 +1642,7 @@ function finish() {
   show('end');
   const prev = +store.get(bestKey()) || 0, best = Math.max(prev, SES.score);
   if (SES.format !== 'duel') store.set(bestKey(), best);
-  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
+  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare', 'fCoins'].forEach(id => { $(id).hidden = true; });
   const goods = SES.log.filter(l => l.good).length;
   if (SES.format === 'duel') {
     SES.results.push({ score: SES.score, log: SES.log });
@@ -1711,7 +1741,7 @@ function renderHome() {
   const page = +store.get('chaumiere-geoquiz-page') || 0;
   requestAnimationFrame(() => go(page)); setTimeout(() => go(page), 150);
   $('homeSub').textContent = `${GAMES.filter(g => !g.parent).length} jeux · réponds vite`;
-  renderOnline(); loadOnline();
+  renderOnline(); loadOnline(); loadWallet();
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
   $('dailyT').textContent = 'Défi du ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   $('dailyP').textContent = done ? `Ton score du jour : ${done} pts. Rejoue pour t’entraîner.` : 'Sept questions mêlées, les mêmes pour tout le groupe aujourd’hui.';
@@ -1760,7 +1790,7 @@ function confirmPlay(id) {
   const g = byGame[id], L = lastOf(id), th = THEMES.find(t => themeItems(t).some(x => x.id === id)) || THEMES[0];
   const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie, une erreur et c’est fini' : (g.n || N) + ' questions'}`;
   const b = store.get(`chaumiere-geoquiz-${id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
-  sheetOpen(g.parent ? byGame[g.parent].name : g.name, th.c, `<div class="conf" data-id="${id}"><div class="cinfo"><span class="sg">${illHTML(id)}</span><p><b>${how}</b><br>${g.desc}${b ? `<br>Ton record : ${b}` : ''}</p></div><div class="row2"><button class="cta" data-act="play">Jouer seul</button><button class="cta" style="background:var(--acc);color:#001" data-act="defi">Défier</button></div><button class="ghost" data-act="setup">Changer les réglages</button></div>`);
+  sheetOpen(g.parent ? byGame[g.parent].name : g.name, th.c, `<div class="conf" data-id="${id}"><div class="cinfo"><span class="sg">${illHTML(id)}</span><p><b>${how}</b><br>${g.desc}${b ? `<br>Ton record : ${b}` : ''}${rewardHint(id) ? `<br><span class="rw">${rewardHint(id)}</span>` : ''}</p></div><div class="row2"><button class="cta" data-act="play">Jouer seul</button><button class="cta" style="background:var(--acc);color:#001" data-act="defi">Défier</button></div><button class="ghost" data-act="setup">Changer les réglages</button></div>`);
 }
 function confirmQuit() {
   const online = SES && SES.online;
@@ -1811,7 +1841,7 @@ function renderSetup() {
   $('names').hidden = !(sel.format === 'multi' && sel.multi === 'local');
   $('fmtInfo').textContent = sel.format === 'survie' ? 'Classique pendant 8 questions, puis Expert' : sel.format !== 'multi' ? `${g.n || N} questions` : { duel: 'Ton adversaire rejoint depuis « En ligne »', points: `${g.n || N} questions, jusqu’à 12 joueurs`, elim: 'Une erreur et tu sors', local: 'Chacun joue la même série à tour de rôle' }[sel.multi];
   const k = `chaumiere-geoquiz-${g.id}-${sel.level}-${sel.format}-${sel.cat[g.id] || ''}`, b = store.get(k);
-  $('best').textContent = sel.format === 'multi' ? '' : 'Meilleur score : ' + (b ? b + (sel.format === 'survie' ? ' d’affilée' : ' pts') : '—');
+  $('best').innerHTML = sel.format === 'multi' ? '' : 'Meilleur score : ' + (b ? b + (sel.format === 'survie' ? ' d’affilée' : ' pts') : '—') + (rewardHint(sel.game) ? `<br><span class="rw">${rewardHint(sel.game)}</span>` : '');
   $('go').disabled = !ready; $('go').textContent = !ready ? 'Chargement…' : online ? (sel.multi === 'duel' ? 'Créer le duel' : 'Créer la partie') : 'Jouer';
   hero(g);
 }
