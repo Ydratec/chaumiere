@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { aliveAt, allAnswered, ranking, readAnswer, readNewMatch, type MatchPlayer } from "../../src/modules/quiz/match.ts";
+import { aliveAt, allAnswered, ELIM_QUESTIONS, mixGames, ranking, readAnswer, readNewMatch, type MatchPlayer } from "../../src/modules/quiz/match.ts";
 
 const p = (user_id: string, goods: (boolean | null)[], left = false): MatchPlayer => ({
   user_id, left, answers: goods.flatMap((g, i) => (g === null ? [] : [{ i, good: g, pts: g ? 10 : 0 }])),
 });
 
 test("quiz en ligne : création de partie vérifiée", () => {
-  assert.deepEqual(readNewMatch({ mode: "duel", game: "flag", level: "expert", cat: "" }), { mode: "duel", rules: "points", game: "flag", level: "expert", cat: "" });
+  assert.deepEqual(readNewMatch({ mode: "duel", game: "flag", level: "expert", cat: "" }), { mode: "duel", rules: "points", game: "flag", level: "expert", cat: "", n: 7 });
   assert.equal(readNewMatch({ mode: "duel", rules: "elim", game: "flag", level: "facile" }), null); // pas d'élimination en duel
   assert.equal(readNewMatch({ mode: "party", game: "daily", level: "facile" }), null); // le défi du jour se joue seul
   assert.equal(readNewMatch({ mode: "party", game: "inconnu", level: "facile" }), null);
@@ -43,4 +43,17 @@ test("quiz en ligne : classement final", () => {
   const players = [p("A", [true, true, false]), p("B", [true, false, null]), p("C", [false, false, true])];
   assert.deepEqual(ranking("elim", players, 40).map((r) => [r.user, r.out]), [["A", null], ["B", 1], ["C", 0]]);
   assert.deepEqual(ranking("points", players, 7).map((r) => r.user), ["A", "B", "C"]); // 20, 10, 10 : B arrivé avant C
+});
+
+test("défi sur mesure : mélange de jeux et nombre de questions", () => {
+  const m = readNewMatch({ mode: "party", game: "mix", cat: "flag.cap.world", level: "facile", n: 10 });
+  assert.deepEqual(m, { mode: "party", rules: "points", game: "mix", level: "facile", cat: "flag.cap.world", n: 10 });
+  assert.equal(readNewMatch({ mode: "duel", game: "mix", cat: "flag", level: "facile" }), null); // un seul jeu : pas un mélange
+  assert.equal(readNewMatch({ mode: "duel", game: "mix", cat: "flag.flag", level: "facile" }), null); // doublon
+  assert.equal(readNewMatch({ mode: "duel", game: "mix", cat: "flag.daily", level: "facile" }), null);
+  assert.equal(readNewMatch({ mode: "duel", game: "mix", cat: "flag.inconnu", level: "facile" }), null);
+  assert.equal(readNewMatch({ mode: "party", rules: "elim", game: "mix", cat: "geo.hdate", level: "expert", n: 5 })?.n, ELIM_QUESTIONS); // élimination : plafond fixe
+  assert.equal(readNewMatch({ mode: "duel", game: "route", level: "facile", n: 99 })?.n, 5); // nombre refusé : celui du jeu
+  assert.equal(readNewMatch({ mode: "duel", game: "geo", level: "facile", n: 15 })?.n, 15);
+  assert.deepEqual(mixGames("geo.reveal.scale"), ["geo", "reveal", "scale"]);
 });

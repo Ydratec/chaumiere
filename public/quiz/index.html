@@ -163,7 +163,46 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .online span{display:block;color:#a9b6c8;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .online .chev{flex:none;color:#a9b6c8;font-size:20px}
 #online{display:flex;flex-direction:column;gap:10px}
-#online>*:not(.olist){flex:none}
+/* Défier : parties ouvertes, puis le défi sur mesure (contre qui, quels jeux, niveau, longueur) */
+.dfbody{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:4px;overscroll-behavior:contain}
+.dfbody h4{margin:0;font:800 clamp(17px,4.6vw,20px) Archivo,Inter,sans-serif;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dfbody h4 small{font:600 12px Inter,sans-serif;color:var(--mute)}
+.dfbody h5{margin:0 0 6px;font:600 12px Inter,sans-serif;color:var(--mute);display:flex;justify-content:space-between;gap:8px}
+.dfopen{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;margin:0 -2px;padding:2px}
+.dfopen::-webkit-scrollbar{display:none}
+.dfopen .card{flex:0 0 78%;scroll-snap-align:start;flex-direction:row;align-items:center;gap:12px;min-height:auto;border-color:#1f3d63;background:linear-gradient(135deg,#10233d,var(--panel) 70%)}
+.dfopen .card:only-child{flex-basis:100%}
+.dfopen .card.mine{border-color:var(--line);background:var(--panel)}
+.dfkind{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dfkind button{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left;min-height:62px}
+.dfkind button b{display:block;font:700 16px Archivo,Inter,sans-serif}
+.dfkind button span{display:block;color:var(--mute);font-size:12px;line-height:1.3}
+.dfkind button i{position:absolute;right:8px;bottom:2px;font:800 26px/1 Archivo,Inter,sans-serif;font-style:normal;color:#fff;opacity:.08}
+.dfkind button[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);background:linear-gradient(135deg,#10233d,var(--panel) 75%)}
+.dfkind button[aria-pressed=true] i{opacity:.25;color:var(--acc)}
+.dfpre{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px}
+.dfpre::-webkit-scrollbar{display:none}
+.dfpre button{flex:none;background:transparent;border:1px solid #3a3a43;border-radius:99px;padding:6px 12px;min-height:34px;font-size:13px;font-weight:600;color:#c9c9d2}
+.dfpre button:first-child{background:#fff;color:#000;border-color:#fff}
+.dfgrp{margin:8px 0 4px;font:600 11px Inter,sans-serif;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.dfgrp::before{content:'';width:8px;height:8px;border-radius:99px;background:var(--th)}
+.dfmodes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.dfmodes button{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 9px;text-align:left;min-height:52px;font:600 13px/1.2 Inter,sans-serif;color:#c9c9d2;display:flex;align-items:flex-end}
+.dfmodes button .ill{position:absolute;right:-6%;top:-4%;width:58%;height:78%;opacity:.13;display:flex;align-items:flex-start;justify-content:flex-end;pointer-events:none}
+.dfmodes button .ill svg{width:100%;height:100%}.dfmodes button .ill path{fill:#fff}.dfmodes button .ill img{width:70%;border-radius:3px}
+.dfmodes button .ill .yr{font:800 20px Archivo,Inter,sans-serif;color:#fff;padding:2px 6px 0 0}
+.dfmodes button span.nm{position:relative}
+.dfmodes button[aria-pressed=true]{color:var(--ink);border-color:var(--th);box-shadow:inset 0 0 0 1px var(--th);background:color-mix(in srgb,var(--th) 14%,var(--panel))}
+.dfmodes button[aria-pressed=true] .ill{opacity:.35}
+.dfmodes button[aria-pressed=true]::after{content:'✓';position:absolute;top:5px;right:7px;width:18px;height:18px;border-radius:99px;background:var(--th);color:#001;font:800 11px/18px Inter,sans-serif;text-align:center}
+.dfmodes button:disabled{opacity:.4;border-style:dashed}
+.dfrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px}
+.dfrow[data-one]{grid-template-columns:1fr}
+.seg.sm button{min-height:40px;padding:6px 8px;text-align:center}
+.seg.sm button b{font-size:15px}
+.dfgo{flex:none;display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.dfgo p{margin:0;color:var(--mute);font-size:13px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#online>*:not(.dfbody){flex:none}
 .olist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .olist .card{flex:none;flex-direction:row;align-items:center;gap:12px;min-height:auto}
 .olist h4{margin:6px 0 0;font:600 12px Inter,sans-serif;color:var(--mute)}
@@ -397,9 +436,16 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
   <div class="sheet" id="sheet" hidden><div class="sbg" id="shBg"></div><div class="spanel" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="grab"></div><div class="sh"><b id="shT"></b><button id="shX" aria-label="Fermer">×</button></div><div class="slist" id="shL"></div></div></div>
 
   <section id="online" hidden>
-    <div class="shead"><button class="back" id="olBack" aria-label="Retour">←</button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">En ligne</h2><p class="lead">Rejoins une partie de la salle, ou lance la tienne.</p></div></div>
-    <div class="olist" id="onlineList"></div>
-    <p class="credit">Cartes : Natural Earth 1:10m (domaine public) · drapeaux : country-flag-icons (MIT) · population et PIB : Natural Earth, 2019</p>
+    <div class="shead"><button class="back" id="olBack" aria-label="Retour">←</button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">Défier</h2><p class="lead" id="dfLead">Rejoins une partie, ou compose ton défi.</p></div></div>
+    <div class="dfbody" id="dfBody">
+      <div id="dfOpenWrap"><h4>Parties ouvertes <small id="dfOpenN"></small></h4><div class="dfopen" id="onlineList"></div></div>
+      <div><h5>Contre qui ?</h5><div class="dfkind" id="dfKind"></div></div>
+      <div class="names" id="dfNames" hidden><input id="d1" value="Joueur 1" aria-label="Nom du joueur 1" maxlength="18"><input id="d2" value="Joueur 2" aria-label="Nom du joueur 2" maxlength="18"></div>
+      <div><h5><span>Questions : mélange les jeux que tu veux</span><span id="dfCount"></span></h5><div class="dfpre" id="dfPre"></div><div id="dfModes"></div></div>
+      <div class="dfrow" id="dfRow"><div><h5>Niveau</h5><div class="seg sm" id="dfLevel"></div></div><div id="dfNWrap"><h5>Questions</h5><div class="seg sm" id="dfN"></div></div></div>
+      <p class="credit">Cartes : Natural Earth 1:10m (domaine public) · drapeaux : country-flag-icons (MIT) · population et PIB : Natural Earth, 2019</p>
+    </div>
+    <div class="dfgo"><p id="dfSum"></p><button class="cta" id="dfGo">Lancer le défi</button></div>
   </section>
 
   <section id="setup" hidden>
@@ -495,6 +541,7 @@ function showBoard() {
   }).catch(() => {});
 }
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const jget = (k, d) => { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* ================= Jeux ================= */
@@ -808,18 +855,21 @@ let SES = null, raf = 0, t0 = 0, locked = false, zoomed = false;
 const sel = { game: 'geo', level: 'facile', format: 'normal', cat: {}, multi: 'duel' };
 const DAILY_MIX = ['geo', 'flag', 'cap', 'neighbor', 'cmp', 'world', 'scale', 'culture', 'touch', 'place', 'hdate', 'chrono', 'hplace'];
 function dayKey(d = new Date()) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+/* Ordre des jeux d'un mélange : chaque jeu revient à tour de rôle, dans un ordre tiré au sort (le même chez tous, via la graine) */
+function mixSeq(ids, n) { const out = []; while (out.length < n) { let b = shuf(ids); if (out.length && b[0] === out[out.length - 1] && b.length > 1) b.push(b.shift()); out.push(...b); } return out.slice(0, n); }
 function newSession(opt) {
   const seed = opt.seed ?? Math.floor(Math.random() * 2 ** 31);
   SES = Object.assign({ seed, i: 0, score: 0, log: [], used: new Set(), qs: [], player: 1, results: [] }, opt);
   RNG = mulberry(seed);
-  SES.n = SES.format === 'survie' ? Infinity : SES.daily ? N : (byGame[SES.game].n || N);
+  if (opt.mixIds) SES.mix = mixSeq(opt.mixIds, opt.n || N);
+  SES.n = SES.format === 'survie' ? Infinity : SES.mix ? SES.mix.length : opt.n || byGame[SES.game].n || N;
   if (SES.format !== 'survie') for (let i = 0; i < SES.n; i++) SES.qs.push(makeQ(i));
   begin();
 }
 function makeQ(i) {
-  const gid = SES.daily ? SES.mix[i] : SES.game;
+  const gid = SES.mix ? SES.mix[i] : SES.game;
   const L = SES.format === 'survie' || SES.rules === 'elim' ? (i < 8 ? (SES.rules === 'elim' ? SES.level : 'facile') : 'expert') : SES.level;
-  const q = GEN[gid](L, SES.used, SES.daily ? 'tout' : SES.cat);
+  const q = GEN[gid](L, SES.used, SES.mix ? 'tout' : SES.cat);
   SES.used.add(q.key); q.gid = gid; return q;
 }
 function begin() {
@@ -1034,6 +1084,7 @@ function mpSession() {
   SES = { online: true, mpId: m.id, game: m.game, level: m.level, cat: m.cat || undefined, rules: m.rules, mode: m.mode, n: m.n, seed: m.seed,
     format: 'online', i: -1, score: 0, log: [], used: new Set(), qs: [], results: [], myColor: colorOf(meId()) };
   RNG = mulberry(m.seed);
+  if (m.game === 'mix') SES.mix = mixSeq(m.cat.split('.').filter(id => GEN[id]), m.n);
 }
 function sched() {
   // où en est la partie, pour tout le monde au même moment
@@ -1129,12 +1180,16 @@ function mpFinish() {
     SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
   });
 }
+/* Nom d'une partie en ligne : un jeu, ou un défi sur mesure (plusieurs jeux) */
+const gameName = id => { const g = byGame[id]; return g ? (g.parent ? `${byGame[g.parent].name} · ${g.v}` : g.name) : id; };
+function matchTitle(m) { if (m.game !== 'mix') return gameName(m.game); const ids = m.cat.split('.'); return ids.length <= 2 ? ids.map(gameName).join(' + ') : `Mélange de ${ids.length} jeux`; }
+function matchMix(m) { return m.game === 'mix' ? m.cat.split('.').map(gameName).join(', ') : ''; }
 function renderLobby(countdown) {
-  const m = MP.match, g = byGame[m.game], ps = mpPlayers(), host = ps.find(p => p.user_id === m.host), iAmHost = meId() === m.host;
+  const m = MP.match, g = byGame[m.game] || { id: 'mix', name: 'Défi sur mesure' }, ps = mpPlayers(), host = ps.find(p => p.user_id === m.host), iAmHost = meId() === m.host;
   if ($('lobby').hidden) show('lobby');
   const kind = m.mode === 'duel' ? 'Duel en ligne' : m.rules === 'elim' ? 'Partie à élimination' : 'Partie aux points';
-  $('lbTitle').textContent = `${(byGame[g.parent || g.id] || g).name}${g.parent ? ' · ' + g.v : ''}`;
-  $('lbSub').textContent = `${kind} · ${m.level === 'expert' ? 'Expert' : 'Classique'}${m.cat && m.cat !== 'tout' && g.cats ? ' · ' + g.cats[m.cat] : ''}${host ? ' · créée par ' + host.name : ''}`;
+  $('lbTitle').textContent = matchTitle(m);
+  $('lbSub').textContent = `${kind} · ${m.level === 'expert' ? 'Expert' : 'Classique'}${m.rules === 'elim' ? '' : ' · ' + m.n + ' questions'}${m.cat && m.cat !== 'tout' && g.cats ? ' · ' + g.cats[m.cat] : ''}${m.game === 'mix' && m.cat.split('.').length > 2 ? ' · ' + matchMix(m) : ''}${host ? ' · créée par ' + host.name : ''}`;
   const who = `<div class="who">${ps.map(p => `<span><i style="background:${colorOf(p.user_id)}"></i>${esc(p.name)}${p.me ? ' <small>(toi)</small>' : ''}${p.user_id === m.host ? ' <small>· crée</small>' : ''}</span>`).join('')}</div>`;
   if (countdown != null) {
     const n = Math.max(1, Math.ceil(countdown / 1000)), st = $('lbStage');
@@ -1158,16 +1213,66 @@ async function loadOnline() {
 function renderOnline() {
   const open = ONLINE.filter(m => m.status === 'lobby' && !m.mine), mine = ONLINE.filter(m => m.mine);
   $('onlineN').textContent = open.length ? open.length : '⇄';
-  $('onlineSub').textContent = !ROOM ? 'Duel à deux sur ce téléphone' : open.length ? `${open.length} partie${open.length > 1 ? 's' : ''} t’attend${open.length > 1 ? 'ent' : ''} · ${open.map(m => m.hostName).join(', ')}` : mine.length ? 'Ta partie est ouverte' : 'Duel ou partie avec la salle';
-  const label = m => { const g = byGame[m.game] || { name: m.game }, root = byGame[g.parent || g.id] || g; return `${root.name}${g.parent ? ' · ' + g.v : ''}`; };
+  $('onlineSub').textContent = !ROOM ? 'Duel à deux sur ce téléphone' : open.length ? `${open.length} partie${open.length > 1 ? 's' : ''} t’attend${open.length > 1 ? 'ent' : ''} · ${open.map(m => m.hostName).join(', ')}` : mine.length ? 'Ta partie est ouverte' : 'Duel, partie à plusieurs, défi sur mesure';
   const list = ONLINE.map(m => {
     const kind = m.mode === 'duel' ? 'Duel' : m.rules === 'elim' ? 'Élimination' : 'Partie';
     const act = m.mine ? (m.status === 'playing' ? 'Reprendre' : 'Ouvrir') : 'Rejoindre';
-    return `<button class="card" data-m="${m.id}" data-join="${m.mine ? '' : '1'}"><span class="mm"><b>${kind} · ${esc(label(m))}</b><span>${esc(m.hostName)} · ${m.level === 'expert' ? 'Expert' : 'Classique'} · ${m.players.length} joueur${m.players.length > 1 ? 's' : ''}${m.status === 'playing' ? ' · en cours' : ''}</span></span><span class="act${m.mine ? ' ghosty' : ''}">${act}</span></button>`;
+    return `<button class="card${m.mine ? ' mine' : ''}" data-m="${m.id}" data-join="${m.mine ? '' : '1'}"><span class="mm"><b>${kind} · ${esc(matchTitle(m))}</b><span>${esc(m.hostName)} · ${m.level === 'expert' ? 'Expert' : 'Classique'} · ${m.players.length} joueur${m.players.length > 1 ? 's' : ''}${m.status === 'playing' ? ' · en cours' : ''}</span></span><span class="act${m.mine ? ' ghosty' : ''}">${act}</span></button>`;
   }).join('');
-  const games = GAMES.filter(g => !g.parent).map(g => `<button data-new="${g.id}">${g.name}</button>`).join('');
-  $('onlineList').innerHTML = (ROOM ? (list || `<div class="card empty"><b>Aucune partie ouverte</b><span>Lance la première : choisis un jeu ci-dessous.</span></div>`) : `<div class="card empty"><b>Dans Chaumière</b><span>Les duels et parties en ligne se jouent depuis l’onglet Quiz de Chaumière. Ici, tu peux jouer un duel à deux sur le même téléphone.</span></div>`)
-    + `<h4>${ROOM ? 'Lancer un défi' : 'Duel sur ce téléphone'}</h4><div class="ogames">${games}</div>`;
+  $('dfOpenWrap').hidden = !ROOM || !list;
+  $('onlineList').innerHTML = list;
+  $('dfOpenN').textContent = list ? `${ONLINE.length} · glisse` : '';
+  if (!$('online').hidden) renderDefi();
+}
+/* ================= Défi sur mesure ================= */
+const DF_KINDS = {
+  duel: { b: 'Duel', s: 'Un contre un, en ligne', i: '1v1' },
+  points: { b: 'Partie', s: 'Jusqu’à 12, aux points', i: '12' },
+  elim: { b: 'Élimination', s: 'Une erreur et tu sors', i: '✕' },
+  local: { b: 'Même téléphone', s: 'À deux, chacun son tour', i: '⇄' },
+};
+const DF_GROUPS = [['Reconnaître', '#4da3ff'], ['Comparer', '#4da3ff'], ['Cartes', '#33d17a'], ['Histoire', '#e0a33a']];
+let DF = Object.assign({ kind: 'duel', ids: ['flag', 'cap', 'geo'], level: 'facile', n: 7 }, jget('chaumiere-geoquiz-defi', {}));
+function openDefi(pre) {
+  if (pre) Object.assign(DF, pre);
+  if (!ROOM) DF.kind = 'local';
+  show('online'); $('dfBody').scrollTop = 0; renderOnline(); loadOnline(); renderDefi();
+}
+function renderDefi() {
+  const kinds = ROOM ? DF_KINDS : { local: DF_KINDS.local };
+  if (!(DF.kind in kinds)) DF.kind = Object.keys(kinds)[0];
+  DF.ids = DF.ids.filter(id => byGame[id]);
+  store.set('chaumiere-geoquiz-defi', JSON.stringify(DF));
+  $('dfLead').textContent = ROOM ? 'Rejoins une partie, ou compose ton défi.' : 'Compose un défi à jouer à deux sur ce téléphone.';
+  $('dfKind').innerHTML = Object.entries(kinds).map(([k, v]) => `<button data-k="${k}" aria-pressed="${k === DF.kind}"><i>${v.i}</i><b>${v.b}</b><span>${v.s}</span></button>`).join('');
+  $('dfNames').hidden = DF.kind !== 'local';
+  $('dfPre').innerHTML = [['surprise', '🎲 Surprise'], ['all', 'Tout'], ...DF_GROUPS.map(([g]) => [g, g]), ['none', 'Aucun']].map(([k, v]) => `<button data-p="${k}">${v}</button>`).join('');
+  $('dfModes').innerHTML = DF_GROUPS.map(([gr, c]) => `<div class="dfgrp" style="--th:${c}">${gr}</div><div class="dfmodes" style="--th:${c}">${GAMES.filter(g => g.g === gr).map(g =>
+    `<button data-id="${g.id}" aria-pressed="${DF.ids.includes(g.id)}">${illHTML(g.id)}<span class="nm">${g.parent ? g.v : g.name}</span></button>`).join('')}</div>`).join('')
+    + `<div class="dfgrp" style="--th:#7c6cff">Culture générale</div><div class="dfmodes" style="--th:#7c6cff">${CULTURE.slice(0, 3).map(t => `<button disabled><span class="nm">${t.t}<br><small>bientôt</small></span></button>`).join('')}</div>`;
+  $('dfCount').textContent = DF.ids.length ? `${DF.ids.length} jeu${DF.ids.length > 1 ? 'x' : ''}` : 'aucun';
+  seg($('dfLevel'), { facile: { b: 'Classique', s: '' }, expert: { b: 'Expert', s: '' } }, DF.level, v => { DF.level = v; renderDefi(); });
+  const elim = DF.kind === 'elim';
+  $('dfNWrap').hidden = elim; elim ? $('dfRow').setAttribute('data-one', '') : $('dfRow').removeAttribute('data-one');
+  seg($('dfN'), { 5: { b: '5', s: '' }, 7: { b: '7', s: '' }, 10: { b: '10', s: '' }, 15: { b: '15', s: '' } }, String(DF.n), v => { DF.n = +v; renderDefi(); });
+  const k = DF_KINDS[DF.kind];
+  $('dfSum').textContent = DF.ids.length ? `${k.b} · ${DF.ids.length === 1 ? gameName(DF.ids[0]) : DF.ids.length + ' jeux mélangés'} · ${elim ? 'jusqu’au dernier' : DF.n + ' questions'} · ${DF.level === 'expert' ? 'Expert' : 'Classique'}` : 'Choisis au moins un jeu';
+  $('dfGo').disabled = !DF.ids.length;
+  $('dfGo').textContent = DF.kind === 'local' ? 'Jouer à deux' : DF.kind === 'duel' ? 'Lancer le duel' : 'Créer la partie';
+}
+async function startDefi() {
+  if (!DF.ids.length) return;
+  if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
+  const one = DF.ids.length === 1 ? DF.ids[0] : null, cat = one ? (byGame[one].cats ? 'tout' : '') : DF.ids.join('.');
+  if (DF.kind === 'local') {
+    const names = [$('d1').value.trim() || 'Joueur 1', $('d2').value.trim() || 'Joueur 2'];
+    return newSession(one ? { game: one, level: DF.level, format: 'duel', cat: cat || undefined, n: DF.n, names } : { game: 'mix', mixIds: DF.ids, level: DF.level, format: 'duel', n: DF.n, names });
+  }
+  $('dfGo').disabled = true;
+  try {
+    const d = await api('POST', { action: 'create', mode: DF.kind === 'duel' ? 'duel' : 'party', rules: DF.kind === 'elim' ? 'elim' : 'points', game: one || 'mix', level: DF.level, cat, n: DF.n });
+    await mpOpen(d.id, false);
+  } catch (e) { toast(e.message); } finally { $('dfGo').disabled = false; }
 }
 
 /* ================= Fin ================= */
@@ -1255,7 +1360,6 @@ function illHTML(id) {
   const c = S.by[ILL[id]]; return c ? `<span class="ill">${silSVG(c)}</span>` : '';
 }
 /* Accueil : chaque page montre les modes du thème que le joueur lance le plus, puis des suggestions du jour, et un (+) */
-const jget = (k, d) => { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
 function notePlay(id, opt) {
   const plays = jget('chaumiere-geoquiz-plays', {}); plays[id] = (plays[id] || 0) + 1;
   store.set('chaumiere-geoquiz-plays', JSON.stringify(plays));
@@ -1345,7 +1449,7 @@ function confirmPlay(id) {
   const g = byGame[id], L = lastOf(id), th = THEMES.find(t => themeItems(t).some(x => x.id === id)) || THEMES[0];
   const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie, une erreur et c’est fini' : (g.n || N) + ' questions'}`;
   const b = store.get(`chaumiere-geoquiz-${id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
-  sheetOpen(g.parent ? byGame[g.parent].name : g.name, th.c, `<div class="conf" data-id="${id}"><div class="cinfo"><span class="sg">${illHTML(id)}</span><p><b>${how}</b><br>${g.desc}${b ? `<br>Ton record : ${b}` : ''}</p></div><button class="cta" data-act="play">Jouer</button><button class="ghost" data-act="setup">Changer les réglages</button></div>`);
+  sheetOpen(g.parent ? byGame[g.parent].name : g.name, th.c, `<div class="conf" data-id="${id}"><div class="cinfo"><span class="sg">${illHTML(id)}</span><p><b>${how}</b><br>${g.desc}${b ? `<br>Ton record : ${b}` : ''}</p></div><div class="row2"><button class="cta" data-act="play">Jouer seul</button><button class="cta" style="background:var(--acc);color:#001" data-act="defi">Défier</button></div><button class="ghost" data-act="setup">Changer les réglages</button></div>`);
 }
 function confirmQuit() {
   const online = SES && SES.online;
@@ -1426,6 +1530,7 @@ $('shL').addEventListener('click', e => {
     if (act === 'stay') return closeTheme();
     if (act === 'quit') return abandon();
     const id = a.closest('.conf').dataset.id;
+    if (act === 'defi') { closeTheme(); return openDefi({ ids: [id], level: lastOf(id).level }); }
     closeTheme(); if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
     const L = lastOf(id);
     Object.assign(sel, { game: id, level: L.level, format: L.format, from: 'home' }); if (L.cat) sel.cat[id] = L.cat; else if (byGame[id].cats) sel.cat[id] = 'tout';
@@ -1455,7 +1560,7 @@ async function startSel() {
   notePlay(sel.game, { level: sel.level, format: sel.format, cat: sel.cat[sel.game] });
   newSession({ game: sel.game, level: sel.level, format: sel.format === 'multi' ? 'duel' : sel.format, cat: sel.cat[sel.game], names });
 }
-$('again').addEventListener('click', () => { if (SES.online) { sel.game = SES.game; sel.level = SES.level; renderSetup(); show('setup'); return; } if (SES.daily) startDaily(); else startSel(); });
+$('again').addEventListener('click', () => { if (SES.online) { const m = MP.match || {}; mpClose(); openDefi({ ids: SES.game === 'mix' ? (m.cat || '').split('.') : [SES.game], level: SES.level, kind: SES.mode === 'duel' ? 'duel' : SES.rules === 'elim' ? 'elim' : 'points', n: m.n && m.n <= 15 ? m.n : DF.n }); return; } if (SES.daily) startDaily(); else startSel(); });
 $('daily').addEventListener('click', () => startDaily());
 function startDaily() {
   const k = dayKey(), seed = [...k].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261);
@@ -1464,11 +1569,21 @@ function startDaily() {
   newSession({ daily: true, mix, game: 'mix', level: 'facile', format: 'normal', seed });
 }
 $('handGo').addEventListener('click', () => begin());
-$('onlineList').addEventListener('click', e => {
-  const b = e.target.closest('.card[data-m]'); if (b) return mpOpen(b.dataset.m, !!b.dataset.join);
-  const n = e.target.closest('[data-new]'); if (n) { sel.game = n.dataset.new; sel.from = 'online'; sel.format = 'multi'; sel.multi = ROOM ? 'duel' : 'local'; renderSetup(); show('setup'); }
+$('onlineList').addEventListener('click', e => { const b = e.target.closest('.card[data-m]'); if (b) return mpOpen(b.dataset.m, !!b.dataset.join); });
+$('onlineBtn').addEventListener('click', () => openDefi());
+$('dfKind').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { DF.kind = b.dataset.k; renderDefi(); } });
+$('dfPre').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const all = GAMES.map(g => g.id), p = b.dataset.p;
+  DF.ids = p === 'all' ? all : p === 'none' ? [] : p === 'surprise' ? shuf(all).slice(0, 3 + Math.floor(Math.random() * 3)) : GAMES.filter(g => g.g === p).map(g => g.id);
+  renderDefi();
 });
-$('onlineBtn').addEventListener('click', () => { renderOnline(); loadOnline(); show('online'); });
+$('dfModes').addEventListener('click', e => {
+  const b = e.target.closest('button[data-id]'); if (!b) return;
+  const id = b.dataset.id; DF.ids = DF.ids.includes(id) ? DF.ids.filter(x => x !== id) : DF.ids.concat(id);
+  renderDefi();
+});
+$('dfGo').addEventListener('click', () => startDefi());
 $('olBack').addEventListener('click', () => { renderHome(); show('home'); });
 const leave = () => { const id = MP.id; mpClose(); if (id) api('POST', { action: 'leave', id }).catch(() => {}); renderHome(); show('home'); };
 $('lbLeave').addEventListener('click', leave);
