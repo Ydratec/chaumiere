@@ -252,6 +252,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 #vbL{left:var(--vbl,0);align-items:flex-start}#vbR{right:var(--vbr,0);align-items:flex-end}
 #play.duo .vbar{display:flex}
 #play.duo .hud .score,#play.duo .hud .gain{visibility:hidden}
+#play.duo #mpRev{display:none!important}
+/* points qui s'ajoutent : le chiffre jaillit au niveau de la barre puis monte en s'effaçant */
+.vbar .pf{position:absolute;font:800 15px/1 Archivo,Inter,sans-serif;font-style:normal;color:var(--pc);text-shadow:0 1px 3px #000,0 0 10px #000;white-space:nowrap;animation:pf 1.3s ease-out forwards}
+#vbL .pf{left:12px}#vbR .pf{right:12px}
+.vbar .pf.ko{color:var(--ko)}
+@keyframes pf{0%{opacity:0;transform:translateY(8px) scale(.7)}15%{opacity:1;transform:translateY(0) scale(1.2)}30%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
 .vbar b{font:800 15px/1 Archivo,Inter,sans-serif;color:var(--pc);font-variant-numeric:tabular-nums;transition:transform .25s;padding:0 4px;text-shadow:0 1px 3px #000,0 0 8px #000}
 #vbL b{transform-origin:left}#vbR b{transform-origin:right}
 .vbar b.bump{transform:scale(1.25)}
@@ -1206,7 +1212,13 @@ async function api(method, body, query = '') {
   return d;
 }
 /* Barres de score du duel en ligne : moi à gauche (en direct), l'adversaire à droite (à chaque révélation) */
-function duoBars() {
+function floatPts(el, txt, ko) {
+  const span = el.querySelector('span'), f = document.createElement('em');
+  f.className = 'pf' + (ko ? ' ko' : ''); f.textContent = txt;
+  f.style.top = Math.max(18, span.offsetTop + span.offsetHeight - el.querySelector('i').offsetHeight - 8) + 'px';
+  el.appendChild(f); setTimeout(() => f.remove(), 1400);
+}
+function duoBars(mine) {
   const on = !!(SES && SES.online && MP.match && MP.match.rules !== 'elim' && mpPlayers().length === 2);
   $('play').classList.toggle('duo', on);
   if (!on) return;
@@ -1216,6 +1228,10 @@ function duoBars() {
   pl.setProperty('--vbl', Math.max(0, Math.round(app.left)) + 'px'); pl.setProperty('--vbr', Math.max(0, Math.round(innerWidth - app.right)) + 'px');
   const ps = mpPlayers(), me = ps.find(p => p.me) || ps[0], op = ps.find(p => p !== me), max = (SES.n + 1) * 20;
   const opScore = op.answers.filter(a => a.i < SES.i || a.i === MP.revI).reduce((t, a) => t + a.pts, 0); // questions déjà révélées seulement
+  if ($('vbL').dataset.m !== SES.mpId) ['vbL', 'vbR'].forEach(k => { $(k).dataset.m = SES.mpId; $(k).dataset.ans = ''; });
+  // mes points dès que je réponds ; ceux de l'adversaire à la révélation (✗ s'il s'est trompé)
+  if (mine !== undefined && $('vbL').dataset.ans !== String(SES.i)) { $('vbL').dataset.ans = SES.i; floatPts($('vbL'), mine ? '+' + mine : '✗', !mine); }
+  if (MP.revI >= 0 && $('vbR').dataset.ans !== String(MP.revI)) { const a = op.answers.find(a => a.i === MP.revI); $('vbR').dataset.ans = MP.revI; floatPts($('vbR'), a && a.pts ? '+' + a.pts : '✗', !(a && a.pts)); }
   [[$('vbL'), me, SES.score], [$('vbR'), op, opScore]].forEach(([el, p, sc]) => {
     const b = el.querySelector('b');
     el.style.setProperty('--pc', colorOf(p.user_id));
@@ -1329,7 +1345,7 @@ function mpSettle(l) {
   const pick = l.pick ?? (l.hit && S.by[l.hit] ? S.by[l.hit].n : null);
   api('POST', { action: 'answer', id: MP.id, i: SES.i, pts: Math.min(40, l.pts), good: !!l.good, pick, pt: l.pt || null }).then(() => mpLoad()).catch(() => {});
   $('hint').textContent = 'En attente des autres…';
-  duoBars();
+  duoBars(l.pts);
 }
 function mpReveal(i) {
   // réponses de tous les joueurs à la question i, et punaises des autres sur les cartes
