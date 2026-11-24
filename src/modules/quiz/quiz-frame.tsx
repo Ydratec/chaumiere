@@ -31,7 +31,7 @@ export function QuizFrame({ roomId, match }: { roomId: string; match?: string })
   // Le fond clair de l'app reste visible sous la zone affichée (barre du bas d'iOS, rebond, application installée) :
   // tant que le quiz est ouvert, la page entière et la couleur de thème du navigateur passent au noir du jeu.
   useEffect(() => {
-    const html = document.documentElement, body = document.body, DARK = "#050506";
+    const html = document.documentElement, body = document.body, DARK = "#0C1117";
     const meta = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'));
     const before = { html: html.style.backgroundColor, body: body.style.background, scheme: html.style.colorScheme, metas: meta.map((m) => m.content) };
     html.style.backgroundColor = DARK;
@@ -48,12 +48,12 @@ export function QuizFrame({ roomId, match }: { roomId: string; match?: string })
   return (
     <>
       {/* fond sombre sur tout l'écran (en-tête et dessous de la barre d'onglets compris) : le jeu se prolonge jusqu'en bas */}
-      <div aria-hidden className="fixed inset-x-0 -bottom-40 top-0 z-[8] bg-[#050506]" />
+      <div aria-hidden className="fixed inset-x-0 -bottom-40 top-0 z-[8] bg-[#0C1117]" />
       <iframe
         ref={frame}
         src={`/quiz/index.html?room=${roomId}${match ? `&m=${encodeURIComponent(match)}` : ""}`}
         title="Géo Quiz"
-        className="fixed inset-x-0 top-0 z-[9] w-full border-0 bg-[#050506]"
+        className="fixed inset-x-0 top-0 z-[9] w-full border-0 bg-[#0C1117]"
         style={{ height: "calc(100dvh - 5.5rem - env(safe-area-inset-bottom))" }}
       />
     </>
