@@ -7,7 +7,7 @@
 import { adminDb } from "@/src/lib/db/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { QUIZ_OPEN, quizVisible } from "@/src/modules/quiz/access";
-import { allAnswered, COUNTDOWN_MS, ELIM_QUESTIONS, MAX_PLAYERS, pointsQuestions, readAnswer, readNewMatch, type MatchPlayer, type Rules } from "@/src/modules/quiz/match";
+import { allAnswered, COUNTDOWN_MS, MAX_PLAYERS, readAnswer, readNewMatch, type MatchPlayer, type Rules } from "@/src/modules/quiz/match";
 import { QUIZ_GAMES } from "@/src/modules/quiz/scores";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
@@ -68,15 +68,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
   if (body.action === "create") {
     const m = readNewMatch(body);
     if (!m) return fail("Partie illisible");
-    const n = m.rules === "elim" ? ELIM_QUESTIONS : pointsQuestions(m.game);
     const seed = Math.floor(Math.random() * 2 ** 31);
-    const { data: match, error } = await db.from("quiz_matches").insert({ room_id: roomId, host: me, ...m, seed, n }).select("id").single();
+    const { data: match, error } = await db.from("quiz_matches").insert({ room_id: roomId, host: me, ...m, seed }).select("id").single();
     if (error || !match) return fail("Indisponible", 503);
     await db.rpc("quiz_join", { m: match.id, u: me });
     // ponytail: notifications seulement une fois le quiz ouvert à tous (pendant les tests, les autres ne le voient pas)
     if (QUIZ_OPEN) {
       const what = m.mode === "duel" ? "te défie en duel" : m.rules === "elim" ? "lance une partie à élimination" : "lance une partie";
-      await notify(await roomMembers(roomId, me), "games", { title: "Géo Quiz", body: `${ctx.names[me]} ${what} : ${QUIZ_GAMES[m.game]}`, url: `/r/${roomId}/quiz?m=${match.id}`, tag: `quiz-${match.id}` }).catch(() => {});
+      await notify(await roomMembers(roomId, me), "games", { title: "Géo Quiz", body: `${ctx.names[me]} ${what} : ${QUIZ_GAMES[m.game] ?? "défi sur mesure"}`, url: `/r/${roomId}/quiz?m=${match.id}`, tag: `quiz-${match.id}` }).catch(() => {});
     }
     return Response.json({ now: now(), id: match.id });
   }

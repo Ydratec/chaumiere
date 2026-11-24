@@ -16,7 +16,20 @@ export const COUNTDOWN_MS = 4000; // décompte avant la première question
 /** Nombre de questions d'une partie aux points : 7 (5 pour l'itinéraire, plus long), comme en solo. */
 export const pointsQuestions = (game: string) => (game === "route" ? 5 : 7);
 
-export type NewMatch = { mode: Mode; rules: Rules; game: string; level: "facile" | "expert"; cat: string };
+/** Défi sur mesure : game = "mix", cat = les jeux mélangés, séparés par des points (ex. "flag.cap.world"). */
+export const MIX = "mix";
+/** Nombres de questions au choix pour une partie aux points (sinon, celui du jeu). */
+export const QUESTION_COUNTS = [5, 7, 10, 15];
+
+export type NewMatch = { mode: Mode; rules: Rules; game: string; level: "facile" | "expert"; cat: string; n: number };
+
+/** Jeux d'un défi sur mesure (2 à 16, sans doublon, tous connus) ; null si invalide. */
+export function mixGames(cat: string): string[] | null {
+  if (!/^[a-z]{2,10}(\.[a-z]{2,10}){1,15}$/.test(cat)) return null;
+  const ids = cat.split(".");
+  if (new Set(ids).size !== ids.length || ids.some((g) => !(g in QUIZ_GAMES) || g === "daily")) return null;
+  return ids;
+}
 
 /** Lit et vérifie une demande de création de partie ; null si invalide. */
 export function readNewMatch(body: unknown): NewMatch | null {
@@ -25,10 +38,18 @@ export function readNewMatch(body: unknown): NewMatch | null {
   const mode = b.mode === "duel" || b.mode === "party" ? b.mode : null;
   const rules = b.rules === "elim" ? "elim" : "points";
   const game = String(b.game ?? ""), level = b.level === "expert" ? "expert" : b.level === "facile" ? "facile" : null;
-  const cat = typeof b.cat === "string" && /^[a-z]{0,20}$/.test(b.cat) ? b.cat : "";
-  if (!mode || !level || !(game in QUIZ_GAMES) || game === "daily") return null;
+  if (!mode || !level) return null;
   if (mode === "duel" && rules !== "points") return null;
-  return { mode, rules, game, level, cat };
+  let cat = "";
+  if (game === MIX) {
+    if (typeof b.cat !== "string" || !mixGames(b.cat)) return null;
+    cat = b.cat;
+  } else {
+    if (!(game in QUIZ_GAMES) || game === "daily") return null;
+    cat = typeof b.cat === "string" && /^[a-z]{0,20}$/.test(b.cat) ? b.cat : "";
+  }
+  const n = rules === "elim" ? ELIM_QUESTIONS : QUESTION_COUNTS.includes(Number(b.n)) ? Number(b.n) : pointsQuestions(game);
+  return { mode, rules, game, level, cat, n };
 }
 
 /** Lit une réponse envoyée par le jeu ; null si invalide. Les points sont plafonnés (20, ×2 à la dernière question). */
