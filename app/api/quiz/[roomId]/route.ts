@@ -1,4 +1,4 @@
-// Géo Quiz (page autonome : public/quiz) : scores des joueurs de la salle.
+// Quiz (page autonome : public/quiz) : scores des joueurs de la salle.
 // POST : enregistre le score d'une partie terminée (pas les duels, joués à deux sur un même téléphone).
 // GET ?day=1 : le défi du jour de la salle (première partie de chacun aujourd'hui), pour l'écran de fin du jeu.
 // Si la table n'existe pas encore (migration 0033 pas appliquée), on répond 503 et le jeu continue avec ses records locaux.

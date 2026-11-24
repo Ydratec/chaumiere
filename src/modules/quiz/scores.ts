@@ -1,4 +1,4 @@
-// Géo Quiz : règles des scores envoyés par le jeu (public/quiz) et calcul des classements de la salle.
+// Quiz : règles des scores envoyés par le jeu (public/quiz) et calcul des classements de la salle.
 
 /** Jeux du quiz (identifiants du jeu public/quiz/index.html) et leur nom affiché. `daily` = défi du jour. */
 export const QUIZ_GAMES: Record<string, string> = {

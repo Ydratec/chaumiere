@@ -3,7 +3,7 @@ import { quizVisible } from "@/src/modules/quiz/access";
 import { QuizFrame } from "@/src/modules/quiz/quiz-frame";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
-// Géo Quiz : page autonome (public/quiz), affichée dans un cadre plein écran au-dessus de la barre d'onglets,
+// Quiz : page autonome (public/quiz), affichée dans un cadre plein écran au-dessus de la barre d'onglets,
 // comme l'usine ; le cadre isole ses styles et son script du reste de l'app. Réservé aux testeurs pour l'instant (voir access.ts).
 // ?m=<partie> (depuis une notification) : le jeu ouvre directement le salon de cette partie en ligne.
 export default async function QuizPage({ params, searchParams }: { params: Promise<{ roomId: string }>; searchParams: Promise<{ m?: string }> }) {

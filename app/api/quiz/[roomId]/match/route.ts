@@ -1,4 +1,4 @@
-// Géo Quiz en ligne (page autonome : public/quiz) : parties à plusieurs dans la salle.
+// Quiz en ligne (page autonome : public/quiz) : parties à plusieurs dans la salle.
 // GET : les parties ouvertes de la salle et celles où l'on joue ; GET ?id= : une partie (joueurs, réponses).
 // POST { action } : create | join | start | leave | answer | done. Toutes les réponses donnent l'heure du serveur
 // (`now`), pour que chaque téléphone cale son horloge et affiche les questions en même temps que les autres.
@@ -75,7 +75,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
     // ponytail: notifications seulement une fois le quiz ouvert à tous (pendant les tests, les autres ne le voient pas)
     if (QUIZ_OPEN) {
       const what = m.mode === "duel" ? "te défie en duel" : m.rules === "elim" ? "lance une partie à élimination" : "lance une partie";
-      await notify(await roomMembers(roomId, me), "games", { title: "Géo Quiz", body: `${ctx.names[me]} ${what} : ${QUIZ_GAMES[m.game] ?? "défi sur mesure"}`, url: `/r/${roomId}/quiz?m=${match.id}`, tag: `quiz-${match.id}` }).catch(() => {});
+      await notify(await roomMembers(roomId, me), "games", { title: "Quiz", body: `${ctx.names[me]} ${what} : ${QUIZ_GAMES[m.game] ?? "défi sur mesure"}`, url: `/r/${roomId}/quiz?m=${match.id}`, tag: `quiz-${match.id}` }).catch(() => {});
     }
     return Response.json({ now: now(), id: match.id });
   }
