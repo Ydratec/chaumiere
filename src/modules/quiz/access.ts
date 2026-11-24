@@ -1,9 +1,9 @@
-// Quiz : qui le voit. Pour l'instant : le super-admin et les testeurs listés dans QUIZ_TESTERS
-// (identifiants de connexion séparés par des virgules, comme SUPERADMINS) ; l'usine reste en place pour les autres.
-// Pour l'ouvrir à toute la salle : passer QUIZ_OPEN à true (onglet, page, accueil, classement, API et notifications suivent).
+// Quiz : qui le voit. Ouvert à toute la salle depuis la première version (géographie, histoire, pièces) :
+// l'onglet Quiz remplace l'usine pour tout le monde (le code de l'usine reste en place).
+// Pour le refermer aux seuls testeurs : QUIZ_OPEN à false (super-admin + QUIZ_TESTERS, identifiants séparés par des virgules).
 import { isSuperAdmin } from "@/src/modules/admin/guard";
 
-export const QUIZ_OPEN = false;
+export const QUIZ_OPEN = true;
 
 export function quizVisible(user: { email?: string } | null | undefined) {
   if (QUIZ_OPEN || isSuperAdmin(user)) return true;
