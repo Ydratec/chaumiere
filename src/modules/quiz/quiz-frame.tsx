@@ -28,10 +28,27 @@ export function QuizFrame({ roomId, match }: { roomId: string; match?: string })
       sb.removeChannel(ch);
     };
   }, [sb, roomId]);
+  // Le fond clair de l'app reste visible sous la zone affichée (barre du bas d'iOS, rebond, application installée) :
+  // tant que le quiz est ouvert, la page entière et la couleur de thème du navigateur passent au noir du jeu.
+  useEffect(() => {
+    const html = document.documentElement, body = document.body, DARK = "#050506";
+    const meta = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'));
+    const before = { html: html.style.backgroundColor, body: body.style.background, scheme: html.style.colorScheme, metas: meta.map((m) => m.content) };
+    html.style.backgroundColor = DARK;
+    body.style.background = DARK;
+    html.style.colorScheme = "dark";
+    meta.forEach((m) => (m.content = DARK));
+    return () => {
+      html.style.backgroundColor = before.html;
+      body.style.background = before.body;
+      html.style.colorScheme = before.scheme;
+      meta.forEach((m, i) => (m.content = before.metas[i]));
+    };
+  }, []);
   return (
     <>
       {/* fond sombre sur tout l'écran (en-tête et dessous de la barre d'onglets compris) : le jeu se prolonge jusqu'en bas */}
-      <div aria-hidden className="fixed inset-0 z-[8] bg-[#050506]" />
+      <div aria-hidden className="fixed inset-x-0 -bottom-40 top-0 z-[8] bg-[#050506]" />
       <iframe
         ref={frame}
         src={`/quiz/index.html?room=${roomId}${match ? `&m=${encodeURIComponent(match)}` : ""}`}
