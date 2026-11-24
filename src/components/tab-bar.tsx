@@ -43,7 +43,7 @@ function useBadges(roomId: string, path: string) {
   return dots;
 }
 
-/** Onglets de la salle. `quiz` : le Géo Quiz remplace l'usine (pour l'instant seulement pour l'admin, voir src/modules/quiz/access.ts). */
+/** Onglets de la salle. `quiz` : le Quiz remplace l'usine (pour l'instant seulement pour l'admin, voir src/modules/quiz/access.ts). */
 export function roomTabs(roomId: string, quiz = false) {
   const base = `/r/${roomId}`;
   return [

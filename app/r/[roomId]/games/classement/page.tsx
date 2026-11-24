@@ -22,11 +22,11 @@ export default async function StandingsPage({ params, searchParams }: { params: 
     adminDb().from("daily_challenges").select("user_id, day, score, solved_at").eq("room_id", roomId), // tous les défis : un seul jeu par jour
     // Usine de Noël : étoiles des contrats, puis étape, puis pièces gagnées (même ordre que dans le jeu)
     adminDb().from("usine_saves").select("user_id, stage:state->stage, stars:state->stars, earned:state->earned").eq("room_id", roomId),
-    // Géo Quiz (réservé à l'admin pendant les tests) : sans la migration 0033, la requête échoue et l'onglet reste vide
+    // Quiz (réservé à l'admin pendant les tests) : sans la migration 0033, la requête échoue et l'onglet reste vide
     quiz ? adminDb().from("quiz_scores").select("user_id, game, level, format, cat, score, day, created_at").eq("room_id", roomId) : Promise.resolve({ data: null }),
   ]);
   const played = ((games ?? []) as unknown as Played[]);
-  const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }, { id: "usine", label: "Usine de Noël" }, ...(quiz ? [{ id: "quiz", label: "Géo Quiz" }] : [])];
+  const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }, { id: "usine", label: "Usine de Noël" }, ...(quiz ? [{ id: "quiz", label: "Quiz" }] : [])];
   const tab = tabs.find((t) => t.id === jeu) ?? tabs[0];
   const person = (id: string) => ctx.people[id];
   const who = (id: string) => (
@@ -53,7 +53,7 @@ export default async function StandingsPage({ params, searchParams }: { params: 
 
       {tab.id === "quiz" ? (() => {
         const rows = (quizRows ?? []) as ScoreRow[];
-        if (!rows.length) return <p className="text-sm text-zinc-500">Aucune partie de Géo Quiz enregistrée pour l&apos;instant.</p>;
+        if (!rows.length) return <p className="text-sm text-zinc-500">Aucune partie de Quiz enregistrée pour l&apos;instant.</p>;
         const today = dailyFirst(rows, parisDay()), wins = dailyWins(rows), best = records(rows);
         const rec = (game: string, format: string, level: string) => best.get(`${game}|${format}|${level}`);
         const games = Object.keys(QUIZ_GAMES).filter((g) => g !== "daily" && ["normal", "survie"].some((f) => rec(g, f, "facile") || rec(g, f, "expert")));

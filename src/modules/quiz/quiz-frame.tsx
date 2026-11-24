@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { browserDb } from "@/src/lib/db/client";
 
 /**
- * Le Géo Quiz (page autonome public/quiz) dans un cadre plein écran, au-dessus de la barre d'onglets.
+ * Le Quiz (page autonome public/quiz) dans un cadre plein écran, au-dessus de la barre d'onglets.
  * Relais temps réel : on écoute les parties en ligne de la salle (Supabase) et on prévient le jeu dans le cadre,
  * qui recharge alors l'état de la partie (il interroge aussi le serveur régulièrement, au cas où).
  */
@@ -52,7 +52,7 @@ export function QuizFrame({ roomId, match }: { roomId: string; match?: string })
       <iframe
         ref={frame}
         src={`/quiz/index.html?room=${roomId}${match ? `&m=${encodeURIComponent(match)}` : ""}`}
-        title="Géo Quiz"
+        title="Quiz"
         className="fixed inset-x-0 top-0 z-[9] w-full border-0 bg-[#0C1117]"
         style={{ height: "calc(100dvh - 5.5rem - env(safe-area-inset-bottom))" }}
       />

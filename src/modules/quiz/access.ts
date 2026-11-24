@@ -1,4 +1,4 @@
-// Géo Quiz : qui le voit. Pour l'instant : le super-admin et les testeurs listés dans QUIZ_TESTERS
+// Quiz : qui le voit. Pour l'instant : le super-admin et les testeurs listés dans QUIZ_TESTERS
 // (identifiants de connexion séparés par des virgules, comme SUPERADMINS) ; l'usine reste en place pour les autres.
 // Pour l'ouvrir à toute la salle : passer QUIZ_OPEN à true (onglet, page, accueil, classement, API et notifications suivent).
 import { isSuperAdmin } from "@/src/modules/admin/guard";

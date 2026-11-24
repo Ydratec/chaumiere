@@ -1,4 +1,4 @@
-// Géo Quiz en ligne : règles des parties à plusieurs (duel, partie aux points, partie à élimination).
+// Quiz en ligne : règles des parties à plusieurs (duel, partie aux points, partie à élimination).
 // Module pur (sans base) : utilisé par l'API (app/api/quiz/[roomId]/match) et testé dans tests/unit/quiz-match.test.ts.
 // Le jeu (public/quiz) fabrique les mêmes questions chez tous les joueurs à partir de la graine de la partie,
 // et calcule l'horloge commune ; le serveur garde les réponses et note quand tout le monde a répondu.
