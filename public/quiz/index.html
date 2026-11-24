@@ -195,7 +195,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .dfmodes button span.nm{position:relative}
 .dfmodes button[aria-pressed=true]{color:var(--ink);border-color:var(--th);box-shadow:inset 0 0 0 1px var(--th);background:color-mix(in srgb,var(--th) 14%,var(--panel))}
 .dfmodes button[aria-pressed=true] .ill{opacity:.35}
-.dfmodes button[aria-pressed=true]::after{content:'✓';position:absolute;top:5px;right:7px;width:18px;height:18px;border-radius:99px;background:var(--th);color:#001;font:800 11px/18px var(--fs);text-align:center}
+/* coche dessinée (pas de caractère) */
+.dfmodes button[aria-pressed=true]::after{content:'';background-image:linear-gradient(var(--th),var(--th));position:absolute;top:5px;right:7px;width:18px;height:18px;border-radius:99px;background:var(--th);color:#001;font:800 11px/18px var(--fs);text-align:center}
 .dfmodes button:disabled{opacity:.4;border-style:dashed}
 .dfrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px}
 .dfrow[data-one]{grid-template-columns:1fr}
@@ -562,6 +563,15 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 .chips button{border-radius:3px!important}
 .chips button[aria-pressed=true]{background:var(--acc)!important;color:var(--bg)!important;border-color:var(--acc)!important}
 .hero,.lbstage,.endmap,.recap li,.duo,.board li{border-radius:3px}
+.top h1{display:flex;align-items:center;gap:10px}.top h1 .logo{flex:none}
+.back,.hud .quit{display:grid;place-items:center;color:var(--ink)}
+.back{border-radius:3px}
+.online .dot svg{color:var(--acc)}
+.choice.undo{display:flex;align-items:center;gap:8px}.choice.undo::before{content:none}
+.dfkind button i{opacity:.35;width:20px;height:20px;right:10px;top:10px;bottom:auto}.dfkind button i svg{width:20px;height:20px}
+.dfkind button[aria-pressed=true] i{opacity:1}
+.dfpre button{display:inline-flex;align-items:center;gap:6px}
+.dfmodes button[aria-pressed=true]::after{width:16px;height:16px;border-radius:2px;background:var(--th) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230C1117' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
 /* Fin de partie */
 #fScore{font-family:var(--fd);font-weight:400}
 .vs .vh .p strong{font-weight:600}
@@ -575,7 +585,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 </defs></svg>
 <main class="app">
   <section id="home">
-    <div class="top"><h1>Géo Quiz</h1><span class="sub" id="homeSub">Réponds vite</span></div>
+    <div class="top"><h1><svg class="logo" aria-hidden="true" viewBox="0 0 40 40" width="34" height="34" fill="none" stroke-linecap="round"><circle cx="20" cy="21" r="14" stroke="#EDE2C8" stroke-width="1.4"/><ellipse cx="20" cy="21" rx="6.5" ry="14" stroke="#EDE2C8" stroke-opacity=".55" stroke-width="1.1"/><path d="M6 21h28M8.2 14h23.6M8.2 28h23.6" stroke="#EDE2C8" stroke-opacity=".55" stroke-width="1.1"/><path d="M27 4.5c-3 0-5.2 2.3-5.2 5.1 0 3.8 5.2 8.9 5.2 8.9s5.2-5.1 5.2-8.9c0-2.8-2.2-5.1-5.2-5.1z" fill="#E8B04B" stroke="#0C1117" stroke-width="1.4"/><circle cx="27" cy="9.6" r="1.8" fill="#0C1117"/></svg>Géo Quiz</h1><span class="sub" id="homeSub">Réponds vite</span></div>
     <button class="daily" id="daily">
       <svg id="dailyMap" aria-hidden="true"></svg>
       <span class="go">Jouer</span>
@@ -585,12 +595,12 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
     <div class="chead"><h3 id="catName">Géographie</h3><nav class="dots" id="gdots" aria-label="Thèmes"></nav></div>
     <div class="pages" id="groups"></div>
     <p class="err" id="err" hidden></p>
-    <button class="online" id="onlineBtn"><span class="dot" id="onlineN">⇄</span><span class="tx"><b>Défier en ligne</b><span id="onlineSub">Duel ou partie avec la salle</span></span><span class="chev">›</span></button>
+    <button class="online" id="onlineBtn"><span class="dot" id="onlineN"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg></span><span class="tx"><b>Défier en ligne</b><span id="onlineSub">Duel ou partie avec la salle</span></span><span class="chev">›</span></button>
   </section>
   <div class="sheet" id="sheet" hidden><div class="sbg" id="shBg"></div><div class="spanel" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="grab"></div><div class="sh"><b id="shT"></b><button id="shX" aria-label="Fermer">×</button></div><div class="slist" id="shL"></div></div></div>
 
   <section id="online" hidden>
-    <div class="shead"><button class="back" id="olBack" aria-label="Retour">←</button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">Défier</h2><p class="lead" id="dfLead">Rejoins une partie, ou compose ton défi.</p></div></div>
+    <div class="shead"><button class="back" id="olBack" aria-label="Retour"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">Défier</h2><p class="lead" id="dfLead">Rejoins une partie, ou compose ton défi.</p></div></div>
     <div class="dfbody" id="dfBody">
       <div id="dfOpenWrap"><h4>Parties ouvertes <small id="dfOpenN"></small></h4><div class="dfopen" id="onlineList"></div></div>
       <div><h5>Contre qui ?</h5><div class="dfkind" id="dfKind"></div></div>
@@ -603,7 +613,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
   </section>
 
   <section id="setup" hidden>
-    <div class="shead"><button class="back" id="back" aria-label="Tous les jeux">←</button><div><h2 id="sTitle"></h2><p class="lead" id="sLead"></p></div></div>
+    <div class="shead"><button class="back" id="back" aria-label="Tous les jeux"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div><h2 id="sTitle"></h2><p class="lead" id="sLead"></p></div></div>
     <div class="hero" id="hero"></div>
     <div class="opt" id="optVar"><h4>Version</h4><div class="chips" id="vars"></div></div>
     <div class="opt" id="optLevel"><h4>Niveau</h4><div class="seg" id="levels"></div></div>
@@ -616,7 +626,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 
   <section id="play" hidden>
     <div class="hud">
-      <button class="quit" id="quit" aria-label="Quitter la partie">✕</button>
+      <button class="quit" id="quit" aria-label="Quitter la partie"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <div class="score"><span id="sc">0</span><small id="scL">points</small></div>
       <div class="qn" id="qn"></div>
       <div class="gain" id="gain">+0</div>
@@ -649,7 +659,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
   </section>
 
   <section id="lobby" hidden>
-    <div class="shead"><button class="back" id="lbBack" aria-label="Quitter le salon">←</button><div><h2 id="lbTitle"></h2><p class="lead" id="lbSub"></p></div></div>
+    <div class="shead"><button class="back" id="lbBack" aria-label="Quitter le salon"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div><h2 id="lbTitle"></h2><p class="lead" id="lbSub"></p></div></div>
     <div class="lbstage" id="lbStage"></div>
     <p class="hint" id="lbHint"></p>
     <div class="sgo"><button class="cta" id="lbGo" hidden>Lancer la partie</button><button class="ghost" id="lbLeave">Quitter</button></div>
@@ -700,6 +710,13 @@ function showBoard() {
   }).catch(() => {});
 }
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+/* Icônes au trait (pas d'emoji) */
+const ICON_SWAP = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>';
+const ICON_UNDO = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+const ICON_SHUFFLE = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h4l10 12h4M3 18h4l3.5-4.2M14.5 10.2L17 6h4M18 3l3 3-3 3M18 15l3 3-3 3"/></svg>';
+const ICON_PODIUM = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 20v-6h4v6M10 20V8h4v12M15 20v-9h4v9"/></svg>';
+const ICON_OUT = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6M15 9l-6 6"/></svg>';
+const ICON_PHONE = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>';
 const jget = (k, d) => { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -734,12 +751,12 @@ const CULTURE = [
     ['Vrai ou faux', 'Une affirmation, un toucher.', 'V/F'], ['Contre-la-montre', '60 s, autant que possible.', '60s']] },
   { t: 'Histoire et société', c: '#D98A5F', lay: 'l-side', m: [
     ['Qui suis-je ?', 'Des indices de plus en plus faciles : moins il en faut, plus tu marques.', '?'],
-    ['L’intrus', 'Quatre réponses, une ne va pas avec les autres.', '≠'], ['Avant ou après ?', 'Cet évènement est-il plus ancien que l’autre ?', '⇆']] },
+    ['L’intrus', 'Quatre réponses, une ne va pas avec les autres.', '≠'], ['Avant ou après ?', 'Cet évènement est-il plus ancien que l’autre ?', 'av.']] },
   { t: 'Sport', c: '#9CC49A', lay: 'l-duo', m: [
     ['Plus ou moins', 'Estime un nombre avec le curseur : plus tu es proche, plus tu marques.', '≈'],
-    ['Duel de stats', 'Deux sportifs, une statistique : qui a le plus ?', '⚖']] },
+    ['Duel de stats', 'Deux sportifs, une statistique : qui a le plus ?', 'A>B']] },
   { t: 'Arts et littérature', c: '#C99BC4', lay: 'l-rows', m: [
-    ['Associer', 'Relie chaque œuvre à son auteur.', 'A↔B'], ['Qui a écrit ?', 'Un titre, quatre auteurs.', '✒'], ['Réponse libre', 'Le nom suffit, l’orthographe est tolérée.', 'Aa_']] },
+    ['Associer', 'Relie chaque œuvre à son auteur.', 'A–B'], ['Qui a écrit ?', 'Un titre, quatre auteurs.', 'Qui'], ['Réponse libre', 'Le nom suffit, l’orthographe est tolérée.', 'Aa_']] },
   { t: 'Langue française', c: '#6FC3D6', lay: 'l-list', m: [
     ['Orthographe', 'Quelle est la bonne écriture ?', 'é'], ['Définition', 'Un mot rare, quatre sens.', 'Déf'], ['Conjugaison', 'Passé simple, subjonctif…', 'eut'],
     ['Expressions', 'Complète l’expression.', '« »'], ['Anagramme', 'Remets les lettres dans l’ordre.', 'RMEA']] },
@@ -1266,7 +1283,7 @@ function routeDraw(q) {
   if (locked) return;
   const nb = graph()[cur].map(id => S.by[id]).sort((a, b) => a.n.localeCompare(b.n, 'fr'));
   $('choices').className = 'choices' + (nb.length > 6 ? ' many' : '');
-  $('choices').innerHTML = (steps ? `<button class="choice undo" data-undo="1">↩ Revenir</button>` : '') + nb.map(c => `<button class="choice" data-go="${c.id}">${esc(c.n)}</button>`).join('');
+  $('choices').innerHTML = (steps ? `<button class="choice undo" data-undo="1">${ICON_UNDO} Revenir</button>` : '') + nb.map(c => `<button class="choice" data-go="${c.id}">${esc(c.n)}</button>`).join('');
 }
 function answerRoute(reached) {
   if (locked) return; locked = true; cancelAnimationFrame(raf);
@@ -1318,9 +1335,9 @@ function duoBars(mine) {
   const ps = mpPlayers(), me = ps.find(p => p.me) || ps[0], op = ps.find(p => p !== me), max = (SES.n + 1) * 20;
   const opScore = op.answers.filter(a => a.i < SES.i || a.i === MP.revI).reduce((t, a) => t + a.pts, 0); // questions déjà révélées seulement
   if ($('vbL').dataset.m !== SES.mpId) ['vbL', 'vbR'].forEach(k => { $(k).dataset.m = SES.mpId; $(k).dataset.ans = ''; });
-  // mes points dès que je réponds ; ceux de l'adversaire à la révélation (✗ s'il s'est trompé)
-  if (mine !== undefined && $('vbL').dataset.ans !== String(SES.i)) { $('vbL').dataset.ans = SES.i; floatPts($('vbL'), mine ? '+' + mine : '✗', !mine); }
-  if (MP.revI >= 0 && $('vbR').dataset.ans !== String(MP.revI)) { const a = op.answers.find(a => a.i === MP.revI); $('vbR').dataset.ans = MP.revI; floatPts($('vbR'), a && a.pts ? '+' + a.pts : '✗', !(a && a.pts)); }
+  // mes points dès que je réponds ; ceux de l'adversaire à la révélation (× s'il s'est trompé)
+  if (mine !== undefined && $('vbL').dataset.ans !== String(SES.i)) { $('vbL').dataset.ans = SES.i; floatPts($('vbL'), mine ? '+' + mine : '×', !mine); }
+  if (MP.revI >= 0 && $('vbR').dataset.ans !== String(MP.revI)) { const a = op.answers.find(a => a.i === MP.revI); $('vbR').dataset.ans = MP.revI; floatPts($('vbR'), a && a.pts ? '+' + a.pts : '×', !(a && a.pts)); }
   [[$('vbL'), me, SES.score], [$('vbR'), op, opScore]].forEach(([el, p, sc]) => {
     const b = el.querySelector('b');
     el.style.setProperty('--pc', p === me ? 'var(--acc)' : 'var(--sea)');
@@ -1441,7 +1458,7 @@ function mpReveal(i) {
   const q = qAt(i), ps = mpPlayers(), aliveBefore = mpAlive(i), aliveAfter = mpAlive(i + 1);
   const chips = ps.filter(p => aliveBefore.includes(p.user_id) || p.answers.some(a => a.i === i)).map(p => {
     const a = p.answers.find(a => a.i === i), out = SES.rules === 'elim' && aliveBefore.includes(p.user_id) && !aliveAfter.includes(p.user_id);
-    return `<span class="${a ? (a.good ? 'ok' : 'ko') : 'ko'}${out ? ' out' : ''}"><i style="background:${colorOf(p.user_id)}"></i>${esc(p.name)}${p.me ? ' (toi)' : ''} · ${a ? (a.good ? '✓' : '✗') + ' +' + a.pts : '—'}</span>`;
+    return `<span class="${a ? (a.good ? 'ok' : 'ko') : 'ko'}${out ? ' out' : ''}"><i style="background:${colorOf(p.user_id)}"></i>${esc(p.name)}${p.me ? ' (toi)' : ''} · ${a ? (a.good ? '' : '× ') + '+' + a.pts : '—'}</span>`;
   });
   $('mpRev').innerHTML = chips.join(''); $('mpRev').className = 'on'; duoBars();
   if (q.type === 'map') {
@@ -1518,7 +1535,7 @@ async function loadOnline() {
 }
 function renderOnline() {
   const open = ONLINE.filter(m => m.status === 'lobby' && !m.mine), mine = ONLINE.filter(m => m.mine);
-  $('onlineN').textContent = open.length ? open.length : '⇄';
+  if (open.length) $('onlineN').textContent = open.length; else $('onlineN').innerHTML = ICON_SWAP;
   $('onlineSub').textContent = !ROOM ? 'Duel à deux sur ce téléphone' : open.length ? `${open.length} partie${open.length > 1 ? 's' : ''} t’attend${open.length > 1 ? 'ent' : ''} · ${open.map(m => m.hostName).join(', ')}` : mine.length ? 'Ta partie est ouverte' : 'Duel, partie à plusieurs, défi sur mesure';
   const list = ONLINE.map(m => {
     const kind = m.mode === 'duel' ? 'Duel' : m.rules === 'elim' ? 'Élimination' : 'Partie';
@@ -1532,10 +1549,10 @@ function renderOnline() {
 }
 /* ================= Défi sur mesure ================= */
 const DF_KINDS = {
-  duel: { b: 'Duel', s: 'Un contre un, en ligne', i: '1v1' },
-  points: { b: 'Partie', s: 'Jusqu’à 12, aux points', i: '12' },
-  elim: { b: 'Élimination', s: 'Une erreur et tu sors', i: '✕' },
-  local: { b: 'Même téléphone', s: 'À deux, chacun son tour', i: '⇄' },
+  duel: { b: 'Duel', s: 'Un contre un, en ligne', i: ICON_SWAP },
+  points: { b: 'Partie', s: 'Jusqu’à 12, aux points', i: ICON_PODIUM },
+  elim: { b: 'Élimination', s: 'Une erreur et tu sors', i: ICON_OUT },
+  local: { b: 'Même téléphone', s: 'À deux, chacun son tour', i: ICON_PHONE },
 };
 const DF_GROUPS = [['Reconnaître', '#E8B04B'], ['Comparer', '#E8B04B'], ['Cartes', '#9CC49A'], ['Histoire', '#D98A5F']];
 let DF = Object.assign({ kind: 'duel', ids: ['flag', 'cap', 'geo'], level: 'facile', n: 7 }, jget('chaumiere-geoquiz-defi', {}));
@@ -1552,7 +1569,7 @@ function renderDefi() {
   $('dfLead').textContent = ROOM ? 'Rejoins une partie, ou compose ton défi.' : 'Compose un défi à jouer à deux sur ce téléphone.';
   $('dfKind').innerHTML = Object.entries(kinds).map(([k, v]) => `<button data-k="${k}" aria-pressed="${k === DF.kind}"><i>${v.i}</i><b>${v.b}</b><span>${v.s}</span></button>`).join('');
   $('dfNames').hidden = DF.kind !== 'local';
-  $('dfPre').innerHTML = [['surprise', '🎲 Surprise'], ['all', 'Tout'], ...DF_GROUPS.map(([g]) => [g, g]), ['none', 'Aucun']].map(([k, v]) => `<button data-p="${k}">${v}</button>`).join('');
+  $('dfPre').innerHTML = [['surprise', ICON_SHUFFLE + ' Surprise'], ['all', 'Tout'], ...DF_GROUPS.map(([g]) => [g, g]), ['none', 'Aucun']].map(([k, v]) => `<button data-p="${k}">${v}</button>`).join('');
   $('dfModes').innerHTML = DF_GROUPS.map(([gr, c]) => `<div class="dfgrp" style="--th:${c}">${gr}</div><div class="dfmodes" style="--th:${c}">${GAMES.filter(g => g.g === gr).map(g =>
     `<button data-id="${g.id}" aria-pressed="${DF.ids.includes(g.id)}">${illHTML(g.id)}<span class="nm">${g.parent ? g.v : g.name}</span></button>`).join('')}</div>`).join('')
     + `<div class="dfgrp" style="--th:#8DA7D6">Culture générale</div><div class="dfmodes" style="--th:#8DA7D6">${CULTURE.slice(0, 3).map(t => `<button disabled><span class="nm">${t.t}<br><small>bientôt</small></span></button>`).join('')}</div>`;
@@ -1632,7 +1649,7 @@ function finish() {
   $('pRecap').hidden = false;
   $('recap').innerHTML = recapHTML(SES.log);
   if (SES.daily) {
-    const d = new Date(), txt = `Géo Quiz · Défi du ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}\n${SES.score} pts · ${SES.log.map(l => l.good ? '🟩' : l.pts ? '🟨' : '🟥').join('')}`;
+    const d = new Date(), txt = `Géo Quiz · Défi du ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}\n${SES.score} pts · ${SES.log.map(l => l.good ? '■' : l.pts ? '▣' : '□').join('')}`;
     $('shareT').textContent = txt; $('pShare').hidden = false; $('copy').dataset.t = txt;
   }
   SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
