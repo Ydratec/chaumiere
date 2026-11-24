@@ -243,7 +243,18 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 
 /* Jeu */
 #play{display:flex;flex-direction:column;gap:10px}
-#play>*:not(.stage){flex:none}
+#play>*:not(.arena){flex:none}
+.arena{flex:1;min-height:0;display:flex;gap:8px}
+.arena>.stage{flex:1;min-width:0}
+/* Duel en ligne : une barre de score par joueur, de chaque côté (l'adversaire monte à chaque révélation) */
+.vbar{display:none;flex:none;width:30px;flex-direction:column;align-items:center;gap:6px;padding:2px 0}
+#play.duo .vbar{display:flex}
+.vbar b{font:800 15px/1 Archivo,Inter,sans-serif;color:var(--pc);font-variant-numeric:tabular-nums;transition:transform .25s}
+.vbar b.bump{transform:scale(1.25)}
+.vbar span{flex:1;width:10px;border-radius:99px;background:rgba(255,255,255,.07);position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.vbar span i{position:absolute;left:0;right:0;bottom:0;height:0;border-radius:99px;background:linear-gradient(to top,color-mix(in srgb,var(--pc) 55%,#000),var(--pc));box-shadow:0 0 14px color-mix(in srgb,var(--pc) 60%,transparent);transition:height .7s cubic-bezier(.2,.8,.2,1)}
+.vbar small{font:700 10.5px Inter,sans-serif;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;max-width:30px;overflow:hidden;text-overflow:clip;white-space:nowrap}
+.vbar.lead small{color:var(--ink)}
 .hud{display:grid;grid-template-columns:auto 1fr auto 1fr;align-items:center;gap:10px}
 .hud .score{font-family:Archivo;font-weight:800;font-size:28px;line-height:1}
 .hud .score small{display:block;font:500 13px Inter;color:var(--mute)}
@@ -251,9 +262,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .hud .qn b{color:var(--ink);font-family:Archivo;font-size:18px}
 .hud .gain{justify-self:end;font-family:Archivo;font-weight:800;font-size:22px;opacity:0;transition:opacity .2s}
 .hud .gain.on{opacity:1}
-.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
-.bar i{display:block;height:100%;width:100%;background:var(--acc);transform-origin:left;border-radius:6px}
-.bar.low i{background:var(--ko)}
+/* Chrono : piste fine et arrondie, couleur qui passe du vert au rouge, secondes à droite, pulsation sur les 3 dernières */
+.bar{--tc:hsl(150 70% 50%);display:flex;align-items:center;gap:10px}
+.bar .tt{flex:1;height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.bar i{display:block;height:100%;width:100%;border-radius:99px;transform-origin:left;background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 60%,#000),var(--tc));box-shadow:0 0 12px color-mix(in srgb,var(--tc) 55%,transparent)}
+.bar .ts{flex:none;min-width:34px;text-align:right;font:800 15px/1 Archivo,Inter,sans-serif;font-variant-numeric:tabular-nums;color:var(--tc)}
+.bar .ts small{font:600 11px Inter,sans-serif;margin-left:1px;opacity:.8}
+.bar.low .ts{animation:tpulse .5s ease-in-out infinite alternate}
+.bar.low .tt{animation:tglow .5s ease-in-out infinite alternate}
+.bar.done{--tc:#55555f}.bar.done .ts{animation:none}
+@keyframes tpulse{to{transform:scale(1.18)}}
+@keyframes tglow{to{box-shadow:inset 0 0 0 1px rgba(255,77,94,.55)}}
 .stage{position:relative;flex:1;min-height:120px;border-radius:18px;background:radial-gradient(55% 60% at 50% 48%,#141418,#000 78%);border:1px solid var(--line);overflow:hidden}
 .stage>*{display:none}
 .stage>.tag,.stage>.reveal{display:block}
@@ -408,6 +427,23 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .recap .vis .txt{font-family:Archivo;font-weight:800;font-size:22px}
 .recap em{display:block;font-style:normal;color:var(--mute);font-size:12px}
 .recap .km{display:block;font-family:Archivo;font-weight:700;font-size:15px}
+/* Récap face à face (duel) */
+.vs{display:flex;flex-direction:column;gap:7px}
+.vs .vh{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px;padding-bottom:8px;margin-bottom:2px;border-bottom:1px solid var(--line)}
+.vs .vh .p{display:flex;flex-direction:column;gap:2px;min-width:0}
+.vs .vh .p.r{align-items:flex-end;text-align:right}
+.vs .vh .p span{font:600 13px Inter,sans-serif;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vs .vh .p strong{font:800 30px/1 Archivo,Inter,sans-serif;color:var(--pc)}
+.vs .vh .p.win span{color:var(--ink)}
+.vs .vh em{font:800 13px Inter,sans-serif;font-style:normal;color:var(--mute);padding-bottom:6px}
+.vs .vr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);align-items:center;gap:8px}
+.vs .vr .s{display:flex;align-items:center;gap:6px}
+.vs .vr .s.l{flex-direction:row-reverse}
+.vs .vr .s i{height:8px;border-radius:99px;background:var(--pc);min-width:3px;opacity:.45}
+.vs .vr .s b{font:700 13px Inter,sans-serif;font-variant-numeric:tabular-nums;color:var(--mute);min-width:20px}
+.vs .vr .s.l b{text-align:right}
+.vs .vr .s.w i{opacity:1}.vs .vr .s.w b{color:var(--ink)}
+.vs .vr .t{text-align:center;font-size:12px;line-height:1.25;color:#c9c9d2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .duo{width:100%;border-collapse:collapse;font-size:15px}
 .duo th,.duo td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
 .duo td.n,.duo th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -485,7 +521,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
       <div class="qn" id="qn"></div>
       <div class="gain" id="gain">+0</div>
     </div>
-    <div class="bar" id="bar"><i id="barI"></i></div>
+    <div class="bar" id="bar"><div class="tt"><i id="barI"></i></div><span class="ts" id="barS"></span></div>
+    <div class="arena" id="arena">
+    <div class="vbar" id="vbL"><b></b><span><i></i></span><small></small></div>
     <div class="stage" id="stage">
       <span class="tag" id="tag"></span>
       <svg id="sil" role="img" aria-label="Silhouette"></svg>
@@ -502,6 +540,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
       <div class="mres" id="mres" hidden></div>
       <div class="reveal" id="reveal"></div>
       <div id="mpRev" aria-live="polite"></div>
+    </div>
+    <div class="vbar" id="vbR"><b></b><span><i></i></span><small></small></div>
     </div>
     <div class="qtext" id="qtext" aria-live="polite"></div>
     <div class="choices" id="choices"></div>
@@ -525,7 +565,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
     <nav class="tabs fill" id="etabs" aria-label="Résultats"></nav>
     <div class="pages" id="epages">
       <div class="epage" id="pRank" data-t="Classement"><table class="duo" id="rankT"></table></div>
-      <div class="epage" id="pDuo" data-t="Duel"><table class="duo" id="duo"></table></div>
+      <div class="epage" id="pDuo" data-t="Duel"><div class="vs" id="duo"></div></div>
       <div class="epage" id="pMap" data-t="Carte"><svg id="endMap" class="endmap" aria-label="Récapitulatif sur la carte"></svg></div>
       <div class="epage" id="pRecap" data-t="Récap"><ul class="recap" id="recap"></ul></div>
       <div class="epage" id="pRoom" data-t="Salle"><div id="board"><h3 class="boardT">Défi du jour dans la salle</h3><ol class="board" id="boardL"></ol><button class="ghost" id="toBoard" type="button">Voir tous les classements</button></div></div>
@@ -968,7 +1008,7 @@ function ask() {
   $('qn').innerHTML = SES.online ? (SES.rules === 'elim' ? `Question <b>${SES.i + 1}</b> · ${mpAlive(SES.i).length} en lice` : `Question <b>${SES.i + 1}</b> / ${SES.n}`) : SES.format === 'survie' ? `Question <b>${SES.i + 1}</b>` : `Question <b>${SES.i + 1}</b> / ${SES.n}` + (SES.format === 'duel' ? ` · ${esc(SES.names[SES.player - 1])}` : '');
   $('tag').textContent = last ? 'Points doublés' : '';
   $('tag').className = 'tag' + (last ? ' x2' : '');
-  $('reveal').className = 'reveal'; $('gain').className = 'gain'; $('hint').innerHTML = ''; $('unzoom').hidden = true; $('mres').hidden = true; $('tag').style.visibility = ''; CAMTOK = {};
+  $('reveal').className = 'reveal'; $('reveal').textContent = ''; $('gain').className = 'gain'; $('hint').innerHTML = ''; $('unzoom').hidden = true; $('mres').hidden = true; $('tag').style.visibility = ''; CAMTOK = {}; duoBars();
   $('choices').className = 'choices'; $('choices').innerHTML = '';
   const st = $('stage');
   if (q.type === 'choice') {
@@ -998,8 +1038,11 @@ function ask() {
 }
 function tick() {
   const q = curQ(), rem = Math.max(0, q.T - (performance.now() - t0) / 1000);
-  $('barI').style.transform = `scaleX(${rem / q.T})`;
-  $('bar').classList.toggle('low', rem < 3);
+  const f = rem / q.T, sec = Math.ceil(rem);
+  $('barI').style.transform = `scaleX(${f})`;
+  $('bar').style.setProperty('--tc', `hsl(${Math.round(150 * Math.min(1, f * 1.35))} 75% 52%)`);
+  if ($('barS').dataset.s !== String(sec)) { $('barS').dataset.s = sec; $('barS').innerHTML = `${sec}<small>s</small>`; }
+  $('bar').classList.toggle('low', rem < 3); $('bar').classList.remove('done');
   if (q.tick) q.tick(1 - rem / q.T);
   if (rem <= 0) return q.type === 'choice' ? answerChoice(-1) : q.type === 'map' ? answerMap(null) : q.type === 'order' ? answerOrder() : answerRoute(false);
   raf = requestAnimationFrame(tick);
@@ -1008,6 +1051,7 @@ const remaining = () => Math.max(0, curQ().T - (performance.now() - t0) / 1000);
 const timePts = () => Math.max(2, Math.round(20 * remaining() / curQ().T));
 
 function settle(l, delay) {
+  $('bar').classList.add('done'); $('bar').classList.remove('low');
   if (SES.online) return mpSettle(l);
   const surv = SES.format === 'survie';
   if (surv) { l.pts = l.good ? 1 : 0; }
@@ -1156,6 +1200,29 @@ async function api(method, body, query = '') {
   if (!r.ok) throw new Error(d.error || 'Erreur');
   return d;
 }
+/* Barres de score du duel en ligne : moi à gauche (en direct), l'adversaire à droite (à chaque révélation) */
+function duoBars() {
+  const on = !!(SES && SES.online && MP.match && MP.match.rules !== 'elim' && mpPlayers().length === 2);
+  $('play').classList.toggle('duo', on);
+  if (!on) return;
+  const ps = mpPlayers(), me = ps.find(p => p.me) || ps[0], op = ps.find(p => p !== me), max = (SES.n + 1) * 20;
+  const opScore = op.answers.filter(a => a.i < SES.i || a.i === MP.revI).reduce((t, a) => t + a.pts, 0); // questions déjà révélées seulement
+  [[$('vbL'), me, SES.score], [$('vbR'), op, opScore]].forEach(([el, p, sc]) => {
+    const b = el.querySelector('b');
+    el.style.setProperty('--pc', colorOf(p.user_id));
+    if (b.textContent !== String(sc)) { b.textContent = sc; b.classList.add('bump'); setTimeout(() => b.classList.remove('bump'), 260); }
+    el.querySelector('i').style.height = Math.min(100, sc / max * 100) + '%';
+    el.querySelector('small').textContent = p.name.slice(0, 4);
+  });
+  $('vbL').classList.toggle('lead', SES.score > opScore); $('vbR').classList.toggle('lead', opScore > SES.score);
+}
+/* Récap face à face : une ligne par question, la barre du meilleur des deux en pleine couleur */
+function versusHTML(A, B, rows) {
+  const top = Math.max(20, ...rows.map(r => Math.max(r.a ?? 0, r.b ?? 0)));
+  const side = (pts, other, cls, c) => `<div class="s ${cls}${(pts ?? -1) > (other ?? -1) ? ' w' : ''}" style="--pc:${c}"><i style="width:${(pts ?? 0) / top * 100}%"></i><b>${pts ?? '—'}</b></div>`;
+  return `<div class="vh"><div class="p${A.total > B.total ? ' win' : ''}" style="--pc:${A.color}"><span>${esc(A.name)}</span><strong>${A.total}</strong></div><em>VS</em><div class="p r${B.total > A.total ? ' win' : ''}" style="--pc:${B.color}"><span>${esc(B.name)}</span><strong>${B.total}</strong></div></div>`
+    + rows.map(r => `<div class="vr">${side(r.a, r.b, 'l', A.color)}<div class="t">${esc(r.t)}</div>${side(r.b, r.a, 'r', B.color)}</div>`).join('');
+}
 const mpPlayers = () => MP.players.map(p => ({ user_id: p.user_id, answers: p.answers || [], left: p.left_game, name: p.name, me: p.me }));
 function mpAlive(i) {
   // même règle que src/modules/quiz/match.ts (aliveAt)
@@ -1251,6 +1318,7 @@ function mpSettle(l) {
   const pick = l.pick ?? (l.hit && S.by[l.hit] ? S.by[l.hit].n : null);
   api('POST', { action: 'answer', id: MP.id, i: SES.i, pts: Math.min(40, l.pts), good: !!l.good, pick, pt: l.pt || null }).then(() => mpLoad()).catch(() => {});
   $('hint').textContent = 'En attente des autres…';
+  duoBars();
 }
 function mpReveal(i) {
   // réponses de tous les joueurs à la question i, et punaises des autres sur les cartes
@@ -1259,7 +1327,7 @@ function mpReveal(i) {
     const a = p.answers.find(a => a.i === i), out = SES.rules === 'elim' && aliveBefore.includes(p.user_id) && !aliveAfter.includes(p.user_id);
     return `<span class="${a ? (a.good ? 'ok' : 'ko') : 'ko'}${out ? ' out' : ''}"><i style="background:${colorOf(p.user_id)}"></i>${esc(p.name)}${p.me ? ' (toi)' : ''} · ${a ? (a.good ? '✓' : '✗') + ' +' + a.pts : '—'}</span>`;
   });
-  $('mpRev').innerHTML = chips.join(''); $('mpRev').className = 'on';
+  $('mpRev').innerHTML = chips.join(''); $('mpRev').className = 'on'; duoBars();
   if (q.type === 'map') {
     const svg = $('map'); svg.querySelectorAll('.mp').forEach(n => n.remove());
     const upp = VB(svg)[2] / (svg.clientWidth || 1);
@@ -1288,6 +1356,14 @@ function mpFinish() {
     $('rankT').innerHTML = `<tr><th>#</th><th>Joueur</th><th class="n">${elim ? 'Éliminé' : 'Points'}</th></tr>` + r.map((p, k) =>
       `<tr${p.me ? ' style="font-weight:700"' : ''}><td>${k + 1}</td><td><span style="display:inline-block;width:10px;height:10px;border-radius:99px;margin-right:8px;background:${colorOf(p.user_id)}"></span>${esc(p.name)}${p.left ? ' (parti)' : ''}</td><td class="n">${elim ? (p.out == null ? (k === 0 ? 'vainqueur' : 'au bout') : 'Q' + (p.out + 1)) + ' · ' + p.score + ' pts' : p.score}</td></tr>`).join('');
     $('pRank').hidden = false;
+    const ps2 = mpPlayers();
+    if (ps2.length === 2 && !elim) {
+      const me = ps2.find(p => p.me) || ps2[0], op = ps2.find(p => p !== me), last = Math.max(-1, ...ps2.flatMap(p => p.answers.map(a => a.i)));
+      const pts = (p, i) => { const a = p.answers.find(a => a.i === i); return a ? a.pts : null; }, tot = p => p.answers.reduce((t, a) => t + a.pts, 0);
+      $('duo').innerHTML = versusHTML({ name: me.name, color: colorOf(me.user_id), total: tot(me) }, { name: op.name, color: colorOf(op.user_id), total: tot(op) },
+        Array.from({ length: last + 1 }, (_, i) => ({ t: qTitle(qAt(i)), a: pts(me, i), b: pts(op, i) })));
+      $('pDuo').hidden = false; $('pRank').hidden = true;
+    }
     const maps = SES.log.filter(l => l.q.type === 'map' && l.q.map !== 'touch');
     if (maps.length === SES.log.length && maps.length) { const svg = $('endMap'); $('pMap').hidden = false; if (maps[0].q.map === 'fr') { frBase(svg); maps.forEach(l => frMarks(svg, l, false)); } else { wBase(svg); maps.forEach(l => wMarks(svg, l, false)); } }
     if (SES.log.length) { $('pRecap').hidden = false; $('recap').innerHTML = recapHTML(SES.log); }
@@ -1415,7 +1491,7 @@ function finish() {
   show('end');
   const prev = +store.get(bestKey()) || 0, best = Math.max(prev, SES.score);
   if (SES.format !== 'duel') store.set(bestKey(), best);
-  ['pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
+  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
   const goods = SES.log.filter(l => l.good).length;
   if (SES.format === 'duel') {
     SES.results.push({ score: SES.score, log: SES.log });
@@ -1423,9 +1499,8 @@ function finish() {
     $('fScore').textContent = `${a.score} – ${b.score}`;
     $('fLine').textContent = a.score === b.score ? 'Égalité parfaite !' : `${a.score > b.score ? n1 : n2} gagne le duel`;
     $('pDuo').hidden = false;
-    $('duo').innerHTML = `<tr><th>Question</th><th class="n">${esc(n1)}</th><th class="n">${esc(n2)}</th></tr>` +
-      a.log.map((l, i) => `<tr><td>${esc(qTitle(l.q))}</td><td class="n">${l.pts}</td><td class="n">${b.log[i] ? b.log[i].pts : '—'}</td></tr>`).join('') +
-      `<tr class="tot"><td>Total</td><td class="n">${a.score}</td><td class="n">${b.score}</td></tr>`;
+    $('duo').innerHTML = versusHTML({ name: n1, color: '#4da3ff', total: a.score }, { name: n2, color: '#ff6b8b', total: b.score },
+      a.log.map((l, i) => ({ t: qTitle(l.q), a: l.pts, b: b.log[i] ? b.log[i].pts : null })));
     $('recap').innerHTML = '';
     SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
     return;
