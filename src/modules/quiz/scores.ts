@@ -3,7 +3,7 @@
 /** Jeux du quiz (identifiants du jeu public/quiz/index.html) et leur nom affiché. `daily` = défi du jour. */
 export const QUIZ_GAMES: Record<string, string> = {
   daily: "Défi du jour",
-  geo: "Frontières", flag: "Drapeaux", cap: "Capitales", reveal: "Frontières · mystère", scale: "Frontières · à l’échelle",
+  geo: "Frontières", flag: "Drapeaux", cap: "Capitales", reveal: "Frontières · mystère",
   neighbor: "Voisins", cmp: "Plus grand ?", route: "Itinéraire",
   place: "Placer en France", world: "Placer dans le monde", touch: "Toucher le pays",
   culture: "Monnaies et co",

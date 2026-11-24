@@ -55,5 +55,5 @@ test("défi sur mesure : mélange de jeux et nombre de questions", () => {
   assert.equal(readNewMatch({ mode: "party", rules: "elim", game: "mix", cat: "geo.hdate", level: "expert", n: 5 })?.n, ELIM_QUESTIONS); // élimination : plafond fixe
   assert.equal(readNewMatch({ mode: "duel", game: "route", level: "facile", n: 99 })?.n, 5); // nombre refusé : celui du jeu
   assert.equal(readNewMatch({ mode: "duel", game: "geo", level: "facile", n: 15 })?.n, 15);
-  assert.deepEqual(mixGames("geo.reveal.scale"), ["geo", "reveal", "scale"]);
+  assert.deepEqual(mixGames("geo.reveal.flag"), ["geo", "reveal", "flag"]);
 });

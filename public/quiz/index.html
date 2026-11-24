@@ -297,7 +297,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 #sil path{fill:#fff;filter:drop-shadow(0 0 22px rgba(255,255,255,.22))}
 .m-sil #sil,.m-name #sil,.m-reveal #sil{display:block}
 .m-name #sil path{opacity:.18;filter:none}
-.in #sil,.in #flag,.in #scale,.in #cmp,.in #big,.in #txt{animation:pop .45s cubic-bezier(.2,.9,.3,1.2)}
+.in #sil,.in #flag,.in #cmp,.in #big,.in #txt{animation:pop .45s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes pop{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
 #flag{position:absolute;inset:14% 8% 18%;align-items:center;justify-content:center}
 .m-flag #flag{display:flex}
@@ -320,11 +320,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .choices.col{grid-template-columns:1fr}
 .choice .rk{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:99px;background:#fff;color:#000;font-family:var(--fm);font-size:14px;margin-right:8px}
 
-#scale{position:absolute;inset:9% 6% 15%;width:88%;height:76%}
-.m-scale #scale{display:block}
-#scale .c path{fill:#fff}
-#scale .f path{fill:none;stroke:var(--acc);stroke-width:2px;stroke-dasharray:6 5;vector-effect:non-scaling-stroke}
-#scale text{fill:var(--acc);font:600 13px var(--fs)}
 #cmp{position:absolute;inset:14px 10px 46px;grid-template-columns:1fr 1fr;gap:10px}
 .m-cmp #cmp{display:grid}
 .pan{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;border-radius:12px;background:rgba(255,255,255,.03);padding:8px}
@@ -477,7 +472,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 @media(max-width:420px){.choice{font-size:15px;min-height:52px}}
 @media(max-height:640px){.page .card .ds{display:none}}
 @media(max-height:620px){.daily p{display:none}.card .ds{-webkit-line-clamp:1}.qtext{font-size:20px}}
-@media(prefers-reduced-motion:reduce){.pinb.drop{animation:none}.in #sil,.in #flag,.in #scale,.in #cmp,.in #big{animation:none}*{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.pinb.drop{animation:none}.in #sil,.in #flag,.in #cmp,.in #big{animation:none}*{transition:none!important}}
 
 /* ================= Style « Atlas » (surcharge) =================
    Coins presque droits, filets fins, pas de pastilles ni de lueurs ; l'or est la seule couleur d'accent. */
@@ -556,7 +551,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 #play.duo .vbar span{width:6px}
 
 /* silhouettes et terres en parchemin, sans lueur */
-#sil path,.hero .sil path,#scale .c path,.pan svg path,.recap .vis path{fill:var(--land);filter:none}
+#sil path,.hero .sil path,.pan svg path,.recap .vis path{fill:var(--land);filter:none}
 .m-name #sil path{opacity:.16}
 #flag img{filter:drop-shadow(0 6px 24px rgba(0,0,0,.5))}
 .wd.rv,.route .wd.rv{fill:#F6EFDF}
@@ -642,7 +637,6 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
       <div id="big"></div>
       <div id="txt"></div>
       <ol id="chrono"></ol>
-      <svg id="scale" role="img" aria-label="Silhouette à l'échelle de la France"></svg>
       <div id="cmp"></div>
       <svg id="map" role="img" aria-label="Carte"></svg>
       <div class="ask" id="ask"></div>
@@ -724,11 +718,10 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const WCATS = { tout: 'Tout', ville: 'Villes', montagne: 'Montagnes', desert: 'Déserts', eau: 'Lacs et mers', fleuve: 'Fleuves', ile: 'Îles', monument: 'Monuments' };
 const WCAT1 = { ville: 'ville', montagne: 'montagne, massif ou volcan', desert: 'désert', eau: 'lac ou mer', fleuve: 'fleuve', ile: 'île ou archipel', monument: 'monument ou merveille' };
 const GAMES = [
-  { id: 'geo', g: 'Reconnaître', v: 'Silhouette', vars: ['geo', 'reveal', 'scale'], name: 'Frontières', desc: 'Silhouette, pays mystère ou à l’échelle.', lead: 'Une silhouette, quatre pays, dix secondes. Plus tu réponds vite, plus tu marques.' },
+  { id: 'geo', g: 'Reconnaître', v: 'Silhouette', vars: ['geo', 'reveal'], name: 'Frontières', desc: 'Silhouette ou pays mystère.', lead: 'Une silhouette, quatre pays, dix secondes. Plus tu réponds vite, plus tu marques.' },
   { id: 'flag', g: 'Reconnaître', name: 'Drapeaux', desc: 'À quel pays est ce drapeau ?', lead: 'Un drapeau, quatre pays. En Expert, les choix viennent de la même région.' },
   { id: 'cap', g: 'Reconnaître', name: 'Capitales', desc: 'Un pays, quatre capitales.', lead: 'Un pays, quatre capitales. En Expert, les fausses réponses sont des capitales voisines.' },
   { id: 'reveal', g: 'Reconnaître', parent: 'geo', v: 'Mystère', name: 'Pays mystère', desc: 'La silhouette se dévoile peu à peu.', lead: 'La silhouette apparaît case par case. Trouve le pays avant qu’elle soit complète : plus tôt tu réponds, plus tu marques.' },
-  { id: 'scale', g: 'Reconnaître', parent: 'geo', v: 'À l’échelle', name: 'À l’échelle', desc: 'Le pays posé sur la France, même échelle.', lead: 'La silhouette est dessinée à la même échelle que la France (en pointillés). La taille est un indice… parfois trompeur.' },
   { id: 'neighbor', g: 'Comparer', name: 'Voisins', desc: 'Lequel touche ce pays ?', lead: 'Un pays s’affiche : trouve, parmi quatre, celui qui partage une frontière terrestre avec lui.' },
   { id: 'cmp', g: 'Comparer', name: 'Plus grand ?', desc: 'Superficie, population ou PIB.', lead: 'Deux pays, une question : lequel est le plus grand, le plus peuplé ou le plus riche ? En Expert, les écarts sont serrés.', cats: { tout: 'Mélange', a: 'Superficie', pop: 'Population', gdp: 'PIB' }, catT: 'Critère' },
   { id: 'route', g: 'Comparer', name: 'Itinéraire', desc: 'Relie deux pays par la terre.', lead: 'Va d’un pays à l’autre en traversant des pays voisins. Chaque étape de trop coûte des points. 5 trajets, 45 s chacun.', n: 5 },
@@ -983,10 +976,6 @@ const GEN = {
       tick(f) { const n = Math.min(G * G, 1 + Math.floor(f * G * G * 1.05)), cp = $('sil').querySelector('#rv'); if (!cp || cp.childElementCount === n) return; cp.innerHTML = order.slice(0, n).map(i => `<rect x="${vx + (i % G) * vw / G}" y="${vy + Math.floor(i / G) * vh / G}" width="${vw / G + .5}" height="${vh / G + .5}"/>`).join(''); },
       done() { const cp = $('sil').querySelector('#rv'); if (cp) cp.innerHTML = `<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}"/>`; } });
   },
-  scale(L, used) {
-    const P = geoPool(L).filter(c => c.id !== 'FR' && c.z), ans = choose(P, used), fr = S.by.FR;
-    return mkChoice({ key: ans.id, ans, wrong: distr(ans, P, c => c.n, L), lab: c => c.n, prompt: 'Quel est ce pays ? (France en pointillés, même échelle)', mode: 'scale', rev: ans.n, vis: silSVG(ans), show: () => drawScale(ans, fr) });
-  },
   neighbor(L, used) {
     const ok = c => c.nb && c.nb.some(id => S.by[id] && S.by[id].s && S.by[id].d);
     const P = statePool(L, c => c.d && ok(c)), X = choose(P, used);
@@ -1069,14 +1058,6 @@ const GEN = {
     }
   },
 };
-function drawScale(c, fr) {
-  const svg = $('scale'), box = x => { const v = x.vb.split(' ').map(Number); return { w: v[2] - 2 * 18, h: v[3] - 2 * 18, f: x.z / 1000 }; };
-  const A = box(c), F = box(fr);
-  const W = Math.max(A.w * A.f, F.w * F.f) * 1.08, H = Math.max(A.h * A.f, F.h * F.f) * 1.08;
-  const g = (x, b, cl) => `<g class="${cl}" transform="translate(${-b.w * b.f / 2} ${-b.h * b.f / 2}) scale(${b.f})"><path fill-rule="evenodd" d="${x.d}"/></g>`;
-  svg.setAttribute('viewBox', `${-W / 2} ${-H / 2} ${W} ${H}`);
-  svg.innerHTML = g(c, A, 'c') + g(fr, F, 'f');
-}
 function graph() {
   if (S.graph) return S.graph;
   const ok = id => S.by[id] && S.by[id].t && S.by[id].s && S.WRD.c[id];
@@ -1089,7 +1070,7 @@ function bfs(a) { const g = graph(), d = { [a]: 0 }, q = [a]; while (q.length) {
 /* ================= Session ================= */
 let SES = null, raf = 0, t0 = 0, locked = false, zoomed = false;
 const sel = { game: 'geo', level: 'facile', format: 'normal', cat: {}, multi: 'duel' };
-const DAILY_MIX = ['geo', 'flag', 'cap', 'neighbor', 'cmp', 'world', 'scale', 'culture', 'touch', 'place', 'hdate', 'chrono', 'hplace'];
+const DAILY_MIX = ['geo', 'flag', 'cap', 'neighbor', 'cmp', 'world', 'culture', 'touch', 'place', 'hdate', 'chrono', 'hplace'];
 function dayKey(d = new Date()) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 /* Ordre des jeux d'un mélange : chaque jeu revient à tour de rôle, dans un ordre tiré au sort (le même chez tous, via la graine) */
 function mixSeq(ids, n) { const out = []; while (out.length < n) { let b = shuf(ids); if (out.length && b[0] === out[out.length - 1] && b.length > 1) b.push(b.shift()); out.push(...b); } return out.slice(0, n); }
@@ -1675,7 +1656,7 @@ function pager(tabsEl, pagesEl, key, onChange) {
   pagesEl.onscroll = () => { cancelAnimationFrame(pagesEl._r); pagesEl._r = requestAnimationFrame(paint); };
   return (i = 0) => { const p = pages()[i] || pages()[0]; pagesEl.scrollLeft = p ? p.offsetLeft : 0; paint(); };
 }
-const ILL = { geo: 'IT', reveal: 'MX', scale: 'CL', neighbor: 'DE', cmp: 'BR', route: 'RU', cap: 'GB', place: 'FR', world: 'AU', touch: 'IN', hplace: 'GR', culture: 'JP' };
+const ILL = { geo: 'IT', reveal: 'MX', neighbor: 'DE', cmp: 'BR', route: 'RU', cap: 'GB', place: 'FR', world: 'AU', touch: 'IN', hplace: 'GR', culture: 'JP' };
 function illHTML(id) {
   if (id === 'flag') return `<span class="ill">${flagHTML('JP')}</span>`;
   if (id === 'hdate' || id === 'chrono') return `<span class="ill"><span class="yr">${id === 'hdate' ? '1789' : '1066'}</span></span>`;
@@ -1788,7 +1769,7 @@ function seg(el, map, val, on) { el.innerHTML = Object.entries(map).map(([k, v])
 function counts(gid, L) {
   const c = sel.cat[gid];
   switch (gid) {
-    case 'geo': case 'reveal': case 'scale': return geoPool(L).length + ' pays';
+    case 'geo': case 'reveal': return geoPool(L).length + ' pays';
     case 'flag': return statePool(L).length + ' drapeaux';
     case 'cap': return statePool(L, c => c.cap).length + ' capitales';
     case 'neighbor': case 'cmp': case 'culture': case 'touch': return statePool(L).length + ' pays';
