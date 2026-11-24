@@ -7,13 +7,13 @@ export const REWARDS = {
   dailyMax: 160,
   streakStep: 50, // + 50 par jour d'affilée de défi déjà joué avant aujourd'hui
   streakMax: 300,
-  perGood: 10, // parties solo : par bonne réponse
+  perGood: 20, // parties solo : par bonne réponse
   decay: [1, 0.5, 0.25], // 1re, 2e, 3e partie du même jeu dans la journée ; ensuite 0
-  onlinePlay: 50, // partie en ligne terminée
-  onlineWin: 100, // + victoire
+  onlinePlay: 100, // partie en ligne terminée
+  onlineWin: 150, // + victoire
   onlinePerDay: 5,
   sameOpponent: 2,
-  dayCap: 1500, // hors défi du jour
+  dayCap: 2000, // hors défi du jour (le même nombre est écrit dans quiz_grant, migration 0035)
 } as const;
 
 /** Série : nombre de jours d'affilée, jusqu'à hier, où le défi du jour a été joué. `days` au format AAAA-MM-JJ. */

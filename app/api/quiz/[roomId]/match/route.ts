@@ -123,7 +123,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
     }
     case "done": {
       if (mine && match.status === "playing") await db.from("quiz_matches").update({ status: "done" }).eq("id", id).eq("status", "playing");
-      // pièces : 50 pour la partie, 100 de plus pour la victoire (une fois par partie, limites dans quiz_grant)
+      // pièces : 100 pour la partie, 150 de plus pour la victoire (une fois par partie, limites dans quiz_grant)
       let coins = 0;
       if (mine && !mine.left_game && mine.answers.length && players.length >= 2) {
         const list = players.map((p) => ({ user_id: p.user_id, answers: p.answers, left: p.left_game }));

@@ -27,6 +27,6 @@ test("parties solo : bonnes réponses bornées, survie = la série", () => {
 });
 
 test("en ligne : participation et victoire", () => {
-  assert.equal(onlineReward(false), 50);
-  assert.equal(onlineReward(true), 150);
+  assert.equal(onlineReward(false), 100);
+  assert.equal(onlineReward(true), 250);
 });

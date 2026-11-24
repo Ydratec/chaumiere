@@ -5,7 +5,7 @@
 --   défi du jour : une seule fois par jour ;
 --   parties solo : gains décroissants par jeu dans la journée (100 %, 50 %, 25 %, puis rien) ;
 --   parties en ligne : 5 récompensées par jour, 2 contre le même adversaire, une fois par partie ;
---   plafond : 1 500 pièces par jour hors défi du jour (jour de Paris).
+--   plafond : 2 000 pièces par jour hors défi du jour (jour de Paris).
 -- Seul le serveur écrit ; chacun peut lire ses propres gains.
 
 create table quiz_rewards (
@@ -48,7 +48,7 @@ begin
     else
       raise exception 'type de gain inconnu : %', k;
     end if;
-    amt := greatest(0, least(amt, 1500 - earned));
+    amt := greatest(0, least(amt, 2000 - earned)); -- plafond du jour : REWARDS.dayCap
   end if;
   insert into quiz_rewards (room_id, user_id, day, kind, game, match_id, opponent, amount) values (r, u, d, k, g, m, opp, amt);
   if amt > 0 then perform farm_add_items(r, u, jsonb_build_object('coins', amt)); end if;
