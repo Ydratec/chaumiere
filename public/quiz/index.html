@@ -1479,10 +1479,11 @@ function mpReveal(i) {
   });
   $('mpRev').innerHTML = chips.join(''); $('mpRev').className = 'on'; duoBars();
   if (q.type === 'map') {
-    const svg = $('map'); svg.querySelectorAll('.mp').forEach(n => n.remove());
+    // mpReveal est rappelé à chaque actualisation : on ne pose que les punaises pas encore posées (sinon elles retombent sans arrêt)
+    const svg = $('map'), drawn = new Set([...svg.querySelectorAll('.mp')].map(n => n.dataset.u));
     const upp = VB(svg)[2] / (svg.clientWidth || 1);
     const others = ps.filter(p => !p.me).map(p => ({ p, a: p.answers.find(a => a.i === i) })).filter(o => o.a && o.a.pt);
-    const s = others.map(({ p, a }) => `<g class="mp">${pinSVG(a.pt, upp, colorOf(p.user_id), true)}<g class="sc" data-x="${a.pt[0]}" data-y="${a.pt[1]}" data-s="${upp}" transform="translate(${a.pt[0]} ${a.pt[1]}) scale(${upp})"><text class="mpn" x="0" y="18" text-anchor="middle">${esc(p.name)}</text></g></g>`).join('');
+    const s = others.filter(({ p }) => !drawn.has(p.user_id)).map(({ p, a }) => `<g class="mp" data-u="${p.user_id}">${pinSVG(a.pt, upp, colorOf(p.user_id), true)}<g class="sc" data-x="${a.pt[0]}" data-y="${a.pt[1]}" data-s="${upp}" transform="translate(${a.pt[0]} ${a.pt[1]}) scale(${upp})"><text class="mpn" x="0" y="18" text-anchor="middle">${esc(p.name)}</text></g></g>`).join('');
     if (q.camPts && others.length && q.camN !== others.length) { q.camN = others.length; camTo(svg, camFrame(svg, q.camPts.concat(others.map(o => o.a.pt)), q.camMin), 600); }
     const g = svg.querySelector('.marks'); if (g && s) g.insertAdjacentHTML('beforeend', s);
   }
