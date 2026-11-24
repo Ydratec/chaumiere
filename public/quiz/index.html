@@ -16,7 +16,9 @@
 html{font-synthesis:none}
 *{box-sizing:border-box;min-width:0}
 html,body{height:100%;overflow:hidden}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--fs);overscroll-behavior:none}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--fs);overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea{-webkit-user-select:text;user-select:text}
+img,svg{-webkit-user-drag:none}
 h1,h2,h3,.big{font-family:var(--fd);letter-spacing:-.01em;margin:0}
 .app{max-width:820px;margin:0 auto;height:100%;height:100dvh;overflow:hidden;padding:12px max(4vw,14px);display:flex;flex-direction:column}
 .app>section{flex:1;min-height:0}
@@ -567,6 +569,10 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 .dfkind button[aria-pressed=true] i{opacity:1}
 .dfpre button{display:inline-flex;align-items:center;gap:6px}
 .dfmodes button[aria-pressed=true]::after{width:16px;height:16px;border-radius:2px;background:var(--th) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230C1117' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
+.card.demo{filter:grayscale(1);opacity:.45}
+.card.demo .qtag{color:var(--mute)!important}
+.page.later .tplus{filter:grayscale(1);opacity:.45}
+.srow.soon[data-demo]{cursor:default}
 /* Fin de partie */
 #fScore{font-family:var(--fd);font-weight:400}
 .vs .vh .p strong{font-weight:600}
@@ -758,9 +764,9 @@ const CULTURE = [
 const THEMES = [
   { t: 'Géographie', c: '#E8B04B', lay: 't-geo', show: 3, geo: ['Reconnaître', 'Comparer', 'Cartes'] },
   { t: 'Histoire', c: '#D98A5F', lay: 't-side', show: 2, geo: ['Histoire'] },
-  // Culture générale : pas encore dans la première version (thèmes de démo, voir CULTURE)
-  // { t: 'Sciences et espace', c: '#8DA7D6', lay: 't-feature', show: 3, demo: [0] },
-  // { t: 'Culture et loisirs', c: '#C99BC4', lay: 't-rows', show: 3, demo: [3, 4, 2] },
+  // Culture générale : pas encore jouable dans la première version, affichée en grisé « bientôt »
+  { t: 'Sciences et espace', c: '#8DA7D6', lay: 't-feature', show: 3, demo: [0] },
+  { t: 'Culture et loisirs', c: '#C99BC4', lay: 't-rows', show: 3, demo: [3, 4, 2] },
 ];
 const FORMATS = { normal: { b: 'Normal', s: '7 questions' }, survie: { b: 'Survie', s: '1 erreur = fin' }, multi: { b: 'À plusieurs', s: 'En ligne ou à deux' } };
 const MULTIS = { duel: 'Duel en ligne', points: 'Partie · points', elim: 'Partie · élimination', local: 'Même téléphone' };
@@ -1554,7 +1560,7 @@ function renderDefi() {
   $('dfPre').innerHTML = [['surprise', ICON_SHUFFLE + ' Surprise'], ['all', 'Tout'], ...DF_GROUPS.map(([g]) => [g, g]), ['none', 'Aucun']].map(([k, v]) => `<button data-p="${k}">${v}</button>`).join('');
   $('dfModes').innerHTML = DF_GROUPS.map(([gr, c]) => `<div class="dfgrp" style="--th:${c}">${gr}</div><div class="dfmodes" style="--th:${c}">${GAMES.filter(g => g.g === gr).map(g =>
     `<button data-id="${g.id}" aria-pressed="${DF.ids.includes(g.id)}">${illHTML(g.id)}<span class="nm">${g.parent ? g.v : g.name}</span></button>`).join('')}</div>`).join('')
-;
+    + `<div class="dfgrp" style="--th:#8DA7D6">Culture générale · bientôt</div><div class="dfmodes" style="--th:#8DA7D6">${CULTURE.slice(0, 3).map(t => `<button disabled><span class="nm">${t.t}</span></button>`).join('')}</div>`;
   $('dfCount').textContent = DF.ids.length ? `${DF.ids.length} jeu${DF.ids.length > 1 ? 'x' : ''}` : 'aucun';
   seg($('dfLevel'), { facile: { b: 'Classique', s: '' }, expert: { b: 'Expert', s: '' } }, DF.level, v => { DF.level = v; renderDefi(); });
   const elim = DF.kind === 'elim';
@@ -1688,7 +1694,7 @@ function themePicks(th, items) {
 }
 const glyph = it => it.demo ? `<span class="ill"><span class="yr">${it.gl}</span></span>` : illHTML(it.id);
 function homeCard(it, i, th) {
-  if (it.demo) return `<button class="card demo" data-demo="${it.name}">${glyph(it)}<i class="qtag sug">Démo</i>${th.lay === 't-rows' ? `<span class="mm"><b>${it.name}</b><span class="ds">${it.desc}</span></span>` : `<b>${it.name}</b><span class="ds">${it.desc}</span>`}</button>`;
+  if (it.demo) return `<button class="card demo" data-demo="${it.name}">${glyph(it)}<i class="qtag sug">Bientôt</i>${th.lay === 't-rows' ? `<span class="mm"><b>${it.name}</b><span class="ds">${it.desc}</span></span>` : `<b>${it.name}</b><span class="ds">${it.desc}</span>`}</button>`;
   const g = byGame[it.id], L = lastOf(it.id);
   const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie' : (g.n || N) + ' q.'}`;
   const b = store.get(`chaumiere-geoquiz-${it.id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
@@ -1698,7 +1704,8 @@ function homeCard(it, i, th) {
 function renderHome() {
   $('groups').innerHTML = THEMES.map((th, k) => {
     const items = themeItems(th), n = items.filter(x => !x.soon).length;
-    return `<div class="page ${th.lay}" data-t="${th.t}" style="--th:${th.c}">${themePicks(th, items).map((it, i) => homeCard(it, i, th)).join('')}<button class="tplus" data-th="${k}" aria-label="Tous les modes : ${th.t}"><span class="pl">+</span><span class="vt">${n} modes</span></button></div>`;
+    const soon = !items.some(x => !x.demo && !x.soon); // thème pas encore jouable : grisé
+    return `<div class="page ${th.lay}${soon ? ' later' : ''}" data-t="${th.t}${soon ? ' · bientôt' : ''}" style="--th:${th.c}">${themePicks(th, items).map((it, i) => homeCard(it, i, th)).join('')}<button class="tplus" data-th="${k}" aria-label="Tous les modes : ${th.t}"><span class="pl">+</span><span class="vt">${n} modes</span></button></div>`;
   }).join('');
   const go = pager($('gdots'), $('groups'), 'chaumiere-geoquiz-page', p => { if (p) { $('catName').textContent = p.dataset.t; $('catName').style.color = p.style.getPropertyValue('--th'); } });
   const page = +store.get('chaumiere-geoquiz-page') || 0;
@@ -1714,8 +1721,8 @@ function openTheme(k) {
   let html = '', last = '';
   for (const it of items) {
     if (it.sub !== last) { html += `<h4>${it.sub}</h4>`; last = it.sub; }
-    const right = it.soon ? 'Bientôt' : it.demo ? 'Démo' : plays[it.id] ? `${plays[it.id]} partie${plays[it.id] > 1 ? 's' : ''}` : '';
-    html += `<button class="srow${it.soon ? ' soon' : ''}" ${it.soon ? 'disabled' : it.demo ? `data-demo="${it.name}"` : `data-g="${it.id}"`}><span class="sg">${it.soon ? '' : glyph(it)}</span><span class="mm"><b>${it.name}</b><span>${it.desc}</span></span><small>${right}</small></button>`;
+    const right = it.soon || it.demo ? 'Bientôt' : plays[it.id] ? `${plays[it.id]} partie${plays[it.id] > 1 ? 's' : ''}` : '';
+    html += `<button class="srow${it.soon || it.demo ? ' soon' : ''}" ${it.soon ? 'disabled' : it.demo ? `data-demo="${it.name}"` : `data-g="${it.id}"`}><span class="sg">${it.soon ? '' : glyph(it)}</span><span class="mm"><b>${it.name}</b><span>${it.desc}</span></span><small>${right}</small></button>`;
   }
   sheetOpen(th.t, th.c, html);
 }
@@ -1822,7 +1829,7 @@ function hero(g) {
 /* ================= Évènements ================= */
 $('groups').addEventListener('click', e => {
   const p = e.target.closest('.tplus'); if (p) return openTheme(+p.dataset.th);
-  const d = e.target.closest('.card[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`);
+  const d = e.target.closest('.card[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » arrive bientôt`);
   const b = e.target.closest('.card[data-q]'); if (!b) return;
   if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
   confirmPlay(b.dataset.q);
@@ -1841,7 +1848,7 @@ $('shL').addEventListener('click', e => {
     if (act === 'setup') { renderSetup(); show('setup'); } else startSel();
     return;
   }
-  const d = e.target.closest('[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`);
+  const d = e.target.closest('[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » arrive bientôt`);
   const b = e.target.closest('[data-g]'); if (!b) return;
   closeTheme(); sel.game = b.dataset.g; sel.from = 'home'; renderSetup(); show('setup');
 });
