@@ -52,6 +52,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .card b{font-family:Archivo;font-size:17px;font-weight:700;line-height:1.15}
 .card span{color:var(--mute);font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card small{margin-top:auto;color:#7d7d89;font-size:12px}
+.quick .card small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .ill{position:absolute;right:-4%;bottom:-6%;width:56%;height:72%;opacity:.16;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:none}
 .card .ill svg{width:100%;height:100%}.card .ill path{fill:#fff}
 .card .ill img{width:80%;border-radius:4px;opacity:.9}
@@ -63,6 +64,54 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .dots{display:flex;gap:6px;align-items:center}
 .dots button{width:8px;height:8px;padding:0;border:0;border-radius:99px;background:#3a3a43;font-size:0;transition:width .2s,background .2s}
 .dots button[aria-pressed=true]{width:22px;background:#fff}
+/* Jeu rapide : favoris et suggestions, le (+) ouvre tous les modes */
+.chead .hint{color:var(--mute);font-size:12px;white-space:nowrap}
+.quick{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 58px;grid-template-rows:minmax(0,1.25fr) minmax(0,1fr);gap:10px}
+.quick>.card:first-child{grid-column:1/3}
+.quick>.card:first-child b{font-size:clamp(20px,5.4vw,26px)}
+.quick>.card:first-child .ill{width:46%;height:92%;opacity:.2}
+.card .qtag{align-self:flex-start;font:700 11px Inter,sans-serif;font-style:normal;letter-spacing:.02em;color:#001;background:var(--acc);border-radius:99px;padding:2px 8px;margin-bottom:3px}
+.card .qtag.sug{background:transparent;color:#c9c9d2;box-shadow:inset 0 0 0 1px #4a4a55}
+.qplus{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--panel);border:1px dashed #4a4a55;border-radius:16px;padding:8px 0;color:var(--ink)}
+.qplus:active{transform:scale(.97)}
+.qplus .pl{width:38px;height:38px;border-radius:99px;background:#fff;color:#000;display:grid;place-items:center;font:800 26px/1 Archivo,Inter,sans-serif}
+.qplus .vt{writing-mode:vertical-rl;transform:rotate(180deg);font:600 13px Inter,sans-serif;color:#c9c9d2;white-space:nowrap}
+#all{display:flex;flex-direction:column;gap:10px}
+.page.l-rows{grid-template-columns:1fr 1fr;grid-auto-rows:auto;grid-template-rows:repeat(3,minmax(0,1fr)) auto}
+.page.l-rows>.card:not(.soon){grid-column:span 2}
+.page.l-rows>.card .ill{width:44%;height:118%;bottom:-10%}
+.page.l-rows>.soon{padding:8px 12px}.page.l-rows>.soon .ds{display:none}
+.page.l-side{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}
+.page.l-side>.card:first-child{grid-row:1/3}
+.page.l-side>.card:first-child .ill{width:100%;height:62%;right:-8%}
+.page.l-quad>.card .ill{width:70%;height:64%}
+.useg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px}
+.useg button{border:0;background:transparent;border-radius:9px;padding:7px 8px;font-weight:600;font-size:14px;color:var(--mute);min-height:36px}
+.useg button[aria-pressed=true]{background:#26262e;color:var(--ink)}
+.page[data-u=culture] .card{border-color:color-mix(in srgb,var(--th) 28%,var(--line))}
+.page[data-u=culture] .card .ill{opacity:.9;width:auto;height:auto;right:0;bottom:0}
+.page[data-u=culture] .card .ill .yr{color:var(--th);opacity:.35;font-size:clamp(30px,9vw,52px)}
+.page[data-u=culture] .qtag{color:var(--th);box-shadow:inset 0 0 0 1px var(--th)}
+.page.l-feature{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1.4fr) minmax(0,1fr)}
+.page.l-feature>.card:first-child{grid-column:1/4;background:linear-gradient(135deg,color-mix(in srgb,var(--th) 26%,var(--panel)),var(--panel) 65%)}
+.page.l-feature>.card:not(:first-child){padding:10px}
+.page.l-feature>.card:not(:first-child) b{font-size:15px}
+.page.l-feature>.card:not(:first-child) .ds{-webkit-line-clamp:3;font-size:12px}
+.page.l-feature>.card:not(:first-child) .ill .yr{font-size:clamp(22px,6vw,34px)}
+.page.l-duo{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr))}
+.page.l-duo>.card{justify-content:center;padding:16px 18px}
+.page.l-duo>.card b{font-size:clamp(22px,6vw,28px)}
+.page.l-duo>.card .ds{-webkit-line-clamp:3;max-width:70%}
+.page.l-duo>.card .ill .yr{font-size:clamp(60px,20vw,110px)!important;padding:0 18px 14px 0}
+.page.l-rows[data-u=culture]{grid-template-rows:repeat(3,minmax(0,1fr))}
+.page.l-list{display:flex;flex-direction:column;gap:8px}
+.page.l-list>.card{flex:1;min-height:0;flex-direction:row;align-items:center;gap:14px;padding:8px 14px}
+.page.l-list>.card .ill{position:static;order:-1;flex:none;width:66px;height:auto;display:grid;place-items:center}
+.page.l-list>.card .ill .yr{font-size:19px!important;opacity:.9!important;padding:0}
+.page.l-list>.card .qtag{display:none}
+.page.l-list>.card b{font-size:16px;flex:none;width:34%}
+.page.l-list>.card .ds{-webkit-line-clamp:2;font-size:12px}
+#all>*:not(.pages){flex:none}
 /* (anciennes rangées, non utilisées) */
 .cats{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
 .crow{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px}
@@ -307,10 +356,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
       <h2 id="dailyT">Défi du jour</h2>
       <p id="dailyP">Sept questions mêlées, les mêmes pour tout le groupe aujourd'hui.</p>
     </button>
-    <div class="chead"><h3 id="catName">Reconnaître</h3><nav class="dots" id="gdots" aria-label="Thèmes"></nav></div>
-    <div class="pages" id="groups"></div>
+    <div class="chead"><h3>Jeu rapide</h3><span class="hint">Un toucher, c’est parti</span></div>
+    <div class="quick" id="quick"></div>
     <p class="err" id="err" hidden></p>
     <button class="online" id="onlineBtn"><span class="dot" id="onlineN">⇄</span><span class="tx"><b>Défier en ligne</b><span id="onlineSub">Duel ou partie avec la salle</span></span><span class="chev">›</span></button>
+  </section>
+
+  <section id="all" hidden>
+    <div class="shead"><button class="back" id="allBack" aria-label="Retour">←</button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">Tous les modes</h2><p class="lead" id="allLead">Glisse pour changer de thème.</p></div></div>
+    <nav class="useg" id="univ" aria-label="Univers"></nav>
+    <nav class="tabs fill" id="gtabs" aria-label="Thèmes"></nav>
+    <div class="pages" id="groups"></div>
   </section>
 
   <section id="online" hidden>
@@ -383,7 +439,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
       <div class="epage" id="pShare" data-t="Partager"><div class="share" id="shareT"></div><button class="ghost" id="copy" type="button" style="width:100%;margin-top:10px">Copier le résultat</button></div>
     </div>
     <div class="row">
-      <button class="ghost" id="toHome">Tous les jeux</button>
+      <button class="ghost" id="toHome">Accueil</button>
       <button class="cta" id="again">Rejouer</button>
     </div>
   </section>
@@ -437,6 +493,24 @@ GAMES.push(
   { id: 'chrono', g: 'Histoire', name: 'Chronologie', desc: 'Remets 4 évènements dans l’ordre.', lead: 'Touche les quatre évènements du plus ancien au plus récent. Touche à nouveau un choix pour l’annuler. 20 secondes par série.' }
 );
 const SOON = [{ name: 'Départements', desc: 'Placer un département, retrouver un numéro.' }, { name: 'Régions du monde', desc: 'États américains, Länder, provinces…' }];
+/* Démo d'interface : thèmes de culture générale et mécaniques à venir (pas encore jouables) */
+const UNIVS = { geo: 'Géographie', culture: 'Culture générale' };
+const CULTURE = [
+  { t: 'Sciences et espace', c: '#7c6cff', lay: 'l-feature', m: [
+    ['Classique', 'Quatre choix, dix secondes.', 'ABCD'], ['Réponse libre', 'Tape la réponse, les fautes sont tolérées.', 'Aa_'],
+    ['Vrai ou faux', 'Une affirmation, un toucher.', 'V/F'], ['Contre-la-montre', '60 s, autant que possible.', '60s']] },
+  { t: 'Histoire et société', c: '#e0a33a', lay: 'l-side', m: [
+    ['Qui suis-je ?', 'Des indices de plus en plus faciles : moins il en faut, plus tu marques.', '?'],
+    ['L’intrus', 'Quatre réponses, une ne va pas avec les autres.', '≠'], ['Avant ou après ?', 'Cet évènement est-il plus ancien que l’autre ?', '⇆']] },
+  { t: 'Sport', c: '#33d17a', lay: 'l-duo', m: [
+    ['Plus ou moins', 'Estime un nombre avec le curseur : plus tu es proche, plus tu marques.', '≈'],
+    ['Duel de stats', 'Deux sportifs, une statistique : qui a le plus ?', '⚖']] },
+  { t: 'Arts et littérature', c: '#ff6b8b', lay: 'l-rows', m: [
+    ['Associer', 'Relie chaque œuvre à son auteur.', 'A↔B'], ['Qui a écrit ?', 'Un titre, quatre auteurs.', '✒'], ['Réponse libre', 'Le nom suffit, l’orthographe est tolérée.', 'Aa_']] },
+  { t: 'Langue française', c: '#4dd0e1', lay: 'l-list', m: [
+    ['Orthographe', 'Quelle est la bonne écriture ?', 'é'], ['Définition', 'Un mot rare, quatre sens.', 'Déf'], ['Conjugaison', 'Passé simple, subjonctif…', 'eut'],
+    ['Expressions', 'Complète l’expression.', '« »'], ['Anagramme', 'Remets les lettres dans l’ordre.', 'RMEA']] },
+];
 const FORMATS = { normal: { b: 'Normal', s: '7 questions' }, survie: { b: 'Survie', s: '1 erreur = fin' }, multi: { b: 'À plusieurs', s: 'En ligne ou à deux' } };
 const MULTIS = { duel: 'Duel en ligne', points: 'Partie · points', elim: 'Partie · élimination', local: 'Même téléphone' };
 const fmtY = e => (e.ap ? 'vers ' : '') + (e.y < 0 ? -e.y + ' av. J.-C.' : e.y);
@@ -720,7 +794,7 @@ function begin() {
   $('scL').textContent = SES.format === 'survie' ? 'série' : 'points';
   ask();
 }
-function show(id) { for (const s of ['home', 'online', 'setup', 'lobby', 'play', 'hand', 'end']) $(s).hidden = s !== id; window.scrollTo(0, 0); }
+function show(id) { for (const s of ['home', 'all', 'online', 'setup', 'lobby', 'play', 'hand', 'end']) $(s).hidden = s !== id; window.scrollTo(0, 0); }
 const qAt = i => { while (SES.qs.length <= i) SES.qs.push(makeQ(SES.qs.length)); return SES.qs[i]; };
 const curQ = () => qAt(SES.i);
 const isLast = () => SES.format !== 'survie' && SES.rules !== 'elim' && SES.i === SES.n - 1;
@@ -1129,6 +1203,7 @@ function pager(tabsEl, pagesEl, key, onChange) {
     const list = pages(), x = pagesEl.scrollLeft;
     let i = 0; list.forEach((p, k) => { if (Math.abs(p.offsetLeft - x) < Math.abs(list[i].offsetLeft - x)) i = k; });
     [...tabsEl.children].forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+    const on = tabsEl.children[i]; if (on && tabsEl.scrollWidth > tabsEl.clientWidth) tabsEl.scrollTo({ left: on.offsetLeft - (tabsEl.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
     if (key) store.set(key, i);
     if (onChange) onChange(list[i]);
   };
@@ -1143,6 +1218,42 @@ function illHTML(id) {
   if (id === 'hdate' || id === 'chrono') return `<span class="ill"><span class="yr">${id === 'hdate' ? '1789' : '1066'}</span></span>`;
   const c = S.by[ILL[id]]; return c ? `<span class="ill">${silSVG(c)}</span>` : '';
 }
+/* Jeu rapide : les modes que le joueur lance le plus, complétés par des suggestions qui changent chaque jour */
+let goAll = () => {};
+function setUniv(u, jump = true) {
+  if (!UNIVS[u]) u = 'geo';
+  store.set('chaumiere-geoquiz-univ', u);
+  $('univ').innerHTML = Object.entries(UNIVS).map(([k, v]) => `<button data-u="${k}" aria-pressed="${k === u}">${v}</button>`).join('');
+  for (const p of $('groups').children) p.hidden = p.dataset.u !== u;
+  goAll = pager($('gtabs'), $('groups'), 'chaumiere-geoquiz-page-' + u);
+  $('gtabs').classList.toggle('fill', u === 'geo');
+  if (jump) requestAnimationFrame(() => goAll(0));
+}
+const jget = (k, d) => { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
+function notePlay(id, opt) {
+  const plays = jget('chaumiere-geoquiz-plays', {}); plays[id] = (plays[id] || 0) + 1;
+  store.set('chaumiere-geoquiz-plays', JSON.stringify(plays));
+  if (opt.format === 'normal' || opt.format === 'survie') store.set('chaumiere-geoquiz-last-' + id, JSON.stringify({ level: opt.level, format: opt.format, cat: opt.cat || '' }));
+}
+function quickPicks() {
+  const plays = jget('chaumiere-geoquiz-plays', {});
+  const fav = Object.keys(plays).filter(id => byGame[id]).sort((a, b) => plays[b] - plays[a]).slice(0, 2);
+  const seed = [...dayKey()].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261), r = mulberry(seed ^ 0x51ed);
+  const rest = GAMES.filter(g => !fav.includes(g.id) && !(g.parent && fav.includes(g.parent))).map(g => [r(), g.id]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  return fav.map(id => ({ id, n: plays[id] })).concat(rest.slice(0, 3 - fav.length).map(id => ({ id })));
+}
+function lastOf(id) { return Object.assign({ level: 'facile', format: 'normal', cat: '' }, jget('chaumiere-geoquiz-last-' + id, {})); }
+function renderQuick() {
+  $('quick').innerHTML = quickPicks().map(({ id, n }, i) => {
+    const g = byGame[id], L = lastOf(id), name = g.parent ? `${byGame[g.parent].name} · ${g.v}` : g.name;
+    const how = `${L.level === 'expert' ? 'Expert' : 'Classique'} · ${L.format === 'survie' ? 'Survie' : (g.n || N) + (i ? ' q.' : ' questions')}`;
+    const b = store.get(`chaumiere-geoquiz-${id}-${L.level}-${L.format}-${L.cat || (g.cats ? 'tout' : '')}`);
+    const tag = n ? `<i class="qtag">${i === 0 ? 'Ton favori' : 'Souvent joué'}</i>` : `<i class="qtag sug">À découvrir</i>`;
+    return `<button class="card" data-q="${id}">${illHTML(id)}${tag}<b>${name}</b>${i === 0 ? `<span class="ds">${g.desc}</span>` : ''}<small>${how}${b ? ` · record ${b}` : ''}</small></button>`;
+  }).join('') + `<button class="qplus" id="allBtn" aria-label="Tous les modes"><span class="pl">+</span><span class="vt">Tous les modes</span></button>`;
+}
+/* Chaque thème a sa propre disposition de cases */
+const LAYOUT = { 'Reconnaître': 'odd', 'Comparer': 'l-quad', 'Cartes': 'l-rows', 'Histoire': 'l-side' };
 function renderHome() {
   const groups = [...new Set(GAMES.map(g => g.g))];
   $('groups').innerHTML = groups.map(gr => {
@@ -1150,11 +1261,13 @@ function renderHome() {
       const b = store.get(`chaumiere-geoquiz-${g.id}-facile-normal-${g.cats ? 'tout' : ''}`);
       return `<button class="card" data-g="${g.id}">${illHTML(g.id)}<b>${g.name}</b><span class="ds">${g.desc}</span>${b ? `<small>Record : ${b} pts</small>` : ''}</button>`;
     }).concat(gr === 'Cartes' ? SOON.map(s => `<div class="card soon" aria-disabled="true"><b>${s.name}</b><span class="ds">${s.desc}</span><small>Bientôt</small></div>`) : []);
-    return `<div class="page${cards.length % 2 ? ' odd' : ''}" data-t="${gr}">${cards.join('')}</div>`;
-  }).join('');
-  const go = pager($('gdots'), $('groups'), 'chaumiere-geoquiz-page', p => { if (p) $('catName').textContent = p.dataset.t; });
-  const page = +store.get('chaumiere-geoquiz-page') || 0;
-  requestAnimationFrame(() => go(page)); setTimeout(() => go(page), 150); // une 2e fois, une fois la mise en page stable
+    const lay = LAYOUT[gr] || (cards.length % 2 ? 'odd' : '');
+    return `<div class="page ${lay}" data-u="geo" data-t="${gr}">${cards.join('')}</div>`;
+  }).join('') + CULTURE.map(th => `<div class="page ${th.lay}" data-u="culture" data-t="${th.t}" style="--th:${th.c}">${th.m.map(([n, d, gl]) =>
+    `<button class="card demo" data-demo="${n}"><span class="ill"><span class="yr">${gl}</span></span><i class="qtag sug">Démo</i><b>${n}</b><span class="ds">${d}</span></button>`).join('')}</div>`).join('');
+  setUniv(store.get('chaumiere-geoquiz-univ') || 'geo', false);
+  renderQuick();
+  $("allLead").textContent = `${GAMES.filter(g => !g.parent).length + CULTURE.reduce((n, t) => n + t.m.length, 0)} modes · glisse pour changer`;
   $('homeSub').textContent = `${GAMES.filter(g => !g.parent).length} jeux · réponds vite`;
   renderOnline(); loadOnline();
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
@@ -1215,8 +1328,19 @@ function hero(g) {
 }
 
 /* ================= Évènements ================= */
-$('groups').addEventListener('click', e => { const b = e.target.closest('.card[data-g]'); if (!b) return; sel.game = b.dataset.g; renderSetup(); show('setup'); });
-$('back').addEventListener('click', () => { renderHome(); show('home'); });
+$('univ').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUniv(b.dataset.u); });
+$('groups').addEventListener('click', e => {
+  const d = e.target.closest('.card[data-demo]'); if (d) return toast(`« ${d.dataset.demo} » : démo d’interface, pas encore jouable`); const b = e.target.closest('.card[data-g]'); if (!b) return; sel.game = b.dataset.g; sel.from = 'all'; renderSetup(); show('setup'); });
+$('back').addEventListener('click', () => { renderHome(); show(sel.from || 'home'); });
+$('quick').addEventListener('click', e => {
+  if (e.target.closest('#allBtn')) { sel.from = 'all'; show('all'); requestAnimationFrame(() => goAll(+store.get('chaumiere-geoquiz-page-' + (store.get('chaumiere-geoquiz-univ') || 'geo')) || 0)); return; }
+  const b = e.target.closest('.card[data-q]'); if (!b) return;
+  if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
+  const id = b.dataset.q, L = lastOf(id);
+  Object.assign(sel, { game: id, level: L.level, format: L.format, from: 'home' }); if (L.cat) sel.cat[id] = L.cat; else if (byGame[id].cats) sel.cat[id] = 'tout';
+  startSel();
+});
+$('allBack').addEventListener('click', () => { sel.from = 'home'; renderHome(); show('home'); });
 $('toHome').addEventListener('click', () => { mpClose(); renderHome(); show('home'); });
 $('go').addEventListener('click', () => startSel());
 async function startSel() {
@@ -1229,6 +1353,7 @@ async function startSel() {
     } catch (e) { toast(e.message); } finally { $('go').disabled = false; }
     return;
   }
+  notePlay(sel.game, { level: sel.level, format: sel.format, cat: sel.cat[sel.game] });
   newSession({ game: sel.game, level: sel.level, format: sel.format === 'multi' ? 'duel' : sel.format, cat: sel.cat[sel.game], names });
 }
 $('again').addEventListener('click', () => { if (SES.online) { sel.game = SES.game; sel.level = SES.level; renderSetup(); show('setup'); return; } if (SES.daily) startDaily(); else startSel(); });
@@ -1242,7 +1367,7 @@ function startDaily() {
 $('handGo').addEventListener('click', () => begin());
 $('onlineList').addEventListener('click', e => {
   const b = e.target.closest('.card[data-m]'); if (b) return mpOpen(b.dataset.m, !!b.dataset.join);
-  const n = e.target.closest('[data-new]'); if (n) { sel.game = n.dataset.new; sel.format = 'multi'; sel.multi = ROOM ? 'duel' : 'local'; renderSetup(); show('setup'); }
+  const n = e.target.closest('[data-new]'); if (n) { sel.game = n.dataset.new; sel.from = 'online'; sel.format = 'multi'; sel.multi = ROOM ? 'duel' : 'local'; renderSetup(); show('setup'); }
 });
 $('onlineBtn').addEventListener('click', () => { renderOnline(); loadOnline(); show('online'); });
 $('olBack').addEventListener('click', () => { renderHome(); show('home'); });
