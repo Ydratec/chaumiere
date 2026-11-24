@@ -717,7 +717,7 @@ function loadWallet() {
 function paintWallet() {
   if (!WALLET) return;
   $('homeSub').innerHTML = `<b class="coin">${fmtN(WALLET.coins)}</b> pièces`;
-  if (!WALLET.daily && !store.get('chaumiere-geoquiz-daily-' + dayKey())) $('dailyP').textContent = 'Sept questions mêlées, les mêmes pour toute la salle · 300 à 500 pièces à gagner.';
+  if (!WALLET.daily && !store.get('chaumiere-geoquiz-daily-' + dayKey())) $('dailyP').textContent = 'Sept questions mêlées, les mêmes pour toute la salle · 500 à 800 pièces à gagner.';
 }
 function showCoins(n) {
   $('fCoins').innerHTML = n > 0 ? `<b>+${fmtN(n)}</b> pièces` : 'Pas de pièces pour cette partie';

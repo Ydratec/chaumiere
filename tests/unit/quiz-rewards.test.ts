@@ -2,13 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { dailyReward, onlineReward, soloGoods, soloShare, streakBefore } from "../../src/modules/quiz/rewards.ts";
 
-test("défi du jour : 300 + jusqu'à 200 selon le score + série plafonnée", () => {
-  assert.equal(dailyReward(0, 0), 300);
-  assert.equal(dailyReward(160, 0), 500);
-  assert.equal(dailyReward(80, 0), 400);
-  assert.equal(dailyReward(999, 0), 500); // score borné
-  assert.equal(dailyReward(160, 2), 600);
-  assert.equal(dailyReward(160, 30), 800); // série plafonnée à +300
+test("défi du jour : 500 + jusqu'à 300 selon le score + série plafonnée", () => {
+  assert.equal(dailyReward(0, 0), 500);
+  assert.equal(dailyReward(160, 0), 800);
+  assert.equal(dailyReward(80, 0), 650);
+  assert.equal(dailyReward(999, 0), 800); // score borné
+  assert.equal(dailyReward(160, 2), 900);
+  assert.equal(dailyReward(160, 30), 1100); // série plafonnée à +300
 });
 
 test("série : jours d'affilée jusqu'à hier", () => {

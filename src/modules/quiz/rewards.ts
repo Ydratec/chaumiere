@@ -2,8 +2,8 @@
 // plafonds) sont appliquées par la fonction SQL quiz_grant (migration 0035), en même temps que le crédit des pièces.
 
 export const REWARDS = {
-  dailyBase: 300, // défi du jour, première partie de la journée
-  dailyBonus: 200, // + jusqu'à 200 selon le score (160 = sans-faute)
+  dailyBase: 500, // défi du jour, première partie de la journée
+  dailyBonus: 300, // + jusqu'à 300 selon le score (160 = sans-faute)
   dailyMax: 160,
   streakStep: 50, // + 50 par jour d'affilée de défi déjà joué avant aujourd'hui
   streakMax: 300,
