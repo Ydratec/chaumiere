@@ -578,6 +578,9 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
 .final .coins.on{color:var(--acc)}.final .coins b{font-size:20px;font-weight:600}
 .conf .rw{font:500 12px var(--fm);color:var(--acc)}
 #best .rw{color:var(--acc)}
+.board li.me{background:rgba(232,176,75,.12);color:var(--acc)}
+.board li span:first-child{font-family:var(--fm);color:var(--mute)}.board li span:last-child{font-family:var(--fm)}
+.conf .boardT b{color:var(--acc)}
 /* Fin de partie */
 #fScore{font-family:var(--fd);font-weight:400}
 .vs .vh .p strong{font-weight:600}
@@ -717,6 +720,7 @@ function loadWallet() {
 function paintWallet() {
   if (!WALLET) return;
   $('homeSub').innerHTML = `<b class="coin">${fmtN(WALLET.coins)}</b> pièces`;
+  if (WALLET.daily && !store.get('chaumiere-geoquiz-daily-' + dayKey())) { $('dailyP').textContent = 'Tu as déjà fait le défi aujourd’hui. Touche pour voir le classement.'; $('daily').querySelector('.go').textContent = 'Classement'; }
   if (!WALLET.daily && !store.get('chaumiere-geoquiz-daily-' + dayKey())) $('dailyP').textContent = 'Sept questions mêlées, les mêmes pour toute la salle · 500 à 800 pièces à gagner.';
 }
 function showCoins(n) {
@@ -1745,7 +1749,25 @@ function renderHome() {
   renderOnline(); loadOnline(); loadWallet();
   const d = new Date(), done = store.get('chaumiere-geoquiz-daily-' + dayKey());
   $('dailyT').textContent = 'Défi du ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-  $('dailyP').textContent = done ? `Ton score du jour : ${done} pts. Rejoue pour t’entraîner.` : 'Sept questions mêlées, les mêmes pour tout le groupe aujourd’hui.';
+  $('dailyP').textContent = done ? `Ton score du jour : ${done} pts. Touche pour voir le classement.` : 'Sept questions mêlées, les mêmes pour tout le groupe aujourd’hui.';
+  $('daily').querySelector('.go').textContent = done ? 'Classement' : 'Jouer';
+}
+/* Défi du jour déjà fait : le classement de la salle, sans avoir à rejouer */
+function openDailyBoard() {
+  const done = store.get('chaumiere-geoquiz-daily-' + dayKey());
+  const title = 'Défi du ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const replay = `<button class="ghost" data-act="replayDaily">Rejouer pour s’entraîner</button>`;
+  const mine = done ? `<p class="boardT">Ton score : <b>${done} pts</b> (seule ta première partie compte)</p>` : '';
+  if (!ROOM) return sheetOpen(title, 'var(--acc)', `<div class="conf">${mine}${replay}</div>`);
+  sheetOpen(title, 'var(--acc)', `<div class="conf">${mine}<p class="boardT">Chargement du classement…</p>${replay}</div>`);
+  fetch(`/api/quiz/${ROOM}?day=1`).then(r => r.ok ? r.json() : null).then(d => {
+    if ($('sheet').hidden || $('shT').textContent !== title) return;
+    const rows = (d && d.rows) || [];
+    const list = rows.length
+      ? `<ol class="board">${rows.map((r, i) => `<li class="${r.me ? 'me' : ''}"><span>${i + 1}</span><span>${esc(r.name)}</span><span>${r.score} pts</span></li>`).join('')}</ol>`
+      : '<p class="boardT">Personne n’a encore joué aujourd’hui.</p>';
+    $('shL').innerHTML = `<div class="conf">${mine}<p class="boardT">${rows.length} joueur${rows.length > 1 ? 's' : ''} aujourd’hui</p>${list}${replay}</div>`;
+  }).catch(() => {});
 }
 function openTheme(k) {
   const th = THEMES[k], items = themeItems(th), plays = jget('chaumiere-geoquiz-plays', {});
@@ -1871,6 +1893,7 @@ $('shL').addEventListener('click', e => {
     const act = a.dataset.act;
     if (act === 'stay') return closeTheme();
     if (act === 'quit') return abandon();
+    if (act === 'replayDaily') { closeTheme(); return startDaily(); }
     const id = a.closest('.conf').dataset.id;
     if (act === 'defi') { closeTheme(); return openDefi({ ids: [id], level: lastOf(id).level }); }
     closeTheme(); if (!(S.C.length && S.FRM && S.WRD)) return toast('Chargement des cartes…');
@@ -1903,7 +1926,8 @@ async function startSel() {
   newSession({ game: sel.game, level: sel.level, format: sel.format === 'multi' ? 'duel' : sel.format, cat: sel.cat[sel.game], names });
 }
 $('again').addEventListener('click', () => { if (SES.online) { const m = MP.match || {}; mpClose(); openDefi({ ids: SES.game === 'mix' ? (m.cat || '').split('.') : [SES.game], level: SES.level, kind: SES.mode === 'duel' ? 'duel' : SES.rules === 'elim' ? 'elim' : 'points', n: m.n && m.n <= 15 ? m.n : DF.n }); return; } if (SES.daily) startDaily(); else startSel(); });
-$('daily').addEventListener('click', () => startDaily());
+// défi déjà fait (sur ce téléphone, ou ailleurs d'après les pièces du jour) : le classement d'abord
+$('daily').addEventListener('click', () => store.get('chaumiere-geoquiz-daily-' + dayKey()) || (WALLET && WALLET.daily) ? openDailyBoard() : startDaily());
 function startDaily() {
   const k = dayKey(), seed = [...k].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261);
   RNG = mulberry(seed ^ 0x9e3779b9);
