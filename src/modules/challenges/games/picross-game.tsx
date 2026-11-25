@@ -69,8 +69,8 @@ function Game({ roomId, view, me, people }: Props) {
           {!done && (
             <div className="flex gap-2">
               <div className="grid flex-1 grid-cols-2 gap-1 rounded-full bg-zinc-100 p-1 text-sm font-medium">
-                <button onClick={() => setTool(1)} className={`rounded-full py-2 ${tool === 1 ? "bg-white shadow-sm" : "text-zinc-500"}`}>■ Noircir</button>
-                <button onClick={() => setTool(2)} className={`rounded-full py-2 ${tool === 2 ? "bg-white shadow-sm" : "text-zinc-500"}`}>✕ Croix</button>
+                <button onClick={() => setTool(1)} className={`rounded-full py-2 ${tool === 1 ? "sticker" : "text-zinc-500"}`}>■ Noircir</button>
+                <button onClick={() => setTool(2)} className={`rounded-full py-2 ${tool === 2 ? "sticker" : "text-zinc-500"}`}>✕ Croix</button>
               </div>
               <button onClick={() => setGrid(Array(PX * PX).fill(0))} className="btn-soft px-3 text-sm">Effacer</button>
             </div>

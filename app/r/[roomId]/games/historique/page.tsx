@@ -37,7 +37,7 @@ export default async function HistoryPage({ params, searchParams }: {
     return `/r/${roomId}/games/historique${s.size ? `?${s}` : ""}`;
   };
   const chip = (href: string, on: boolean, text: string) => (
-    <Link key={href + text} href={href} className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${on ? "bg-indigo-600 text-white" : "bg-white text-zinc-600 shadow-sm"}`}>{text}</Link>
+    <Link key={href + text} href={href} className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${on ? "bg-indigo-600 text-white" : "sticker text-zinc-600"}`}>{text}</Link>
   );
 
   return (

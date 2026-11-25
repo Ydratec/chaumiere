@@ -33,7 +33,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
       type="button"
       aria-pressed={picked === t}
       onClick={() => { setPicked(picked === t ? null : t); setError(""); }}
-      className={`flex w-full items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-left text-sm font-medium transition active:scale-95 ${picked === t ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}
+      className={`flex w-full items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-left text-sm font-medium transition active:scale-95 ${picked === t ? "bg-indigo-50 ring-2 ring-indigo-500" : "sticker"}`}
     >
       <span className="truncate">{label}</span>
       <span className="shrink-0 text-xs text-zinc-500">{coin(cost(t), 12)}</span>
@@ -54,7 +54,7 @@ export function QuestionShop({ roomId, price, coins }: { roomId: string; price: 
       </div>
       {chip("extra", "Question en plus · c'est toi qui l'écris")}
       {picked === "extra" && (
-        <div className="space-y-2 rounded-2xl bg-white p-3 shadow-sm">
+        <div className="space-y-2 rounded-2xl sticker p-3">
           <div className="flex flex-wrap gap-1.5">
             {FORMATS.map(([k, label]) => (
               <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}

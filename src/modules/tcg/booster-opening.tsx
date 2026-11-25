@@ -203,8 +203,8 @@ export function BoosterOpening({ pulled: raw, inline, onPick, caption, onAgain, 
             ))}
           </div>
           <div className="flex items-center gap-16">
-            <button onClick={() => turn(-1)} aria-label="Booster précédent" className={`rounded-full px-4 py-2 text-xl ${inline ? "bg-white shadow-sm" : "bg-white/10"}`}>‹</button>
-            <button onClick={() => turn(1)} aria-label="Booster suivant" className={`rounded-full px-4 py-2 text-xl ${inline ? "bg-white shadow-sm" : "bg-white/10"}`}>›</button>
+            <button onClick={() => turn(-1)} aria-label="Booster précédent" className={`rounded-full px-4 py-2 text-xl ${inline ? "sticker" : "bg-white/10"}`}>‹</button>
+            <button onClick={() => turn(1)} aria-label="Booster suivant" className={`rounded-full px-4 py-2 text-xl ${inline ? "sticker" : "bg-white/10"}`}>›</button>
           </div>
           {(busy || caption || error) && (
             <div className={`px-4 text-center text-sm ${inline ? "text-zinc-600" : "text-zinc-300"}`}>

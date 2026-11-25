@@ -10,7 +10,7 @@ export function MemoryBoard({ state, myTurn, name, play }: BoardProps) {
     <>
       <div className="mb-5 grid grid-cols-2 gap-2">
         {Object.keys(s.scores).map((p) => (
-          <div key={p} className={`rounded-2xl px-4 py-2 transition ${s.turn === p && !s.winner ? "bg-indigo-600 text-white" : "bg-white text-zinc-600 shadow-sm"}`}>
+          <div key={p} className={`rounded-2xl px-4 py-2 transition ${s.turn === p && !s.winner ? "bg-indigo-600 text-white" : "sticker text-zinc-600"}`}>
             <p className="text-xs font-medium opacity-80">{name(p)}</p>
             <p className="text-2xl font-bold tabular-nums">{s.scores[p]}</p>
           </div>
@@ -24,7 +24,7 @@ export function MemoryBoard({ state, myTurn, name, play }: BoardProps) {
             onClick={() => play({ i })}
             aria-label={c ? `Chat ${c}` : "Carte cachée"}
             className={`flex aspect-square items-center justify-center rounded-2xl transition ${
-              s.matched[i] ? "bg-white/60" : c ? "animate-pop bg-white shadow-md ring-2 ring-indigo-400" : "bg-indigo-600 shadow-sm hover:bg-indigo-500"
+              s.matched[i] ? "bg-white/60" : c ? "animate-pop sticker ring-2 ring-indigo-400" : "bg-indigo-600 hover:bg-indigo-500"
             }`}
           >
             {c && <Cat coat={Number(c)} mood={s.matched[i] ? "laugh" : "happy"} size={44} />}

@@ -103,11 +103,11 @@ export function DailyMot({ roomId, view, me, people }: { roomId: string; view: S
               {r === 2 && <button type="button" onClick={() => press("enter")} disabled={pending || typed.length !== MOT_LEN} className="h-12 rounded-lg bg-indigo-600 px-2.5 text-xs font-bold text-white disabled:opacity-40">OK</button>}
               {row.split("").map((k) => (
                 <button key={k} type="button" onClick={() => press(k)} disabled={pending}
-                  className={`h-12 min-w-0 flex-1 basis-0 rounded-lg text-base font-semibold uppercase ${keys[k] === "ok" ? "bg-green-600 text-white" : keys[k] === "near" ? "bg-amber-400 text-white" : keys[k] === "no" ? "bg-zinc-300 text-zinc-500" : "bg-white text-zinc-800 shadow-sm"}`}>
+                  className={`h-12 min-w-0 flex-1 basis-0 rounded-lg text-base font-semibold uppercase ${keys[k] === "ok" ? "bg-green-600 text-white" : keys[k] === "near" ? "bg-amber-400 text-white" : keys[k] === "no" ? "bg-zinc-300 text-zinc-500" : "sticker text-zinc-800"}`}>
                   {k}
                 </button>
               ))}
-              {r === 2 && <button type="button" onClick={() => press("back")} disabled={pending} aria-label="Effacer" className="h-12 rounded-lg bg-white px-3 text-lg shadow-sm">⌫</button>}
+              {r === 2 && <button type="button" onClick={() => press("back")} disabled={pending} aria-label="Effacer" className="h-12 rounded-lg sticker px-3 text-lg">⌫</button>}
             </div>
           ))}
         </div>

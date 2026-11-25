@@ -81,8 +81,8 @@ export function NotificationSettings({ initial }: { initial: Prefs }) {
             ))}
           </div>
           <div className="flex gap-2">
-            <button disabled={pending} onClick={() => startTransition(() => sendTest())} className="btn-soft flex-1 bg-white shadow-sm">Envoyer un test</button>
-            <button disabled={pending} onClick={disable} className="btn-soft flex-1 bg-white shadow-sm">Désactiver ici</button>
+            <button disabled={pending} onClick={() => startTransition(() => sendTest())} className="btn-soft flex-1">Envoyer un test</button>
+            <button disabled={pending} onClick={disable} className="btn-soft flex-1">Désactiver ici</button>
           </div>
         </>
       )}

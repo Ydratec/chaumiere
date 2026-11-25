@@ -75,7 +75,7 @@ export function ProjectsView({ roomId, projects, unlocks, items, names }: {
                     </div>
                     {sel && (
                       <div className="animate-pop flex flex-wrap items-center gap-2 rounded-2xl bg-zinc-50 p-2">
-                        <div className="flex items-center rounded-full bg-white shadow-sm">
+                        <div className="flex items-center rounded-full sticker">
                           <button onClick={() => set(sel.qty - 1)} aria-label="Moins" className="size-8 rounded-full text-lg font-bold text-zinc-500">−</button>
                           <span className="w-8 text-center font-semibold tabular-nums">{sel.qty}</span>
                           <button onClick={() => set(sel.qty + 1)} aria-label="Plus" className="size-8 rounded-full text-lg font-bold text-zinc-500">+</button>

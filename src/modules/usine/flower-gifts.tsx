@@ -65,7 +65,7 @@ export function FlowerGifts({ roomId, gifts, names }: { roomId: string; gifts: G
       {(revealed || (shown && next)) && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6" role="dialog" aria-modal>
           <div className="absolute inset-0 bg-black/35" />
-          <div className="animate-pop relative w-full max-w-xs rounded-[1.75rem] bg-white p-6 text-center shadow-2xl">
+          <div className="animate-pop relative w-full max-w-xs rounded-[1.75rem] sticker p-6 text-center">
             {revealed ? (
               <>
                 <div className="animate-pop mx-auto w-fit"><GiftContents gift={revealed} size={96} /></div>

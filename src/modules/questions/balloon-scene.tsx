@@ -87,7 +87,7 @@ export function BalloonCard({ roomId, flight, people, names, question }: {
       {/* voile sombre derrière le texte, pour qu'il reste lisible sur le ciel */}
       <span aria-hidden className="pointer-events-none absolute -inset-x-6 -top-6 h-40 bg-gradient-to-b from-black/45 to-transparent" />
 
-      <p className="relative text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-100">Question du jour</p>
+      <p className="relative inline-block rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-extrabold text-[#FFD54A]">Question du jour</p>
       <h2 className="relative mt-3 text-2xl font-bold leading-snug tracking-tight drop-shadow">{question}</h2>
 
       {/* la scène : repères à gauche (dans le flux), montgolfière à droite */}

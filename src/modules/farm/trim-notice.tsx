@@ -33,7 +33,7 @@ export function TrimNotice({ roomId, page }: { roomId: string; page: string }) {
   return (
     <div className="fixed inset-0 z-[1250] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-label="Serres remises aux règles">
       <button aria-label="Fermer" onClick={close} className="absolute inset-0 bg-black/45" />
-      <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-6 text-center shadow-2xl">
+      <div className="relative w-full max-w-sm rounded-[2rem] sticker p-6 text-center">
         <p className="eyebrow">À la serre</p>
         <h2 className="mt-1 text-2xl font-bold tracking-tight">Les serres ont été remises aux règles</h2>
         <p className="mt-3 text-[0.95rem] leading-relaxed text-zinc-600">

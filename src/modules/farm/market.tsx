@@ -44,12 +44,12 @@ export function Market({ roomId, offers, items, userId, members }: {
     });
 
   const select = (v: ItemId, set: (i: ItemId) => void) => (
-    <select value={v} onChange={(e) => set(e.target.value as ItemId)} className="field min-w-0 flex-1 bg-white py-2.5 shadow-sm">
+    <select value={v} onChange={(e) => set(e.target.value as ItemId)} className="field min-w-0 flex-1 py-2.5">
       {TRADABLE.map((k) => <option key={k} value={k}>{ITEMS[k].name}</option>)}
     </select>
   );
   const qty = (v: number, set: (n: number) => void) => (
-    <input type="number" min={1} max={999} value={v} onChange={(e) => set(Number(e.target.value))} className="field w-20 bg-white py-2.5 text-center shadow-sm" />
+    <input type="number" min={1} max={999} value={v} onChange={(e) => set(Number(e.target.value))} className="field w-20 py-2.5 text-center" />
   );
 
   return (

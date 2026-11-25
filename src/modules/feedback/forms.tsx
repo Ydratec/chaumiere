@@ -18,7 +18,7 @@ export function FeedbackForms({ roomId, coins }: { roomId: string; coins: number
     <>
       <section className="space-y-3">
         <h2 className="eyebrow">Un retour, une idée ?</h2>
-        <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3} maxLength={MAX_TEXT} placeholder="Un bug, une remarque, une idée… ça arrive directement chez l'admin." className="field resize-y bg-white shadow-sm" />
+        <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3} maxLength={MAX_TEXT} placeholder="Un bug, une remarque, une idée… ça arrive directement chez l'admin." className="field resize-y" />
         <button
           disabled={pending || !feedback.trim()}
           className="btn w-full"
@@ -38,7 +38,7 @@ export function FeedbackForms({ roomId, coins }: { roomId: string; coins: number
         <p className="text-sm text-amber-900">
           Tu veux quelque chose de précis dans le jeu (une fonction, un objet, un mini-jeu…) ? Dis-le-moi : je regarde ta demande en priorité. Ça coûte très cher.
         </p>
-        <textarea value={wish} onChange={(e) => setWish(e.target.value)} rows={3} maxLength={MAX_TEXT} placeholder="J'aimerais que…" className="field resize-y bg-white shadow-sm" />
+        <textarea value={wish} onChange={(e) => setWish(e.target.value)} rows={3} maxLength={MAX_TEXT} placeholder="J'aimerais que…" className="field resize-y" />
         <button
           disabled={pending || !wish.trim() || coins < WISH_PRICE}
           className="btn w-full"

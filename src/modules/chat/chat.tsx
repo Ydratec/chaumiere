@@ -182,7 +182,7 @@ export function Chat({
                   </button>}
                 </div>
                 {picker === m.id && (
-                  <div className="animate-pop mt-1 inline-flex gap-1 rounded-full bg-white px-2 py-1 shadow-lg ring-1 ring-black/5">
+                  <div className="animate-pop mt-1 inline-flex gap-1 rounded-full sticker px-2 py-1">
                     {MOODS.map((e) => (
                       <button key={e} type="button" onClick={() => toggle(m.id, e)} className="transition-transform hover:scale-125">
                         <Reacts k={e} size={28} />

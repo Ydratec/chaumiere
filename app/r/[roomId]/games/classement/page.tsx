@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Medal } from "@/src/components/medal";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/src/components/avatar";
 import { Icon } from "@/src/components/icons";
@@ -9,7 +10,6 @@ import { getRoomContext } from "@/src/modules/rooms/context";
 import { quizVisible } from "@/src/modules/quiz/access";
 import { QUIZ_GAMES, dailyFirst, dailyWins, parisDay, records, type ScoreRow } from "@/src/modules/quiz/scores";
 
-const MEDAL = ["🥇", "🥈", "🥉"];
 
 /** Classement de la salle, jeu par jeu (et pour le défi du jour). */
 export default async function StandingsPage({ params, searchParams }: { params: Promise<{ roomId: string }>; searchParams: Promise<{ jeu?: string }> }) {
@@ -45,7 +45,7 @@ export default async function StandingsPage({ params, searchParams }: { params: 
       <nav className="-mx-4 flex gap-2 overflow-x-auto px-4">
         {tabs.map((t) => (
           <Link key={t.id} href={`/r/${roomId}/games/classement?jeu=${t.id}`} aria-current={t.id === tab.id ? "page" : undefined}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${t.id === tab.id ? "bg-indigo-600 text-white" : "bg-white text-zinc-600 shadow-sm"}`}>
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${t.id === tab.id ? "bg-indigo-600 text-white" : "sticker text-zinc-600"}`}>
             {t.label}
           </Link>
         ))}
@@ -62,13 +62,13 @@ export default async function StandingsPage({ params, searchParams }: { params: 
           : <span className="text-zinc-300">—</span>;
         return (
           <>
-            <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+            <section className="rounded-[1.5rem] sticker p-4">
               <p className="mb-2 text-xs text-zinc-500">Défi du jour · aujourd&apos;hui (seule la première partie compte)</p>
               {today.length ? (
                 <ol className="rows">
                   {today.map((r, i) => (
                     <li key={r.user_id} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                      <span className="flex w-6 justify-center">{i < 3 ? <Medal rank={i} /> : <span className="tabular-nums text-zinc-500">{i + 1}</span>}</span>
                       {who(r.user_id)}
                       <span className="text-right tabular-nums"><b>{r.score}</b> <span className="text-zinc-500">pts</span></span>
                     </li>
@@ -77,12 +77,12 @@ export default async function StandingsPage({ params, searchParams }: { params: 
               ) : <p className="py-2 text-sm text-zinc-500">Personne n&apos;a encore joué le défi aujourd&apos;hui.</p>}
             </section>
             {!!wins.length && (
-              <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+              <section className="rounded-[1.5rem] sticker p-4">
                 <p className="mb-2 text-xs text-zinc-500">Défis du jour gagnés · défis joués</p>
                 <ol className="rows">
                   {wins.map((r, i) => (
                     <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                      <span className="flex w-6 justify-center">{i < 3 ? <Medal rank={i} /> : <span className="tabular-nums text-zinc-500">{i + 1}</span>}</span>
                       {who(r.user)}
                       <span className="text-right tabular-nums"><b>{r.wins}</b> <span className="text-zinc-500">j.</span> · {r.played}</span>
                     </li>
@@ -91,7 +91,7 @@ export default async function StandingsPage({ params, searchParams }: { params: 
               </section>
             )}
             {!!games.length && (
-              <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+              <section className="rounded-[1.5rem] sticker p-4">
                 <p className="mb-2 text-xs text-zinc-500">Records par jeu · 7 questions (survie : meilleure série)</p>
                 <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 text-sm">
                   <span className="py-1.5 text-xs font-medium text-zinc-400">Jeu</span>
@@ -114,12 +114,12 @@ export default async function StandingsPage({ params, searchParams }: { params: 
           .filter((r) => r.stage && person(r.user)).sort((a, b) => b.stars - a.stars || b.stage - a.stage || b.earned - a.earned);
         if (!rows.length) return <p className="text-sm text-zinc-500">Personne n&apos;a encore d&apos;usine.</p>;
         return (
-          <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+          <section className="rounded-[1.5rem] sticker p-4">
             <p className="mb-2 text-xs text-zinc-500">Étoiles des contrats · à égalité : l&apos;étape, puis les pièces gagnées</p>
             <ol className="rows">
               {rows.map((r, i) => (
                 <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
-                  <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                  <span className="flex w-6 justify-center">{i < 3 ? <Medal rank={i} /> : <span className="tabular-nums text-zinc-500">{i + 1}</span>}</span>
                   {who(r.user)}
                   <span className="text-right tabular-nums">
                     <b>{r.stars.toLocaleString("fr-FR")}</b> <span className="text-zinc-500">★</span>
@@ -134,12 +134,12 @@ export default async function StandingsPage({ params, searchParams }: { params: 
         const rows = dailyStandings((daily ?? []) as DailyRow[]);
         if (!rows.length) return <p className="text-sm text-zinc-500">Personne n&apos;a encore réussi de défi du jour.</p>;
         return (
-          <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+          <section className="rounded-[1.5rem] sticker p-4">
             <p className="mb-2 text-xs text-zinc-500">Jours remportés (meilleur score du jour) · défis réussis</p>
             <ol className="rows">
               {rows.map((r, i) => (
                 <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
-                  <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                  <span className="flex w-6 justify-center">{i < 3 ? <Medal rank={i} /> : <span className="tabular-nums text-zinc-500">{i + 1}</span>}</span>
                   {who(r.user)}
                   <span className="text-right tabular-nums">
                     <b>{r.days}</b> <span className="text-zinc-500">j.</span> · {r.solved}
@@ -153,12 +153,12 @@ export default async function StandingsPage({ params, searchParams }: { params: 
         const rows = standings(played, tab.id);
         if (!rows.length) return <p className="text-sm text-zinc-500">Aucune partie de {tab.label} terminée pour l&apos;instant.</p>;
         return (
-          <section className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+          <section className="rounded-[1.5rem] sticker p-4">
             <p className="mb-2 text-xs text-zinc-500">3 points la victoire, 1 l&apos;égalité · V / N / D · % de victoires</p>
             <ol className="rows">
               {rows.map((r, i) => (
                 <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
-                  <span className="w-6 text-center">{MEDAL[i] ?? <span className="tabular-nums text-zinc-400">{i + 1}</span>}</span>
+                  <span className="flex w-6 justify-center">{i < 3 ? <Medal rank={i} /> : <span className="tabular-nums text-zinc-500">{i + 1}</span>}</span>
                   {who(r.user)}
                   <span className="text-right tabular-nums">
                     <b>{r.points}</b> <span className="text-zinc-500">pts</span>

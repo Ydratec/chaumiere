@@ -24,7 +24,7 @@ export function RoomOptions({ roomId, voteLocked, questionHour }: { roomId: stri
       </label>
       <label className="flex items-center justify-between gap-3 py-3 text-sm">
         <span className="font-medium">Nouvelle question chaque jour à</span>
-        <select value={hour} onChange={(e) => save(locked, Number(e.target.value))} className="rounded-xl bg-white px-3 py-2 font-medium shadow-sm">
+        <select value={hour} onChange={(e) => save(locked, Number(e.target.value))} className="rounded-xl sticker px-3 py-2 font-medium">
           {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{h} h</option>)}
         </select>
       </label>

@@ -40,7 +40,7 @@ export default async function ManagePage({ params }: { params: Promise<{ roomId:
             {rid}
             <label className="eyebrow" htmlFor="room-name">Nom de la salle</label>
             <div className="flex gap-2">
-              <input id="room-name" name="name" defaultValue={ctx.roomName} maxLength={60} required className="field min-w-0 flex-1 bg-white shadow-sm" />
+              <input id="room-name" name="name" defaultValue={ctx.roomName} maxLength={60} required className="field min-w-0 flex-1" />
               <button className="btn px-4">Renommer</button>
             </div>
           </form>

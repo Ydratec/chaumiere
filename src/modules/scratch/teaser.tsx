@@ -27,7 +27,7 @@ export function ScratchTeaser({ roomId }: { roomId: string }) {
   return (
     <div className="fixed inset-0 z-[1230] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-label="Nouveauté">
       <button aria-label="Fermer" onClick={close} className="absolute inset-0 bg-black/45" />
-      <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-6 text-center shadow-2xl">
+      <div className="relative w-full max-w-sm rounded-[2rem] sticker p-6 text-center">
         <div className="-mt-12 mb-2 flex justify-center">
           <span className="flex size-20 rotate-[-6deg] items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-300 text-4xl shadow-lg ring-4 ring-white">🎟️</span>
         </div>

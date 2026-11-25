@@ -27,7 +27,7 @@ export function GiftButton({ roomId, receiver, done, items }: { roomId: string; 
   };
 
   return (
-    <section className="space-y-3 rounded-3xl bg-white p-4 shadow-sm">
+    <section className="space-y-3 rounded-3xl sticker p-4">
       <h3 className="eyebrow">Offrir une fleur, ou un bouquet</h3>
       <div className="grid grid-cols-4 gap-2">
         {owned.map((f) => {
@@ -41,7 +41,7 @@ export function GiftButton({ roomId, receiver, done, items }: { roomId: string; 
               </button>
               <span className="mt-1 text-[11px] tabular-nums text-zinc-500">{n} / {items[f.id]}</span>
               {n > 0 && (
-                <button type="button" aria-label={`Retirer ${ITEMS[f.id].name}`} onClick={() => add(f.id, -1)} className="absolute -right-1 -top-1 flex size-6 items-center justify-center rounded-full bg-white text-sm font-bold text-zinc-600 shadow">−</button>
+                <button type="button" aria-label={`Retirer ${ITEMS[f.id].name}`} onClick={() => add(f.id, -1)} className="absolute -right-1 -top-1 flex size-6 items-center justify-center rounded-full sticker text-sm font-bold text-zinc-600">−</button>
               )}
             </div>
           );

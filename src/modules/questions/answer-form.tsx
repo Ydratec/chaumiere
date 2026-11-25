@@ -37,7 +37,7 @@ export function AnswerForm({ activityId, name, mine, locked, children }: { activ
         required
         autoFocus={editing}
         placeholder="Ta réponse…"
-        className="field resize-y bg-white shadow-sm"
+        className="field resize-y"
       />
       <div className="flex gap-2">
         {editing && <button type="button" onClick={() => setEditing(false)} className="btn-soft">Annuler</button>}
