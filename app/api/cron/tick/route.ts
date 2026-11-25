@@ -100,7 +100,7 @@ async function storyNews() {
     }
     for (const e of events) {
       const to = await throttle(everyone, `event:${r.chapter}:${e.id}:${r.id}`);
-      await notify(to, "farm", { title: e.title, body: e.text, url: `/r/${r.id}/farm`, tag: `event-${e.id}` });
+      await notify(to, "farm", { title: e.title, body: e.text, url: `/r/${r.id}/farm`, tag: `event-${e.id}` }, { level: "room", topic: "farm" });
       sent += to.length;
     }
   }
@@ -122,7 +122,7 @@ async function newsPush() {
       seen.add(m.user_id);
       const to = await throttle([m.user_id], `news:${n.id}`);
       if (!to.length) continue;
-      await notify(to, "farm", { title: n.push.title, body: n.push.body, url: `/r/${m.room_id}/farm`, tag: `news-${n.id}` });
+      await notify(to, "farm", { title: n.push.title, body: n.push.body, url: `/r/${m.room_id}/farm`, tag: `news-${n.id}` }, { level: "room", topic: "farm" });
       sent++;
     }
   }

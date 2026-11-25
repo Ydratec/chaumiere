@@ -3,9 +3,10 @@
 import { after } from "next/server";
 import { adminDb } from "@/src/lib/db/server";
 import { getAuthUser, getRoomContext } from "@/src/modules/rooms/context";
-import { notify, throttle, type Kind } from "./push";
+import type { Prefs } from "./prefs";
+import { notify, throttle, touchPresence } from "./push";
 
-export type Prefs = Record<Kind, boolean>;
+
 
 async function me() {
   const user = await getAuthUser();
@@ -29,8 +30,14 @@ export async function unsubscribe(endpoint: string) {
 export async function savePrefs(p: Prefs) {
   const uid = await me();
   await adminDb().from("notification_prefs").upsert({
-    user_id: uid, question: !!p.question, games: !!p.games, chat: !!p.chat, farm: !!p.farm,
+    user_id: uid, question: !!p.question, games: !!p.games, chat: !!p.chat, farm: !!p.farm, quiz: !!p.quiz, room: !!p.room,
   });
+}
+
+/** L'appli est ouverte : remet à zéro les limites des notifications « salle » (appelé par <Presence />). */
+export async function markSeen() {
+  const user = await getAuthUser();
+  if (user) await touchPresence(user.id);
 }
 
 export async function sendTest() {
@@ -49,7 +56,7 @@ export async function gameChatSent(gameId: string) {
   const others = [g.creator, g.opponent].filter((u): u is string => !!u && u !== c.user.id);
   after(async () => {
     const to = await throttle(others, `gamechat:${gameId}`, 10);
-    await notify(to, "games", { title: `${c.names[c.user.id]} · partie`, body: last.content.slice(0, 140), url: `/r/${g.room_id}/games/${gameId}`, tag: `gamechat-${gameId}` });
+    await notify(to, "games", { title: `${c.names[c.user.id]} · partie`, body: last.content.slice(0, 140), url: `/r/${g.room_id}/games/${gameId}`, tag: `gamechat-${gameId}` }, { skipIfActive: true });
   });
 }
 
@@ -70,6 +77,6 @@ export async function chatSent(activityId: string) {
       body: last.content.slice(0, 140),
       url: `/r/${a.room_id}/question`,
       tag: `chat-${activityId}`,
-    });
+    }, { level: "room", topic: `chat:${activityId}`, sender: c.user.id, skipIfActive: true });
   });
 }

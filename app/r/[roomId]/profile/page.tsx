@@ -6,6 +6,7 @@ import { isSuperAdmin } from "@/src/modules/admin/guard";
 import { loadOwnedSkins } from "@/src/modules/characters/data";
 import { CharacterEditor } from "@/src/modules/characters/editor";
 import { FeedbackForms } from "@/src/modules/feedback/forms";
+import { ALL_ON } from "@/src/modules/notifications/prefs";
 import { NotificationSettings } from "@/src/modules/notifications/settings";
 import { adminDb } from "@/src/lib/db/server";
 import { loadUnlocks } from "@/src/modules/farm/data";
@@ -27,7 +28,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ roomId
     loadOwnedSkins(roomId, ctx.user.id),
     loadUnlocks(roomId),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("item", "coins").maybeSingle(),
-    adminDb().from("notification_prefs").select("question, games, chat, farm").eq("user_id", ctx.user.id).maybeSingle(),
+    adminDb().from("notification_prefs").select("question, games, chat, farm, quiz, room").eq("user_id", ctx.user.id).maybeSingle(),
   ]);
   const coins = wallet?.qty ?? 0;
   const canLeave = !others.length || !ctx.isAdmin || others.some((m) => m.role === "admin");
@@ -57,7 +58,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ roomId
 
       <section>
         <h2 className="eyebrow mb-3">Notifications</h2>
-        <NotificationSettings initial={np ?? { question: true, games: true, chat: true, farm: true }} />
+        <NotificationSettings initial={{ ...ALL_ON, ...(np ?? {}) }} />
       </section>
 
       <section>

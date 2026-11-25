@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
-import { savePrefs, sendTest, subscribe, unsubscribe, type Prefs } from "./actions";
+import { savePrefs, sendTest, subscribe, unsubscribe } from "./actions";
+import type { Prefs } from "./prefs";
 
 const LABELS: Record<keyof Prefs, string> = {
   question: "Question du jour",
   games: "Jeux : défis, à toi de jouer",
+  quiz: "Quiz : défis, revanches",
   chat: "Messages de la discussion",
   farm: "Serre : récoltes, échanges, projets",
+  room: "Ce qui se passe dans la salle (parties lancées, réponses des autres…)",
 };
 
 /** État de l'appareil (lu côté navigateur seulement). */

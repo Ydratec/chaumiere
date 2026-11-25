@@ -103,11 +103,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
     const { data: match, error } = await db.from("quiz_matches").insert({ room_id: roomId, host: me, ...m, seed, target }).select("id").single();
     if (error || !match) return fail("Indisponible", 503);
     await db.rpc("quiz_join", { m: match.id, u: me });
-    // ponytail: notifications seulement une fois le quiz ouvert à tous (pendant les tests, les autres ne le voient pas)
+    // Défi à la salle : notification « salle » (une seule invitation au quiz tant qu'on n'est pas revenu sur l'appli).
     if (QUIZ_OPEN) {
       const what = target ? "te défie en duel" : m.mode === "duel" ? "lance un duel" : m.rules === "elim" ? "lance une partie à élimination" : "lance une partie";
       const to = target ? [target] : await roomMembers(roomId, me);
-      await notify(to, "games", { title: "Quiz", body: `${ctx.names[me]} ${what} : ${QUIZ_GAMES[m.game] ?? "défi sur mesure"}`, url: `/r/${roomId}/quiz?m=${match.id}`, tag: `quiz-${match.id}` }).catch(() => {});
+      await notify(to, "quiz", { title: "Quiz", body: `${ctx.names[me]} ${what} : ${QUIZ_GAMES[m.game] ?? "défi sur mesure"}`, url: `/r/${roomId}/quiz?m=${match.id}`, tag: `quiz-${match.id}` }, target ? {} : { level: "room", topic: "quiz", sender: me }).catch(() => {});
     }
     return Response.json({ now: now(), id: match.id });
   }
@@ -148,8 +148,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
       if (error) return fail("Indisponible", 503);
       const others = players.filter((p) => !p.me && !p.left_game).map((p) => p.user_id);
       if (QUIZ_OPEN && others.length) {
-        if (next) await notify(others, "games", { title: "Quiz", body: "Revanche ! La partie commence", url: `/r/${roomId}/quiz?m=${next}`, tag: `quiz-${next}` }).catch(() => {});
-        else if (first) await notify(others, "games", { title: "Quiz", body: `${ctx.names[me]} veut sa revanche`, url: `/r/${roomId}/quiz?m=${id}`, tag: `quiz-${id}` }).catch(() => {});
+        if (next) await notify(others, "quiz", { title: "Quiz", body: "Revanche ! La partie commence", url: `/r/${roomId}/quiz?m=${next}`, tag: `quiz-${next}` }).catch(() => {});
+        else if (first) await notify(others, "quiz", { title: "Quiz", body: `${ctx.names[me]} veut sa revanche`, url: `/r/${roomId}/quiz?m=${id}`, tag: `quiz-${id}` }).catch(() => {});
       }
       return Response.json({ now: now(), ok: true, next: next ?? null });
     }
@@ -162,7 +162,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
     case "decline": {
       if (match.target !== me || (mine && mine.done_at) || match.status === "done" || match.status === "cancelled") return fail("Impossible ici", 409);
       await db.from("quiz_matches").update({ status: "cancelled" }).eq("id", id);
-      if (QUIZ_OPEN) await notify([match.host], "games", { title: "Quiz", body: `${ctx.names[me]} a refusé ton défi`, url: `/r/${roomId}/quiz`, tag: `quiz-${id}` }).catch(() => {});
+      if (QUIZ_OPEN) await notify([match.host], "quiz", { title: "Quiz", body: `${ctx.names[me]} a refusé ton défi`, url: `/r/${roomId}/quiz`, tag: `quiz-${id}` }).catch(() => {});
       return Response.json({ now: now(), ok: true });
     }
     case "leave": {
@@ -227,7 +227,7 @@ async function settleAsync(ctx: Ctx, roomId: string, id: string, me?: string) {
     // le créateur a fini : la personne défiée est prévenue (une fois : la notification remplace la précédente)
     const host = players.find((p) => p.user_id === match.host);
     if (me && me === match.host && host?.done_at && match.target && !players.some((p) => p.user_id === match.target) && QUIZ_OPEN) {
-      await notify([match.target], "games", { title: "Quiz", body: `${ctx.names[me]} a fait ${host.score} pts : à toi de jouer`, url: `/r/${roomId}/quiz?m=${id}`, tag: `quiz-${id}` }).catch(() => {});
+      await notify([match.target], "quiz", { title: "Quiz", body: `${ctx.names[me]} a fait ${host.score} pts : à toi de jouer`, url: `/r/${roomId}/quiz?m=${id}`, tag: `quiz-${id}` }).catch(() => {});
     }
     return { over: false, coins: 0 };
   }
@@ -246,7 +246,7 @@ async function settleAsync(ctx: Ctx, roomId: string, id: string, me?: string) {
   const other = players.find((p) => p.user_id !== me);
   if (me && other && QUIZ_OPEN) {
     const a = players.find((p) => p.user_id === me)!;
-    await notify([other.user_id], "games", { title: "Quiz", body: `${ctx.names[me]} a relevé le défi : ${other.score} – ${a.score}`, url: `/r/${roomId}/quiz?m=${id}`, tag: `quiz-${id}` }).catch(() => {});
+    await notify([other.user_id], "quiz", { title: "Quiz", body: `${ctx.names[me]} a relevé le défi : ${other.score} – ${a.score}`, url: `/r/${roomId}/quiz?m=${id}`, tag: `quiz-${id}` }).catch(() => {});
   }
   return { over: true, coins: mineCoins };
 }

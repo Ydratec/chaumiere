@@ -41,7 +41,7 @@ export async function buyQuestion(roomId: string, theme: string | null, custom?:
       title: theme ? `${who} a ouvert le pack « ${THEMES[theme]} »` : `${who} a ajouté une question`,
       body: theme ? `Une question par jour pendant ${PACK_SIZE} jours. Aujourd'hui : ${data.payload.text}` : data.payload.text,
       url: `/r/${roomId}/question?a=${data.id}`,
-    }),
+    }, { level: "room", topic: "question", sender: c.user.id }),
   );
   return { id: data.id };
 }

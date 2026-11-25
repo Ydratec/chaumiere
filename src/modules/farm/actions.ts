@@ -147,7 +147,7 @@ export async function contribute(roomId: string, project: string, item: string, 
       const to = await roomMembers(roomId, uid);
       // Bonus du projet (ex. pluie de bonbons) : versé à chaque membre, une seule fois (garanti par l'upsert ci-dessus).
       if (p.bonus) await Promise.all([uid, ...to].map((u) => admin.rpc("farm_add_items", { r: roomId, u, delta: p.bonus })));
-      after(() => notify(to, "farm", { title: `Projet terminé : ${p.title}`, body: p.desc, url: `/r/${roomId}/farm`, tag: `project-${project}` }));
+      after(() => notify(to, "farm", { title: `Projet terminé : ${p.title}`, body: p.desc, url: `/r/${roomId}/farm`, tag: `project-${project}` }, { level: "room", topic: "farm" }));
     }
   }
   revalidatePath(`/r/${roomId}`, "layout");

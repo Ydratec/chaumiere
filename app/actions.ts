@@ -87,7 +87,7 @@ export async function answer(f: FormData) {
         body: a.payload.text ?? "",
         url: `/r/${a.room_id}/question?a=${activityId}`,
         tag: `answers-${activityId}`,
-      });
+      }, { level: "room", topic: "answers", sender: me.id });
     });
   }
   revalidatePath(`/r/${a.room_id}/question`, "page"); // seule la page de la question change
