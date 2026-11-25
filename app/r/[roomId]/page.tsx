@@ -12,8 +12,7 @@ import { GamesLive } from "@/src/modules/games/live";
 import { questionPrice, todayExtras } from "@/src/modules/questions/extras";
 import { QuestionShop } from "@/src/modules/questions/shop";
 import { questionLabel } from "@/src/modules/questions/themes";
-import { BalloonCard } from "@/src/modules/questions/balloon-scene";
-import { loadFlight } from "@/src/modules/questions/flight-data";
+import { loadStreak } from "@/src/modules/questions/streak";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { QUIZ_OPEN, quizVisible } from "@/src/modules/quiz/access";
 
@@ -34,9 +33,9 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     questionPrice(roomId),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("item", "coins").maybeSingle(),
   ]);
-  const [extras, flight] = await Promise.all([
+  const [extras, streak] = await Promise.all([
     todayExtras(ctx.sb, activity),
-    activity?.day ? loadFlight(ctx.sb, roomId, ctx.members.map((m) => m.user_id), activity.day) : null,
+    activity?.day ? loadStreak(ctx.sb, roomId, ctx.members.map((m) => m.user_id), activity.day) : null,
   ]);
 
   const tiles: { href: string; title: string; sub?: string; band: string; icon: React.ReactNode; count?: number }[] = [
@@ -50,23 +49,21 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     <>
       <GamesLive roomId={roomId} />
       {inbox.length > 0 && <FeedbackInbox roomId={roomId} items={inbox} />}
-      {flight ? (
-        <Link href={`/r/${roomId}/question`} className="sticker relative block overflow-hidden p-6 text-white">
-          <BalloonCard roomId={roomId} flight={flight} people={ctx.people} names={ctx.names} question={activity?.payload.text ?? "Pas de question aujourd'hui"} />
-        </Link>
-      ) : (
-        <Link href={`/r/${roomId}/question`} className="sticker relative block -rotate-1 overflow-hidden bg-[#FFD54A] p-5 pr-10">
-          <span className="inline-block rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-extrabold text-[#FFD54A]">Question du jour</span>
-          <h2 className="mt-2.5 text-[1.65rem] font-bold leading-[1.12]">{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
-          <span className="mt-4 inline-block rounded-full border-2 border-ink bg-white px-4 py-1 font-display text-[1.05rem] font-bold">Répondre</span>
-          {/* coin décollé */}
-          <svg aria-hidden width="34" height="34" viewBox="0 0 34 34" className="absolute -right-[2.5px] -top-[2.5px]">
-            <path d="M0 0H34V34Z" fill="#EEF3F4" />
-            <path d="M2 0L34 32L6 28Z" fill="#fff" stroke="#2B2730" strokeWidth="2" strokeLinejoin="round" />
-            <path d="M2 0L34 32L6 28Z" fill="#000" opacity=".08" />
-          </svg>
-        </Link>
-      )}
+      <Link href={`/r/${roomId}/question`} className="sticker relative block -rotate-1 bg-[#FFD54A] p-5 pr-10">
+        <span className="inline-block rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-extrabold text-[#FFD54A]">Question du jour</span>
+        <h2 className="mt-2.5 text-[1.65rem] font-bold leading-[1.12]">{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
+        <span className="mt-4 flex items-center justify-between gap-3">
+          {streak && <span className="text-sm font-extrabold">{streak.answered} sur {streak.total} ont répondu</span>}
+          <span className="rounded-full border-2 border-ink bg-white px-4 py-1 font-display text-[1.05rem] font-bold">Répondre</span>
+        </span>
+        {/* coin décollé */}
+        <svg aria-hidden width="34" height="34" viewBox="0 0 34 34" className="absolute -right-[2.5px] -top-[2.5px]">
+          <path d="M0 0H34V34Z" fill="#EEF3F4" />
+          <path d="M2 0L34 32L6 28Z" fill="#fff" stroke="#2B2730" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M2 0L34 32L6 28Z" fill="#000" opacity=".08" />
+        </svg>
+        {streak && <Flame days={streak.days} lit={streak.today} />}
+      </Link>
 
       {extras.length > 0 && (
         <div className="space-y-3">
@@ -127,4 +124,24 @@ function TileIcon({ kind }: { kind: "games" | "quiz" | "farm" | "cards" }) {
     case "cards":
       return <svg {...common}><rect x="4" y="2.5" width="16" height="19" rx="3" fill="#E2D6FF" /><path d="M12 7l2.6 5L12 17l-2.6-5z" fill="#9B7BFF" stroke="none" /></svg>;
   }
+}
+
+/**
+ * Flamme de la salle (autocollant rond sur la question du jour) : jours d'affilée où tout le monde a répondu.
+ * Vive quand la série inclut aujourd'hui, plus pâle tant qu'il manque des réponses du jour, grise à zéro.
+ */
+function Flame({ days, lit }: { days: number; lit: boolean }) {
+  const [outer, inner] = !days ? ["#D5D2DA", "#F1EFF4"] : lit ? ["#FF7A2F", "#FFD54A"] : ["#FFB07A", "#FFE8A6"];
+  return (
+    <span
+      aria-label={days ? `${days} jour${days > 1 ? "s" : ""} d'affilée où tout le monde a répondu` : "Aucune série en cours"}
+      className="sticker absolute -bottom-4 -right-3 flex rotate-6 items-center gap-0.5 rounded-full py-0.5 pl-1.5 pr-2.5"
+    >
+      <svg width="24" height="28" viewBox="0 0 24 28" aria-hidden>
+        <path d="M12 1.5c1 4.5 6.5 7 7.8 12.6C21 19.6 17.5 26 12 26S3 21.8 3 17c0-3.2 1.6-5.6 3.6-7.2.2 2.4 1.2 4 2.8 4.6C8.4 9.6 9.6 4.6 12 1.5z" fill={outer} stroke="#2B2730" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M12 13c.6 2.6 4 3.6 4 7.2 0 2.4-1.8 3.8-4 3.8s-4-1.4-4-3.6c0-2.8 2.6-4.2 4-7.4z" fill={inner} />
+      </svg>
+      <span className="font-display text-xl font-extrabold leading-none">{days}</span>
+    </span>
+  );
 }
