@@ -1,7 +1,7 @@
 // Envoi des notifications push (côté serveur uniquement : pas une server action).
 import webpush from "web-push";
 import { adminDb } from "@/src/lib/db/server";
-import { digest, isQuiet, LIMITS, roomAllowed, type Level } from "./policy";
+import { LIMITS, roomAllowed, type Level } from "./policy";
 
 export type Kind = "question" | "games" | "chat" | "farm" | "quiz";
 export type Message = { title: string; body: string; url: string; tag?: string };
@@ -41,14 +41,13 @@ async function deliver(userIds: string[], msg: Message) {
 
 /**
  * Envoie à ces personnes, sur tous leurs appareils, en respectant leurs préférences et l'anti-spam (policy.ts) :
- * les notifications « salle » sont limitées et ne partent pas la nuit ; celles « pour toi » attendent le matin
- * (résumé envoyé par le cron). « test » et « admin » passent toujours.
+ * les notifications « salle » sont limitées. « test » et « admin » passent toujours.
  */
 export async function notify(userIds: string[], kind: Kind | "test" | "admin", msg: Message, opt: Options = {}) {
   const ids = [...new Set(userIds)];
   if (!ids.length || !setup()) return;
   if (kind === "test" || kind === "admin") return deliver(ids, msg);
-  const admin = adminDb(), level = opt.level ?? "me", now = new Date(), t = now.getTime();
+  const admin = adminDb(), level = opt.level ?? "me", t = Date.now();
   const since = new Date(t - 24 * 3600_000).toISOString();
   const [{ data: prefs }, { data: seen }, { data: sent }] = await Promise.all([
     admin.from("notification_prefs").select("*").in("user_id", ids),
@@ -57,39 +56,24 @@ export async function notify(userIds: string[], kind: Kind | "test" | "admin", m
   ]);
   const pref = new Map((prefs ?? []).map((p) => [p.user_id as string, p]));
   const lastSeen = new Map((seen ?? []).map((p) => [p.user_id as string, Date.parse(p.seen_at)]));
-  const send: string[] = [], later: string[] = [], logged: string[] = [];
+  const send: string[] = [], logged: string[] = [];
   for (const u of ids) {
     const p = pref.get(u);
     if (p && (p[kind] === false || (level === "room" && p.room === false))) continue;
-    const quiet = p?.quiet !== false && isQuiet(now), s = lastSeen.get(u) ?? 0;
+    const s = lastSeen.get(u) ?? 0;
     if (opt.skipIfActive && s > t - LIMITS.activeMinutes * 60_000) continue; // déjà dans l'appli
     if (level === "room") {
-      if (quiet) continue; // la nuit, rien de la salle
       const mine = (sent ?? []).filter((x) => x.user_id === u).map((x) => ({ topic: x.topic as string, sender: x.sender as string | null, at: Date.parse(x.sent_at) }));
       if (!roomAllowed({ sent: mine, seen: s, now: t, topic: opt.topic ?? kind, sender: opt.sender })) continue;
       logged.push(u);
-    } else if (quiet) { later.push(u); continue; }
+    }
     send.push(u);
   }
-  await Promise.all([
-    logged.length ? admin.from("notification_sent").insert(logged.map((user_id) => ({ user_id, topic: opt.topic ?? kind, sender: opt.sender ?? null }))) : null,
-    later.length ? admin.from("notification_queue").insert(later.map((user_id) => ({ user_id, title: msg.title, body: msg.body, url: msg.url }))) : null,
-  ]);
+  if (logged.length) {
+    await admin.from("notification_sent").delete().lt("sent_at", new Date(t - 2 * 86_400_000).toISOString()); // ménage
+    await admin.from("notification_sent").insert(logged.map((user_id) => ({ user_id, topic: opt.topic ?? kind, sender: opt.sender ?? null })));
+  }
   await deliver(send, msg);
-}
-
-/** Cron, le matin : un seul résumé par personne pour tout ce qui est arrivé pendant les heures calmes. */
-export async function sendDigests() {
-  if (isQuiet(new Date())) return 0;
-  const admin = adminDb();
-  await admin.from("notification_sent").delete().lt("sent_at", new Date(Date.now() - 2 * 86_400_000).toISOString()); // ménage
-  const { data } = await admin.from("notification_queue").select("id, user_id, title, body, url").order("id").limit(1000);
-  if (!data?.length || !setup()) return 0;
-  const byUser = new Map<string, typeof data>();
-  for (const r of data) byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r]);
-  await admin.from("notification_queue").delete().in("id", data.map((r) => r.id));
-  await Promise.all([...byUser].map(([u, items]) => deliver([u], digest(items))));
-  return byUser.size;
 }
 
 /** Note que la personne est dans l'appli (remet à zéro les limites « salle » ; au plus une écriture par minute). */

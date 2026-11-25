@@ -30,7 +30,7 @@ export async function unsubscribe(endpoint: string) {
 export async function savePrefs(p: Prefs) {
   const uid = await me();
   await adminDb().from("notification_prefs").upsert({
-    user_id: uid, question: !!p.question, games: !!p.games, chat: !!p.chat, farm: !!p.farm, quiz: !!p.quiz, room: !!p.room, quiet: !!p.quiet,
+    user_id: uid, question: !!p.question, games: !!p.games, chat: !!p.chat, farm: !!p.farm, quiz: !!p.quiz, room: !!p.room,
   });
 }
 

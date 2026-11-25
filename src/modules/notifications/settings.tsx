@@ -11,7 +11,6 @@ const LABELS: Record<keyof Prefs, string> = {
   chat: "Messages de la discussion",
   farm: "Serre : récoltes, échanges, projets",
   room: "Ce qui se passe dans la salle (parties lancées, réponses des autres…)",
-  quiet: "Heures calmes : rien entre 22 h et 8 h (ce qui te concerne arrive le matin)",
 };
 
 /** État de l'appareil (lu côté navigateur seulement). */

@@ -28,7 +28,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ roomId
     loadOwnedSkins(roomId, ctx.user.id),
     loadUnlocks(roomId),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", ctx.user.id).eq("item", "coins").maybeSingle(),
-    adminDb().from("notification_prefs").select("question, games, chat, farm, quiz, room, quiet").eq("user_id", ctx.user.id).maybeSingle(),
+    adminDb().from("notification_prefs").select("question, games, chat, farm, quiz, room").eq("user_id", ctx.user.id).maybeSingle(),
   ]);
   const coins = wallet?.qty ?? 0;
   const canLeave = !others.length || !ctx.isAdmin || others.some((m) => m.role === "admin");

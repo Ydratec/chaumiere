@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { digest, isQuiet, roomAllowed, type Sent } from "@/src/modules/notifications/policy";
+import { roomAllowed, type Sent } from "@/src/modules/notifications/policy";
 
 const MIN = 60_000, now = Date.parse("2026-11-25T14:00:00Z");
 const sent = (minAgo: number, topic = "games", sender: string | null = "lea"): Sent => ({ topic, sender, at: now - minAgo * MIN });
@@ -21,14 +21,5 @@ describe("anti-spam des notifications", () => {
     expect(roomAllowed({ sent: hour, seen: now - 2.5 * MIN, now, topic: "games", sender: "x" })).toBe(true);
     const day = Array.from({ length: 12 }, (_, k) => sent(70 + k * 60, "games", `u${k}`));
     expect(roomAllowed({ sent: day, seen: 0, now, topic: "games", sender: "x" })).toBe(false);
-  });
-  it("heures calmes de 22 h à 8 h (heure de Paris)", () => {
-    expect(isQuiet(new Date("2026-11-25T21:30:00Z"))).toBe(true); // 22 h 30 à Paris
-    expect(isQuiet(new Date("2026-11-25T06:59:00Z"))).toBe(true); // 7 h 59
-    expect(isQuiet(new Date("2026-11-25T07:00:00Z"))).toBe(false); // 8 h
-  });
-  it("résumé du matin", () => {
-    const d = digest([{ title: "Léa te défie", body: "Memory", url: "/a" }, { title: "À toi de jouer", body: "Dames", url: "/b" }]);
-    expect(d).toEqual({ title: "Pendant la nuit (2)", body: "Léa te défie : Memory · À toi de jouer : Dames", url: "/b", tag: "digest" });
   });
 });

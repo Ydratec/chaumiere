@@ -8,7 +8,7 @@ import { chapterOf } from "@/src/modules/farm/story";
 import { activeEvents } from "@/src/modules/farm/story/events";
 import { chapterDay, questOpensAt } from "@/src/modules/farm/story/state";
 import { activeNews } from "@/src/modules/news/news";
-import { notify, sendDigests, throttle } from "@/src/modules/notifications/push";
+import { notify, throttle } from "@/src/modules/notifications/push";
 import { notifyHour, paris, questionDay } from "@/src/modules/questions/day";
 
 
@@ -16,8 +16,8 @@ export async function POST(req: Request) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`)
     return new Response("Non autorisé", { status: 401 });
   // Serre fermée : plus de notifications de récolte ni d'histoire (leur code reste en dessous).
-  const [farm, question, story, news, digests] = await Promise.all([SERRE_OPEN ? harvests() : 0, dailyQuestion(), SERRE_OPEN ? storyNews() : 0, newsPush(), sendDigests()]);
-  return Response.json({ farm, question, story, news, digests });
+  const [farm, question, story, news] = await Promise.all([SERRE_OPEN ? harvests() : 0, dailyQuestion(), SERRE_OPEN ? storyNews() : 0, newsPush()]);
+  return Response.json({ farm, question, story, news });
 }
 
 /** Récoltes et productions devenues prêtes depuis le dernier passage (une notification par serre). */
