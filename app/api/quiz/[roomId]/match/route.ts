@@ -1,5 +1,6 @@
 // Quiz en ligne (page autonome : public/quiz) : parties à plusieurs dans la salle.
-// GET : les parties ouvertes de la salle et celles où l'on joue ; GET ?id= : une partie (joueurs, réponses).
+// GET : les parties ouvertes de la salle et celles où l'on joue ; GET ?id= : une partie (joueurs, réponses) ;
+// GET ?stats=1 : les résultats en ligne de la salle (classement, mes face-à-face, mes dernières parties).
 // POST { action } : create | join | start | solo | decline | leave | answer | done | say | rematch. Toutes les réponses donnent l'heure du serveur
 // (`now`), pour que chaque téléphone cale son horloge et affiche les questions en même temps que les autres.
 // Si les tables n'existent pas encore (migration 0034 pas appliquée), on répond 503.
@@ -11,6 +12,7 @@ import { adminDb } from "@/src/lib/db/server";
 import { notify, roomMembers } from "@/src/modules/notifications/push";
 import { QUIZ_OPEN, quizVisible } from "@/src/modules/quiz/access";
 import { allAnswered, COUNTDOWN_MS, MAX_PLAYERS, ranking, readAnswer, readNewMatch, type MatchPlayer, type Rules } from "@/src/modules/quiz/match";
+import { loadOnlineStats } from "@/src/modules/quiz/online-results";
 import { onlineReward } from "@/src/modules/quiz/rewards";
 import { parisDay, QUIZ_GAMES } from "@/src/modules/quiz/scores";
 import { getRoomContext } from "@/src/modules/rooms/context";
@@ -42,7 +44,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ roomId: 
   const { roomId } = await params;
   const ctx = await getRoomContext(roomId);
   if (!ctx || !quizVisible(ctx.user)) return fail("Non autorisé", 401);
-  const id = new URL(req.url).searchParams.get("id");
+  const q = new URL(req.url).searchParams, id = q.get("id");
+  if (q.get("stats")) {
+    const st = await loadOnlineStats(roomId, ctx.user.id), name = (u: string) => ctx.names[u] ?? "Ancien membre";
+    return Response.json({
+      now: now(),
+      standings: st.standings.slice(0, 20).map((x) => ({ ...x, name: name(x.user), me: x.user === ctx.user.id })),
+      duels: st.duels.map((x) => ({ ...x, name: name(x.user) })),
+      recent: st.recent.map((r) => ({ ...r, scores: r.scores.map((x) => ({ ...x, name: name(x.user) })) })),
+    });
+  }
   if (id) {
     const r = await loadMatch(ctx, roomId, id);
     if ("error" in r) return fail(r.error as string, r.status);

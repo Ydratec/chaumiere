@@ -8,6 +8,7 @@ import { GAME_TYPES } from "@/src/modules/games/labels";
 import { dailyStandings, standings, type DailyRow, type Played } from "@/src/modules/games/standings";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { quizVisible } from "@/src/modules/quiz/access";
+import { loadOnlineStats } from "@/src/modules/quiz/online-results";
 import { QUIZ_GAMES, dailyFirst, dailyWins, parisDay, records, type ScoreRow } from "@/src/modules/quiz/scores";
 
 
@@ -26,6 +27,8 @@ export default async function StandingsPage({ params, searchParams }: { params: 
     quiz ? adminDb().from("quiz_scores").select("user_id, game, level, format, cat, score, day, created_at").eq("room_id", roomId) : Promise.resolve({ data: null }),
   ]);
   const played = ((games ?? []) as unknown as Played[]);
+  // Quiz en ligne : classement des parties à plusieurs, tes face-à-face et tes dernières parties
+  const online = quiz && jeu === "quiz" ? await loadOnlineStats(roomId, ctx.user.id) : null;
   const tabs = [...Object.entries(GAME_TYPES).map(([id, t]) => ({ id, label: t.label })), { id: "defi", label: "Défi du jour" }, { id: "usine", label: "Usine de Noël" }, ...(quiz ? [{ id: "quiz", label: "Quiz" }] : [])];
   const tab = tabs.find((t) => t.id === jeu) ?? tabs[0];
   const person = (id: string) => ctx.people[id];
@@ -53,15 +56,65 @@ export default async function StandingsPage({ params, searchParams }: { params: 
 
       {tab.id === "quiz" ? (() => {
         const rows = (quizRows ?? []) as ScoreRow[];
-        if (!rows.length) return <p className="text-sm text-zinc-500">Aucune partie de Quiz enregistrée pour l&apos;instant.</p>;
+        if (!rows.length && !online?.standings.length) return <p className="text-sm text-zinc-500">Aucune partie de Quiz enregistrée pour l&apos;instant.</p>;
         const today = dailyFirst(rows, parisDay()), wins = dailyWins(rows), best = records(rows);
         const rec = (game: string, format: string, level: string) => best.get(`${game}|${format}|${level}`);
         const games = Object.keys(QUIZ_GAMES).filter((g) => g !== "daily" && ["normal", "survie"].some((f) => rec(g, f, "facile") || rec(g, f, "expert")));
         const cell = (r: ScoreRow | undefined, unit: string) => r
           ? <span className="block tabular-nums"><b>{r.score}</b> <span className="text-zinc-500">{unit}</span><span className="block truncate text-xs text-zinc-500">{person(r.user_id)?.name ?? "Ancien membre"}</span></span>
           : <span className="text-zinc-300">—</span>;
+        const fmt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
         return (
           <>
+            {!!online?.standings.length && (
+              <section className="rounded-[1.5rem] sticker p-4">
+                <p className="mb-2 text-xs text-zinc-500">En ligne · victoires sur parties jouées (duels et parties à plusieurs)</p>
+                <ol className="rows">
+                  {online.standings.map((r, i) => (
+                    <li key={r.user} className="flex items-center gap-3 py-2.5 text-sm">
+                      <span className="flex w-6 justify-center">{i < 3 ? <Medal rank={i} /> : <span className="tabular-nums text-zinc-500">{i + 1}</span>}</span>
+                      {who(r.user)}
+                      <span className="text-right tabular-nums"><b>{r.wins}</b> <span className="text-zinc-500">/ {r.played}</span></span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+            {!!online?.duels.length && (
+              <section className="rounded-[1.5rem] sticker p-4">
+                <p className="mb-2 text-xs text-zinc-500">Tes duels · victoires, nuls, défaites</p>
+                <ol className="rows">
+                  {online.duels.map((h) => (
+                    <li key={h.user} className="flex items-center gap-3 py-2.5 text-sm">
+                      {who(h.user)}
+                      <span className="flex gap-1.5 tabular-nums">
+                        <span className="rounded-full bg-[#CDEBB5] px-2 py-0.5 font-bold">{h.w}</span>
+                        <span className="rounded-full bg-zinc-100 px-2 py-0.5">{h.d}</span>
+                        <span className="rounded-full bg-[#FFC6D3] px-2 py-0.5 font-bold">{h.l}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+            {!!online?.recent.length && (
+              <section className="rounded-[1.5rem] sticker p-4">
+                <p className="mb-2 text-xs text-zinc-500">Tes dernières parties en ligne</p>
+                <ol className="rows">
+                  {online.recent.map((r) => (
+                    <li key={r.id} className="flex items-center gap-3 py-2.5 text-sm">
+                      <span className={`w-16 shrink-0 rounded-full px-2 py-0.5 text-center font-display text-xs font-bold ${r.win ? "bg-[#CDEBB5]" : r.draw ? "bg-zinc-100" : "bg-[#FFC6D3]"}`}>
+                        {r.win ? "Victoire" : r.draw ? "Nul" : r.of > 2 ? `${r.rank}e / ${r.of}` : "Défaite"}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {r.scores.map((x) => `${person(x.user)?.name ?? "?"} ${x.score}`).join(" · ")}
+                        <span className="block text-xs text-zinc-500">{QUIZ_GAMES[r.game] ?? "Défi sur mesure"} · {fmt(r.at)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
             <section className="rounded-[1.5rem] sticker p-4">
               <p className="mb-2 text-xs text-zinc-500">Défi du jour · aujourd&apos;hui (seule la première partie compte)</p>
               {today.length ? (
