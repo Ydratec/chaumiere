@@ -49,18 +49,24 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     <>
       <GamesLive roomId={roomId} />
       {inbox.length > 0 && <FeedbackInbox roomId={roomId} items={inbox} />}
-      <Link href={`/r/${roomId}/question`} className="relative block -rotate-1 rounded-md bg-[#FFD54A] p-5 pr-10 shadow-[0_14px_22px_-14px_rgb(43_39_48/0.55),0_2px_3px_rgb(43_39_48/0.12)]">
-        <span className="inline-block rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-extrabold text-[#FFD54A]">Question du jour</span>
-        <h2 className="mt-2.5 text-[1.65rem] font-bold leading-[1.12]">{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
-        <span className="mt-4 flex items-center justify-between gap-3">
-          {streak && <span className="text-sm font-extrabold">{streak.answered} sur {streak.total} ont répondu</span>}
-          <span className="rounded-full border-2 border-ink bg-white px-4 py-1 font-display text-[1.05rem] font-bold">Répondre</span>
+      {/* L'autocollant de la question du jour : le coin en haut à droite est vraiment découpé (clip-path), la marge
+          blanche (.cut, sur le parent) suit donc la découpe ; le rabat replié est dessiné par-dessus. */}
+      <Link href={`/r/${roomId}/question`} className="cut relative block -rotate-1">
+        <span
+          className="block rounded-[1.4rem] border-[2.5px] border-ink bg-[#FFD54A] p-5 pr-10"
+          style={{ clipPath: "polygon(0 0, calc(100% - 32px) 0, 100% 32px, 100% 100%, 0 100%)" }}
+        >
+          <span className="inline-block rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-extrabold text-[#FFD54A]">Question du jour</span>
+          <span className="mt-2.5 block font-display text-[1.65rem] font-bold leading-[1.12]">{activity?.payload.text ?? "Pas de question aujourd'hui"}</span>
+          <span className="mt-4 flex items-center justify-between gap-3">
+            {streak && <span className="text-sm font-extrabold">{streak.answered} sur {streak.total} ont répondu</span>}
+            <span className="rounded-full border-2 border-ink bg-white px-4 py-1 font-display text-[1.05rem] font-bold">Répondre</span>
+          </span>
         </span>
-        {/* coin du post-it qui se décolle */}
-        <svg aria-hidden width="30" height="30" viewBox="0 0 30 30" className="absolute right-0 top-0">
-          <path d="M0 0H30V30Z" fill="#EEF3F4" />
-          <path d="M0 0L30 30L4 26Z" fill="#F2C53A" />
-          <path d="M0 0L30 30L4 26Z" fill="#000" opacity=".06" />
+        <svg aria-hidden width="32" height="32" viewBox="0 0 32 32" className="absolute right-0 top-0 overflow-visible">
+          <path d="M0 1.2L30.8 32" stroke="#2B2730" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M0 0L32 32L5 27.5Z" fill="#fff" stroke="#2B2730" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M0 0L32 32L5 27.5Z" fill="#000" opacity=".08" />
         </svg>
         {streak && <Flame days={streak.days} lit={streak.today} />}
       </Link>
