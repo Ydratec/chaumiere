@@ -199,6 +199,14 @@ h3 {
 ::view-transition-new(.page-in) {
   animation: 180ms ease-out both fade-in-up;
 }
+/* Petite fenêtre d'invitation (InviteToast) : descend du haut de l'écran. */
+@keyframes toast {
+  from { opacity: 0; transform: translateY(-14px) rotate(-1deg); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[toast_\.35s_ease-out\] { animation: none; }
+}
 @keyframes fade-out {
   to {
     opacity: 0;
