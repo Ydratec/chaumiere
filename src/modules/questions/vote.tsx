@@ -41,7 +41,7 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
             type="button"
             aria-pressed={picked === m.id}
             onClick={() => setPicked(m.id)}
-            className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${picked === m.id ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}
+            className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${picked === m.id ? "bg-indigo-50 ring-2 ring-indigo-500" : "sticker"}`}
           >
             {person(m.id, 48)}
             <span className="w-full truncate text-center text-sm font-medium">{m.id === userId ? "Moi" : m.name}</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Medal } from "@/src/components/medal";
 import { useOptimistic, useState } from "react";
 import { answer } from "@/app/actions";
 import { Avatar } from "@/src/components/avatar";
@@ -61,7 +62,7 @@ export function ChoiceActivity(props: ActivityProps) {
       <div className="grid grid-cols-2 gap-2">
         {options.map((o, i) => (
           <button key={i} type="button" aria-pressed={picked === i} onClick={() => setPicked(i)}
-            className={`min-h-24 rounded-2xl p-4 text-center text-base font-bold leading-snug transition active:scale-95 ${picked === i ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}>
+            className={`min-h-24 rounded-2xl p-4 text-center text-base font-bold leading-snug transition active:scale-95 ${picked === i ? "bg-indigo-50 ring-2 ring-indigo-500" : "sticker"}`}>
             {o}
           </button>
         ))}
@@ -114,7 +115,7 @@ export function RankActivity(props: ActivityProps) {
           const rank = order.indexOf(m.id);
           return (
             <button key={m.id} type="button" onClick={() => tap(m.id)}
-              className={`relative flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${rank >= 0 ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}>
+              className={`relative flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${rank >= 0 ? "bg-indigo-50 ring-2 ring-indigo-500" : "sticker"}`}>
               {rank >= 0 && <span className="absolute left-1.5 top-1.5 flex size-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">{rank + 1}</span>}
               <Face people={people} id={m.id} size={48} />
               <span className="w-full truncate text-center text-sm font-medium">{nameOf(props, m.id)}</span>
@@ -139,8 +140,8 @@ export function RankActivity(props: ActivityProps) {
           <h3 className="eyebrow">Ordre moyen · {t.total} classement{t.total > 1 ? "s" : ""}</h3>
           <ol className="space-y-2">
             {t.rows.map((r, i) => (
-              <li key={r.id} className="flex items-center gap-3 rounded-2xl bg-white p-2.5 shadow-sm">
-                <span className="w-7 text-center text-lg font-bold tabular-nums text-indigo-600">{["🥇", "🥈", "🥉"][i] ?? i + 1}</span>
+              <li key={r.id} className="flex items-center gap-3 rounded-2xl sticker p-2.5">
+                <span className="flex w-7 justify-center text-lg font-bold tabular-nums">{i < 3 ? <Medal rank={i} /> : i + 1}</span>
                 <Face people={people} id={r.id} size={32} />
                 <span className="min-w-0 flex-1 truncate font-semibold">{nameOf(props, r.id)}</span>
                 {r.avg !== null && <span className="text-xs tabular-nums text-zinc-500">{r.avg.toFixed(1).replace(".", ",")}ᵉ en moyenne</span>}
@@ -178,7 +179,7 @@ export function DuoActivity(props: ActivityProps) {
       <div className="grid grid-cols-3 gap-2">
         {cands.map((m) => (
           <button key={m.id} type="button" aria-pressed={duo.includes(m.id)} onClick={() => tap(m.id)}
-            className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${duo.includes(m.id) ? "bg-indigo-50 ring-2 ring-indigo-500" : "bg-white shadow-sm"}`}>
+            className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 transition active:scale-95 ${duo.includes(m.id) ? "bg-indigo-50 ring-2 ring-indigo-500" : "sticker"}`}>
             <Face people={people} id={m.id} size={48} />
             <span className="w-full truncate text-center text-sm font-medium">{nameOf(props, m.id)}</span>
           </button>
@@ -197,8 +198,8 @@ export function DuoActivity(props: ActivityProps) {
         <section className="space-y-4">
           <h3 className="eyebrow">Les duos les plus choisis</h3>
           {t.rows.map((r, i) => (
-            <div key={r.pair.join("+")} className="flex items-center gap-3 rounded-2xl bg-white p-2.5 shadow-sm">
-              <span className="w-7 text-center text-lg">{["🥇", "🥈", "🥉"][i] ?? ""}</span>
+            <div key={r.pair.join("+")} className="flex items-center gap-3 rounded-2xl sticker p-2.5">
+              <span className="flex w-7 justify-center">{i < 3 && <Medal rank={i} />}</span>
               <div className="flex -space-x-2"><Face people={people} id={r.pair[0]} size={32} /><Face people={people} id={r.pair[1]} size={32} /></div>
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">{nameOf(props, r.pair[0])} & {nameOf(props, r.pair[1])}</span>
               <Voters people={people} ids={r.voters} />

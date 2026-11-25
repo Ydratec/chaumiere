@@ -13,7 +13,7 @@ export function Logo({ size = 32 }: { size?: number }) {
 
 export function Wordmark({ size = 28 }: { size?: number }) {
   return (
-    <span className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight">
+    <span className="inline-flex items-center gap-2 font-display text-2xl font-extrabold">
       <Logo size={size} /> Chaumière
     </span>
   );

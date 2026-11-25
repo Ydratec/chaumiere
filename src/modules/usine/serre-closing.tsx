@@ -16,7 +16,7 @@ export function SerreClosing({ roomId }: { roomId: string }) {
   if (!sale) return null;
   return (
     <div role="dialog" aria-label="La serre ferme" className="fixed inset-0 z-[1250] flex items-center justify-center bg-black/60 p-6">
-      <div className="max-w-sm space-y-3 rounded-3xl bg-white p-6 text-center shadow-xl">
+      <div className="max-w-sm space-y-3 rounded-3xl sticker p-6 text-center">
         <p className="text-4xl">🎄</p>
         <h2 className="text-xl font-bold">Il est temps de préparer Noël !</h2>
         <p className="text-sm text-zinc-600">La serre ferme ses portes : place à l&apos;Usine de Noël des lutins.</p>

@@ -50,7 +50,7 @@ export function DamesBoard({ state, userId, myTurn, name, play }: BoardProps) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2">
         {players.map((p) => (
-          <div key={p} className={`flex items-center gap-3 rounded-2xl px-4 py-2 transition ${s.turn === p && !s.winner ? "bg-indigo-600 text-white" : "bg-white text-zinc-600 shadow-sm"}`}>
+          <div key={p} className={`flex items-center gap-3 rounded-2xl px-4 py-2 transition ${s.turn === p && !s.winner ? "bg-indigo-600 text-white" : "sticker text-zinc-600"}`}>
             <span className={`size-6 shrink-0 rounded-full ring-2 ${s.colors[p] === "w" ? "bg-[#f6ead3] ring-[#c9b28a]" : "bg-[#3b2a20] ring-[#1f1510]"}`} />
             <div className="min-w-0">
               <p className="truncate text-xs font-medium opacity-80">{name(p)}</p>

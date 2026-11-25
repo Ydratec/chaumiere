@@ -80,7 +80,7 @@ export function StoryView({ roomId, story, items, catchNote, stage }: { roomId: 
       {catchNote && <p className="rounded-2xl bg-indigo-50 px-4 py-3 text-sm text-indigo-800">{catchNote}</p>}
 
       {quest ? (
-        <section className="space-y-3 rounded-[1.75rem] bg-white p-5 shadow-sm">
+        <section className="space-y-3 rounded-[1.75rem] sticker p-5">
           <div className="flex items-center gap-3">
             <NpcPortrait who={quest.intro[0].who} size={52} />
             <div className="min-w-0 flex-1">
@@ -118,14 +118,14 @@ export function StoryView({ roomId, story, items, catchNote, stage }: { roomId: 
           <button disabled={!met || pending} onClick={finish} className="btn w-full">{met ? "Terminer la quête" : "Pas encore…"}</button>
         </section>
       ) : story.next ? (
-        <section className="rounded-[1.75rem] bg-white p-5 text-center shadow-sm">
+        <section className="rounded-[1.75rem] sticker p-5 text-center">
           <p className="eyebrow">Prochain épisode</p>
           <h3 className="mt-1 text-lg font-bold">{story.next.title}</h3>
           <p className="mt-1 text-sm text-zinc-500">{story.next.at ? releaseLabel(story.next.at) : `dans ${story.next.inDays} jour${story.next.inDays > 1 ? "s" : ""}`}</p>
           {story.next.teaser && <p className="mt-3 text-sm italic text-zinc-600">« {story.next.teaser} »</p>}
         </section>
       ) : (
-        <section className="rounded-[1.75rem] bg-white p-5 text-center shadow-sm">
+        <section className="rounded-[1.75rem] sticker p-5 text-center">
           <p className="font-semibold">{story.finished ? "À suivre…" : "Rien à faire pour l'instant."}</p>
           <p className="mt-1 text-sm text-zinc-500">La suite de l&apos;histoire arrive bientôt.</p>
         </section>
@@ -138,7 +138,7 @@ export function StoryView({ roomId, story, items, catchNote, stage }: { roomId: 
           {story.orders.map((o) => {
             const ok = !o.done && (Object.entries(o.wants) as [ItemId, number][]).every(([k, n]) => (items[k] ?? 0) >= n);
             return (
-              <div key={o.id} className={`flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ${o.done ? "opacity-50" : ""}`}>
+              <div key={o.id} className={`flex items-center gap-3 rounded-2xl sticker p-3 ${o.done ? "opacity-50" : ""}`}>
                 <NpcPortrait who={o.npc} size={44} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap gap-x-2 gap-y-1">
@@ -174,7 +174,7 @@ export function StoryView({ roomId, story, items, catchNote, stage }: { roomId: 
         <h3 className="eyebrow">Le journal de Mirabelle · {story.journal.length} page{story.journal.length > 1 ? "s" : ""}</h3>
         {story.journal.length === 0 && <p className="text-sm text-zinc-500">Les pages se dévoilent au fil des quêtes.</p>}
         {[...story.journal].reverse().map((j) => (
-          <details key={j.id} className="rounded-2xl bg-white p-4 shadow-sm">
+          <details key={j.id} className="rounded-2xl sticker p-4">
             <summary className="cursor-pointer font-semibold">{j.title}</summary>
             <p className="mt-2 whitespace-pre-wrap font-serif text-[0.95rem] italic leading-relaxed text-zinc-700">{j.text}</p>
           </details>

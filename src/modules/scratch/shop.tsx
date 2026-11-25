@@ -60,7 +60,7 @@ export function ScratchShop({ roomId, coins, pending }: { roomId: string; coins:
         {KINDS.map((k) => {
           const t = TICKETS[k];
           return (
-            <button key={k} disabled={busy || coins < t.price} onClick={() => buy(k)} className="flex items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition active:scale-[0.98] disabled:opacity-50">
+            <button key={k} disabled={busy || coins < t.price} onClick={() => buy(k)} className="flex items-center gap-3 rounded-2xl sticker p-3 text-left transition active:scale-[0.98] disabled:opacity-50">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-300 text-xl font-bold">{t.name[0]}</span>
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{t.name}</span>

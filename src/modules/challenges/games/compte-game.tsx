@@ -49,7 +49,7 @@ function Game({ roomId, view, me, people }: Props) {
           <div className="grid grid-cols-3 gap-2">
             {nums.map((n, i) => (
               <button key={`${i}-${n}`} type="button" onClick={() => tapNum(i)}
-                className={`rounded-2xl py-3 text-2xl font-bold tabular-nums shadow-sm transition ${pick.a === i ? "bg-indigo-600 text-white" : made[i] ? "bg-amber-100 text-amber-900" : "bg-white"}`}>
+                className={`rounded-2xl py-3 text-2xl font-bold tabular-nums transition ${pick.a === i ? "bg-indigo-600 text-white" : made[i] ? "bg-amber-100 text-amber-900" : "sticker"}`}>
                 {n}
               </button>
             ))}
@@ -58,7 +58,7 @@ function Game({ roomId, view, me, people }: Props) {
           <div className="grid grid-cols-4 gap-2">
             {OPS.map((op) => (
               <button key={op} type="button" disabled={pick.a === null} onClick={() => setPick({ ...pick, op })}
-                className={`rounded-2xl py-3 text-2xl font-bold shadow-sm disabled:opacity-40 ${pick.op === op ? "bg-indigo-600 text-white" : "bg-white"}`}>
+                className={`rounded-2xl py-3 text-2xl font-bold disabled:opacity-40 ${pick.op === op ? "bg-indigo-600 text-white" : "sticker"}`}>
                 {op}
               </button>
             ))}
@@ -67,7 +67,7 @@ function Game({ roomId, view, me, people }: Props) {
           {warn && <p className="text-center text-sm text-amber-700">{warn}</p>}
 
           {steps.length > 0 && (
-            <ol className="space-y-1 rounded-2xl bg-white p-3 text-sm tabular-nums shadow-sm">
+            <ol className="space-y-1 rounded-2xl sticker p-3 text-sm tabular-nums">
               {steps.map((s, k) => {
                 const before = play(c.plates, steps.slice(0, k))!.numbers;
                 return <li key={k}>{before[s.a]} {s.op} {before[s.b]} = <b>{state.results[k]}</b></li>;

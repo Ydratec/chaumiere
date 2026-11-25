@@ -40,7 +40,7 @@ export default async function QuestionPage({ params, searchParams }: { params: P
               key={x.id}
               href={i ? `/r/${roomId}/question?a=${x.id}` : `/r/${roomId}/question`}
               aria-current={x.id === activity.id ? "page" : undefined}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${x.id === activity.id ? "bg-indigo-600 text-white" : "bg-white text-zinc-600 shadow-sm"}`}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${x.id === activity.id ? "bg-indigo-600 text-white" : "sticker text-zinc-600"}`}
             >
               {i ? `Question ${i + 1}` : "Du jour"}
             </Link>
@@ -49,7 +49,7 @@ export default async function QuestionPage({ params, searchParams }: { params: P
       )}
       <Today key={activity.id} activity={activity} userId={user.id} names={names} people={people} voteLocked={ctx.voteLocked} answers={answers ?? []} />
       {!(answers ?? []).some((x) => x.user_id === user.id) ? (
-        <p className="rounded-2xl bg-white px-4 py-5 text-center text-sm text-zinc-500 shadow-sm">
+        <p className="rounded-2xl sticker px-4 py-5 text-center text-sm text-zinc-500">
           {activity.payload.kind === "open" || !activity.payload.kind ? "Réponds" : activity.payload.kind === "rank" ? "Fais ton classement" : "Vote"} pour voir la discussion.
         </p>
       ) : (

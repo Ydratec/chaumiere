@@ -295,9 +295,9 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
         </div>
         <div className="flex items-center gap-2">
           {!owner && !placing && (
-            <button onClick={() => { setOpen("build"); setMsg(""); }} className="btn-soft bg-white shadow-sm">Construire</button>
+            <button onClick={() => { setOpen("build"); setMsg(""); }} className="btn-soft">Construire</button>
           )}
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-semibold tabular-nums shadow-sm">
+          <span className="inline-flex items-center gap-1.5 rounded-full sticker px-3 py-1.5 font-semibold tabular-nums">
             <ItemIcon id="coins" size={18} /> {coins}
           </span>
         </div>
@@ -409,7 +409,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-1 rounded-full bg-white p-1 shadow-lg">
+              <div className="flex items-center gap-1 rounded-full sticker p-1">
                 <button aria-label="Annuler" onClick={() => { setPlacing(null); setGhost(null); }} className="flex size-9 items-center justify-center rounded-full bg-zinc-100 text-lg font-bold text-zinc-500">
                   ✕
                 </button>
@@ -474,7 +474,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
             {FLOWERS.map((f) => {
               const seen = (farm.album[f.id] ?? 0) > 0 || (farm.items[f.id] ?? 0) > 0;
               return (
-                <div key={f.id} className={`flex flex-col items-center rounded-2xl p-2 text-center ${seen ? "bg-white shadow-sm" : "bg-zinc-100"}`}>
+                <div key={f.id} className={`flex flex-col items-center rounded-2xl p-2 text-center ${seen ? "sticker" : "bg-zinc-100"}`}>
                   <span className={seen ? "" : "opacity-20 brightness-0"}><ItemIcon id={f.id} size={34} /></span>
                   <span className="mt-0.5 w-full truncate text-[10px] font-medium">{seen ? ITEMS[f.id].name : "?"}</span>
                   <span className="text-[10px] text-zinc-400">{seen ? rarityOf(f.id) : "à trouver"}</span>
@@ -506,7 +506,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
       {!owner && (revealed || (giftShown && waiting)) && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6" role="dialog" aria-modal>
           <div className="absolute inset-0 bg-black/35" />
-          <div className="animate-pop relative w-full max-w-xs rounded-[1.75rem] bg-white p-6 text-center shadow-2xl">
+          <div className="animate-pop relative w-full max-w-xs rounded-[1.75rem] sticker p-6 text-center">
             {revealed ? (
               <>
                 <div className="animate-pop mx-auto w-fit"><GiftContents gift={revealed} size={96} /></div>
@@ -542,7 +542,7 @@ export function FarmView({ roomId, initial, character, owner, names }: { roomId:
       {sheet && (
         <div className="fixed inset-0 z-[1000] flex items-end" role="dialog" aria-modal>
           <button aria-label="Fermer" onClick={() => setOpen(null)} className="absolute inset-0 bg-black/25" />
-          <div className="animate-pop relative mx-auto max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-[1.75rem] bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl">
+          <div className="animate-pop relative mx-auto max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-[1.75rem] sticker p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             {sheet === "build" ? (
               <BuildList farm={farm} pending={pending} pick={pickNew} />
             ) : (

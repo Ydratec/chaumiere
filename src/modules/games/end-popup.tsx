@@ -48,7 +48,7 @@ export function EndPopup({ game, userId, people, name }: { game: Game; userId: s
       <button aria-label="Fermer" onClick={close} className="absolute inset-0 bg-black/50" />
       <div className="animate-pop relative w-full max-w-sm space-y-4">
         <GameResult game={game} people={people} me={userId} big />
-        {why && <p className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-medium shadow">{why}</p>}
+        {why && <p className="rounded-2xl sticker px-4 py-3 text-center text-sm font-medium">{why}</p>}
         <button onClick={close} className="btn w-full">{game.type === "orapa" ? "Voir les grilles" : "Voir la partie"}</button>
       </div>
     </div>

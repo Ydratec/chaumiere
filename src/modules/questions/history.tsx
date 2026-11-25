@@ -1,4 +1,5 @@
 // Historique : les questions des deux jours précédents, avec les réponses (et le résultat des votes).
+import { Medal } from "@/src/components/medal";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Activity, Answer } from "../activities/registry";
@@ -43,7 +44,7 @@ export async function QuestionHistory({ sb, roomId, today, names, people }: {
               const podium = (rows: { label: string; value: string }[]) => (
                 <ol className="mt-2 space-y-1 text-sm">
                   {rows.slice(0, 3).map((r, i) => (
-                    <li key={i} className="flex justify-between gap-3"><span>{["🥇", "🥈", "🥉"][i]} {r.label}</span><span className="tabular-nums text-zinc-500">{r.value}</span></li>
+                    <li key={i} className="flex justify-between gap-3"><span className="flex items-center gap-1.5"><Medal rank={i} size={20} /> {r.label}</span><span className="tabular-nums text-zinc-500">{r.value}</span></li>
                   ))}
                 </ol>
               );
@@ -54,14 +55,14 @@ export async function QuestionHistory({ sb, roomId, today, names, people }: {
                 : kind === "duo" ? podium(duoTally(answers).rows.map((r) => ({ label: `${nm(r.pair[0])} & ${nm(r.pair[1])}`, value: `${r.voters.length} voix` })))
                 : null;
               return (
-                <article key={a.id} className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+                <article key={a.id} className="rounded-[1.5rem] sticker p-4">
                   <h3 className="font-bold leading-snug">{a.payload.text}</h3>
                   {summary ?? (vote ? (
                     t!.total ? (
                       <ol className="mt-2 space-y-1 text-sm">
                         {t!.rows.filter((r) => r.voters.length).slice(0, 3).map((r, i) => (
                           <li key={r.id} className="flex justify-between gap-3">
-                            <span>{["🥇", "🥈", "🥉"][i]} {r.name}</span>
+                            <span className="flex items-center gap-1.5"><Medal rank={i} size={20} /> {r.name}</span>
                             <span className="tabular-nums text-zinc-500">{r.voters.length} voix</span>
                           </li>
                         ))}

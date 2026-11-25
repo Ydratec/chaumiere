@@ -32,9 +32,9 @@ export function StoryTeaser({ roomId, chapter, phase }: { roomId: string; chapte
   return (
     <div className="fixed inset-0 z-[1200] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-label="Nouveauté à la serre">
       <button aria-label="Fermer" onClick={close} className="absolute inset-0 bg-black/45" />
-      <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-6 text-center shadow-2xl">
+      <div className="relative w-full max-w-sm rounded-[2rem] sticker p-6 text-center">
         <div className="-mt-14 mb-3 flex justify-center">
-          <span className="rounded-3xl bg-white p-1 shadow-lg ring-4 ring-white"><NpcPortrait who="mirabelle" size={72} /></span>
+          <span className="rounded-3xl sticker p-1 ring-4 ring-white"><NpcPortrait who="mirabelle" size={72} /></span>
         </div>
         {phase === "soon" ? (
           <>

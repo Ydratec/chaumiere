@@ -270,8 +270,8 @@ export function ScenePlayer({ steps, stage, onDone, title }: { steps: Step[]; st
       <div className="h-[15rem] shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
         <div className="mx-auto max-w-md">
           {show?.kind === "say" && (
-            <div className="animate-pop relative rounded-[1.75rem] bg-white p-5 pt-7 shadow-xl">
-              <span className="absolute -top-7 left-4 flex size-14 items-center justify-center rounded-2xl bg-white shadow-lg ring-4 ring-white/70">
+            <div className="animate-pop relative rounded-[1.75rem] sticker p-5 pt-7">
+              <span className="absolute -top-7 left-4 flex size-14 items-center justify-center rounded-2xl sticker ring-4 ring-white/70">
                 <NpcPortrait who={show.who} size={46} />
               </span>
               <span className="eyebrow ml-14">{NPCS[show.who].name}</span>
@@ -289,7 +289,7 @@ export function ScenePlayer({ steps, stage, onDone, title }: { steps: Step[]; st
             <div className="animate-pop space-y-2" onClick={(e) => e.stopPropagation()}>
               <p className="text-center text-xs font-semibold uppercase tracking-wider text-white/50">Que réponds-tu ?</p>
               {show.options.map((o) => (
-                <button key={o.text} onClick={() => choose(o)} className="block w-full rounded-2xl bg-white px-4 py-3 text-left text-[0.95rem] font-semibold text-zinc-900 shadow-lg">
+                <button key={o.text} onClick={() => choose(o)} className="block w-full rounded-2xl sticker px-4 py-3 text-left text-[0.95rem] font-semibold text-zinc-900">
                   {fill(o.text, stage.name)}
                 </button>
               ))}

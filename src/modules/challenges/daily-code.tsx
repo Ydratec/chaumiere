@@ -67,7 +67,7 @@ export function DailyCode({ roomId, view, me, people }: { roomId: string; view: 
 
       {msg && <p role="status" className={`rounded-2xl px-4 py-3 text-center text-sm font-medium ${msg.ok ? "bg-green-50 text-green-800" : "bg-amber-50 text-amber-800"}`}>{msg.text}</p>}
 
-      <ol className="space-y-2 rounded-3xl bg-white p-3 shadow-sm">
+      <ol className="space-y-2 rounded-3xl sticker p-3">
         {a.log.map((e, k) => (
           <li key={k} className="flex items-center gap-3">
             <span className="w-5 text-right text-xs tabular-nums text-zinc-400">{k + 1}</span>

@@ -103,7 +103,7 @@ export function TcgCollection({ roomId, userId, coins, offers, owned: initial }:
           <BoosterOpening key={ring} inline onPick={pick} caption={caption} onClose={(toCollection) => { setRing((n) => n + 1); if (toCollection) setView("collection"); }} />
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
-          <button onClick={() => setView("collection")} className="flex w-full items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm active:scale-[0.98]">
+          <button onClick={() => setView("collection")} className="flex w-full items-center justify-between rounded-2xl sticker px-4 py-3 active:scale-[0.98]">
             <span className="font-semibold">Ma collection</span>
             <span className="text-sm text-zinc-500 tabular-nums">
               {count()}/{CARDS.length}{count("rainbow") > 0 && <> · Arc-en-ciel {count("rainbow")}/{CARDS.length}</>} <span aria-hidden>→</span>
@@ -137,7 +137,7 @@ export function TcgCollection({ roomId, userId, coins, offers, owned: initial }:
               key={v ?? "normal"}
               onClick={() => setSet(v)}
               aria-pressed={set === v}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${set === v ? "bg-zinc-900 text-white" : "bg-white text-zinc-600 shadow-sm"}`}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${set === v ? "bg-zinc-900 text-white" : "sticker text-zinc-600"}`}
             >
               {setName(v)} <span className="tabular-nums opacity-70">{count(v)}/{CARDS.length}</span>
             </button>

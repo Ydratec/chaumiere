@@ -1,14 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import type { CSSProperties } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Gluten, Nunito } from "next/font/google";
 import { NoZoom } from "@/src/components/no-zoom";
 import { ServiceWorker } from "@/src/components/service-worker";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Interface « autocollants » : Nunito pour le texte, Gluten (ronde, un peu bancale) pour les titres et boutons.
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
+});
+
+const gluten = Gluten({
+  variable: "--font-gluten",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -28,7 +35,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#f6f6fb",
+  themeColor: "#EEF3F4",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -38,7 +45,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="fr"
       style={style}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nunito.variable} ${gluten.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <NoZoom />

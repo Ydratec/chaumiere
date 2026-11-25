@@ -37,7 +37,7 @@ export default async function RoomLayout({
           <RoomSwitcher roomId={roomId} name={ctx.roomName ?? "?"} avatar={ctx.roomAvatar} rooms={rooms} />
         </div>
       </header>
-      <main className="mx-auto max-w-md space-y-8 px-4 py-4">{children}</main>
+      <main className="mx-auto max-w-md space-y-7 px-4 py-4">{children}</main>
       {SERRE_OPEN && chapterOf(ctx.chapter) && <StoryTeaser roomId={roomId} chapter={ctx.chapter} phase={ctx.storyDay < 1 ? "soon" : "live"} />}
       <ScratchTeaser roomId={roomId} />
       <NewsPopup roomId={roomId} />

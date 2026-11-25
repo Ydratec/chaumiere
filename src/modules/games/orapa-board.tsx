@@ -278,7 +278,7 @@ export function EditableBoard({ ed, plateau, onProbe, probeHint }: {
       <Plateau grid={ed.grid} crosses={ed.crosses} ghost={ghost} boardRef={board} onCellDown={onCellDown} {...plateau} onEdge={tool === "gems" ? plateau?.onEdge : undefined} />
       <div className={`grid ${probeHint !== undefined ? "grid-cols-3" : "grid-cols-2"} gap-1 rounded-full bg-zinc-100 p-1 text-sm font-medium`}>
         {(probeHint !== undefined ? (["gems", "cross", "probe"] as const) : (["gems", "cross"] as const)).map((t) => (
-          <button key={t} onClick={() => setTool(t)} className={`rounded-full py-1.5 transition ${tool === t ? "bg-white shadow-sm" : "text-zinc-500"}`}>
+          <button key={t} onClick={() => setTool(t)} className={`rounded-full py-1.5 transition ${tool === t ? "sticker" : "text-zinc-500"}`}>
             {t === "gems" ? "Gemmes" : t === "cross" ? "Croix" : "Demander"}
           </button>
         ))}
@@ -478,7 +478,7 @@ function OrapaGame({ gameId, state, userId, myTurn, name, play, priv }: BoardPro
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-1 rounded-full bg-zinc-100 p-1 text-sm font-medium">
         {tabs.map((t, i) => (
-          <button key={t} onClick={() => { setTab(i); setSel(null); }} className={`rounded-full py-1.5 transition ${tab === i ? "bg-white shadow-sm" : "text-zinc-500"}`}>
+          <button key={t} onClick={() => { setTab(i); setSel(null); }} className={`rounded-full py-1.5 transition ${tab === i ? "sticker" : "text-zinc-500"}`}>
             {t}
           </button>
         ))}

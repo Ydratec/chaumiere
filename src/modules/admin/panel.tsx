@@ -23,7 +23,7 @@ export function AdminPanel({ roomId, members }: { roomId: string; members: { use
       <section className="space-y-2">
         <h2 className="eyebrow">Code PIN oublié</h2>
         <div className="flex gap-2">
-          <select value={who} onChange={(e) => setWho(e.target.value)} className="field min-w-0 flex-1 bg-white shadow-sm" aria-label="Membre">
+          <select value={who} onChange={(e) => setWho(e.target.value)} className="field min-w-0 flex-1" aria-label="Membre">
             {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.username}</option>)}
           </select>
           <button disabled={pending || !who} className="btn px-4" onClick={() => run(() => resetPin(roomId, who), `Donner un nouveau PIN à ${members.find((m) => m.user_id === who)?.username ?? "ce membre"} ? L'ancien ne marchera plus.`)}>Nouveau PIN</button>
@@ -56,8 +56,8 @@ export function AdminPanel({ roomId, members }: { roomId: string; members: { use
           <button disabled={pending} className={btn} onClick={() => run(() => giveItems(roomId, "coins", 1000))}>+1000 pièces</button>
         </div>
         <div className="flex gap-2">
-          <input type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} className="field w-24 bg-white text-center shadow-sm" />
-          <select value={item} onChange={(e) => setItem(e.target.value as ItemId)} className="field min-w-0 flex-1 bg-white shadow-sm">
+          <input type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} className="field w-24 text-center" />
+          <select value={item} onChange={(e) => setItem(e.target.value as ItemId)} className="field min-w-0 flex-1">
             {(Object.keys(ITEMS) as ItemId[]).map((k) => <option key={k} value={k}>{ITEMS[k].name}</option>)}
           </select>
           <button disabled={pending} className="btn px-4" onClick={() => run(() => giveItems(roomId, item, qty))}>Donner</button>

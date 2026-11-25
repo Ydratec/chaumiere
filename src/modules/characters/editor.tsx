@@ -79,7 +79,7 @@ export function CharacterEditor({ roomId, saved, owned, unlocks, coins }: {
 
       {isUnique(draft.species) ? (
         <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          ✨ Personnage unique, donné par l&apos;admin de la salle : personne d&apos;autre ne l&apos;a. Il garde ses propres couleurs.
+          Personnage unique, donné par l&apos;admin de la salle : personne d&apos;autre ne l&apos;a. Il garde ses propres couleurs.
         </p>
       ) : (
       <div>

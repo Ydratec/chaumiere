@@ -20,7 +20,7 @@ export function LoginForm() {
         <form action={action} className="space-y-4">
           <label className="block">
             <span className="eyebrow">Identifiant</span>
-            <input name="username" autoComplete="username" autoCapitalize="none" required className="field mt-1.5 bg-white shadow-sm" />
+            <input name="username" autoComplete="username" autoCapitalize="none" required className="field mt-1.5" />
           </label>
           <label className="block">
             <span className="eyebrow">Code PIN</span>
@@ -32,7 +32,7 @@ export function LoginForm() {
               maxLength={4}
               placeholder="4 chiffres"
               required
-              className="field mt-1.5 bg-white tracking-[0.5em] shadow-sm"
+              className="field mt-1.5 tracking-[0.5em]"
             />
           </label>
           {error && (

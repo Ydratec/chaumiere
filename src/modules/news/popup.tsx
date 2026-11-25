@@ -34,10 +34,10 @@ export function NewsPopup({ roomId }: { roomId: string }) {
   return (
     <div className="fixed inset-0 z-[1210] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-label={n.title}>
       <button aria-label="Fermer" onClick={close} className="absolute inset-0 bg-black/55" />
-      <div className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-white p-6 text-center shadow-2xl">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-[2rem] sticker p-6 text-center">
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-indigo-950/90 via-indigo-900/40 to-transparent" />
         <div className="relative mb-3 flex justify-center pt-1">
-          <span className="rounded-3xl bg-white p-1 shadow-lg ring-4 ring-white/70"><NpcPortrait who={n.who} size={72} /></span>
+          <span className="rounded-3xl sticker p-1 ring-4 ring-white/70"><NpcPortrait who={n.who} size={72} /></span>
         </div>
         <p className="eyebrow relative">{n.eyebrow}</p>
         <h2 className="relative mt-1 text-2xl font-bold tracking-tight">{n.title}</h2>

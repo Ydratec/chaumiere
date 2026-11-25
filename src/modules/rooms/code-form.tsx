@@ -9,7 +9,7 @@ export function CodeForm({ roomId, code }: { roomId: string; code: string }) {
     <form action={action} className="space-y-2">
       <input type="hidden" name="room_id" value={roomId} />
       <div className="flex gap-2">
-        <input name="code" defaultValue={code} required className="field min-w-0 flex-1 bg-white font-mono shadow-sm" />
+        <input name="code" defaultValue={code} required className="field min-w-0 flex-1 font-mono" />
         <button disabled={pending} className="btn px-4">
           Changer
         </button>
