@@ -176,6 +176,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .dfopen .card{flex:0 0 78%;scroll-snap-align:start;flex-direction:row;align-items:center;gap:12px;min-height:auto;border-color:#1f3d63;background:linear-gradient(135deg,#10233d,var(--panel) 70%)}
 .dfopen .card:only-child{flex-basis:100%}
 .dfopen .card.mine{border-color:var(--line);background:var(--panel)}
+.dft{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}
+.dft::-webkit-scrollbar{display:none}
+.dft button{flex:none;background:transparent;border:1px solid var(--line);border-radius:99px;padding:6px 14px;min-height:36px;font-size:14px;font-weight:600;color:var(--ink)}
+.dft button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dfopen .card.forme{border-color:var(--acc)}
+.dfopen .card .acts{display:flex;flex-direction:column;gap:6px;flex:none}
 .dfkind{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .dfkind button{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left;min-height:62px}
 .dfkind button b{display:block;font:700 16px var(--fd)}
@@ -394,6 +400,15 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 #lobby{display:flex;flex-direction:column;gap:12px}
 #lobby>*:not(.lbstage){flex:none}
 .lbstage{flex:1;min-height:0;border-radius:18px;border:1px solid var(--line);background-color:var(--bg);background-image:var(--grat);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;overflow:hidden;text-align:center}
+.lbchat{flex:none;display:flex;flex-direction:column;gap:8px}
+.lbchat ol{list-style:none;margin:0;padding:0;max-height:132px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;scrollbar-width:none}
+.lbchat ol:empty{display:none}
+.lbchat li{font-size:14px;line-height:1.35;color:var(--ink);user-select:text;-webkit-user-select:text}
+.lbchat li b{font-weight:700;margin-right:6px}
+.lbchat li.me{opacity:.85}
+.lbchat form{display:flex;gap:6px}
+.lbchat input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);font:inherit;font-size:15px}
+.lbchat button{flex:none;width:44px;border-radius:12px;background:var(--acc);color:#001;border:0;display:flex;align-items:center;justify-content:center}
 .lbstage .count{font:800 clamp(90px,30vw,170px)/1 var(--fm);animation:pop .5s cubic-bezier(.2,.9,.3,1.2)}
 .lbstage .wait{color:var(--mute);font-size:15px;max-width:34ch}
 .who{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-height:60%;overflow-y:auto}
@@ -611,8 +626,9 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
   <section id="online" hidden>
     <div class="shead"><button class="back" id="olBack" aria-label="Retour"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div><h2 style="font-size:clamp(22px,5.6vw,30px);font-weight:800;line-height:1.1">Défier</h2><p class="lead" id="dfLead">Rejoins une partie, ou compose ton défi.</p></div></div>
     <div class="dfbody" id="dfBody">
-      <div id="dfOpenWrap"><h4>Parties ouvertes <small id="dfOpenN"></small></h4><div class="dfopen" id="onlineList"></div></div>
+      <div id="dfOpenWrap"><h4>Défis et parties <small id="dfOpenN"></small></h4><div class="dfopen" id="onlineList"></div></div>
       <div><h5>Contre qui ?</h5><div class="dfkind" id="dfKind"></div></div>
+      <div id="dfTargetWrap" hidden><h5>Adversaire</h5><div class="dft" id="dfTarget"></div></div>
       <div class="names" id="dfNames" hidden><input id="d1" value="Joueur 1" aria-label="Nom du joueur 1" maxlength="18"><input id="d2" value="Joueur 2" aria-label="Nom du joueur 2" maxlength="18"></div>
       <div><h5><span>Questions : mélange les jeux que tu veux</span><span id="dfCount"></span></h5><div class="dfpre" id="dfPre"></div><div id="dfModes"></div></div>
       <div class="dfrow" id="dfRow"><div><h5>Niveau</h5><div class="seg sm" id="dfLevel"></div></div><div id="dfNWrap"><h5>Questions</h5><div class="seg sm" id="dfN"></div></div></div>
@@ -669,8 +685,9 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
   <section id="lobby" hidden>
     <div class="shead"><button class="back" id="lbBack" aria-label="Quitter le salon"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div><h2 id="lbTitle"></h2><p class="lead" id="lbSub"></p></div></div>
     <div class="lbstage" id="lbStage"></div>
+    <div class="lbchat"><ol id="lbMsgs" aria-live="polite"></ol><form id="lbSay"><input id="lbIn" maxlength="200" placeholder="Un message pour le salon…" autocomplete="off" aria-label="Message"><button type="submit" aria-label="Envoyer"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form></div>
     <p class="hint" id="lbHint"></p>
-    <div class="sgo"><button class="cta" id="lbGo" hidden>Lancer la partie</button><button class="ghost" id="lbLeave">Quitter</button></div>
+    <div class="sgo"><button class="cta" id="lbGo" hidden>Lancer la partie</button><button class="cta" id="lbSolo" hidden>Jouer sans attendre</button><button class="ghost" id="lbLeave">Quitter</button></div>
   </section>
 
   <section id="hand" hidden>
@@ -1190,7 +1207,7 @@ const timePts = () => Math.max(2, Math.round(20 * remaining() / curQ().T));
 
 function settle(l, delay) {
   $('bar').classList.add('done'); $('bar').classList.remove('low');
-  if (SES.online) return mpSettle(l);
+  if (SES.online) return SES.async ? asyncSettle(l, delay) : mpSettle(l);
   const surv = SES.format === 'survie';
   if (surv) { l.pts = l.good ? 1 : 0; }
   else if (isLast()) l.pts *= 2;
@@ -1325,7 +1342,7 @@ function answerRoute(reached) {
    questions à partir de la graine de la partie et calcule la même horloge : la question i commence à la fin de la
    précédente + le temps de révélation ; elle se termine à la fin du chrono, ou plus tôt si tous les joueurs en lice
    ont répondu (`ends`, noté par le serveur). La page Quiz de Chaumière prévient le jeu des changements (temps réel). */
-const MP = { id: null, match: null, players: [], offset: 0, loop: 0, poll: 0, finished: false, revI: -1, busy: false };
+const MP = { id: null, match: null, players: [], offset: 0, loop: 0, poll: 0, rp: 0, finished: false, revI: -1, busy: false };
 const API = () => `/api/quiz/${ROOM}/match`;
 const srvNow = () => Date.now() + MP.offset;
 const REVEAL = q => q.type === 'choice' ? 3200 : q.type === 'order' ? 4200 : 5000;
@@ -1401,7 +1418,7 @@ async function mpOpen(id, join) {
   mpTick();
 }
 function mpClose(keep) {
-  clearInterval(MP.loop); clearInterval(MP.poll); MP.loop = MP.poll = 0;
+  clearInterval(MP.loop); clearInterval(MP.poll); clearInterval(MP.rp); MP.loop = MP.poll = MP.rp = 0;
   if (!keep) { MP.id = null; MP.match = null; MP.players = []; }
 }
 async function mpLoad() {
@@ -1438,6 +1455,7 @@ function sched() {
 function mpTick() {
   const m = MP.match; if (!m) return;
   if (m.status === 'cancelled') { mpClose(); toast('Partie annulée par son créateur'); renderHome(); show('home'); return; }
+  if (m.async) return mpAsync();
   if (m.status === 'lobby' || !m.start_at) { renderLobby(); return; }
   mpSession();
   const s = sched();
@@ -1524,8 +1542,93 @@ function mpFinish() {
     if (maps.length === SES.log.length && maps.length) { const svg = $('endMap'); $('pMap').hidden = false; if (maps[0].q.map === 'fr') { frBase(svg); maps.forEach(l => frMarks(svg, l, false)); } else { wBase(svg); maps.forEach(l => wMarks(svg, l, false)); } }
     if (SES.log.length) { $('pRecap').hidden = false; $('recap').innerHTML = recapHTML(SES.log); }
     SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
+    rematchUI(true);
   });
 }
+/* Défi chacun son tour (le créateur n'a pas attendu) : on joue les mêmes questions (même graine) à son rythme,
+   comme en solo ; les réponses partent au serveur une à une. En jouant après l'autre, on voit ses points
+   question par question (barres sur les côtés) et sa réponse à chaque révélation. */
+function mpAsync() {
+  const m = MP.match, me = MP.players.find(p => p.me);
+  if (!me) return;
+  if (me.done_at || m.status === 'done') { if (!MP.finished) { MP.finished = true; asyncEnd(null); } return; }
+  if (SES && SES.async && SES.mpId === m.id) return; // déjà en train de jouer
+  mpSession(); SES.async = true;
+  // reprise après un rechargement : on repart après la dernière question répondue
+  const k = Math.max(0, ...(me.answers || []).map(a => a.i + 1));
+  SES.score = (me.answers || []).reduce((t, a) => t + a.pts, 0);
+  if (k >= SES.n) { asyncFinish(); return; }
+  SES.i = k; MP.revI = -1; qAt(k); show('play'); $('sc').textContent = SES.score; ask();
+}
+function asyncSettle(l, delay) {
+  if (isLast()) l.pts *= 2;
+  SES.score += l.pts; SES.log.push(l);
+  $('sc').textContent = SES.score;
+  $('gain').textContent = '+' + l.pts; $('gain').style.color = l.pts ? 'var(--ok)' : 'var(--ko)'; $('gain').className = 'gain on';
+  const pick = l.pick ?? (l.hit && S.by[l.hit] ? S.by[l.hit].n : null), i = SES.i, ses = SES;
+  api('POST', { action: 'answer', id: MP.id, i, pts: Math.min(40, l.pts), good: !!l.good, pick, pt: l.pt || null }).catch(() => {});
+  const other = mpPlayers().find(p => !p.me), seen = other && other.answers.some(a => a.i === i);
+  if (seen) { MP.revI = i; mpReveal(i); }
+  duoBars(l.pts);
+  setTimeout(() => {
+    if (ses.aborted || SES !== ses) return;
+    MP.revI = -1; SES.i++;
+    if (SES.i >= SES.n) asyncFinish(); else ask();
+  }, delay + (seen ? 900 : 0));
+}
+function asyncFinish() {
+  MP.finished = true;
+  $('fCoins').hidden = true;
+  api('POST', { action: 'done', id: MP.id }).then(d => mpLoad().catch(() => {}).then(() => asyncEnd(d))).catch(() => asyncEnd(null));
+}
+function asyncEnd(d) {
+  clearInterval(MP.loop); MP.loop = 0;
+  mpSession(); // les questions (même graine), pour les titres du face-à-face
+  const ps = mpPlayers(), me = ps.find(p => p.me) || ps[0], op = ps.find(p => p !== me), m = MP.match;
+  const tot = p => p.answers.reduce((t, a) => t + a.pts, 0), opName = op ? op.name : memberName(m.target === me.user_id ? m.host : m.target);
+  const over = m.status === 'done' || (op && MP.players.every(p => p.done_at));
+  show('end'); $('end').scrollTop = 0;
+  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
+  if (d && ROOM) { if (d.coins) showCoins(d.coins); loadWallet(); }
+  if (over && op) {
+    const a = tot(me), b = tot(op), last = Math.max(-1, ...ps.flatMap(p => p.answers.map(x => x.i)));
+    const pts = (p, i) => { const x = p.answers.find(x => x.i === i); return x ? x.pts : null; };
+    $('fScore').textContent = a === b ? 'Égalité' : a > b ? 'Victoire !' : 'Perdu';
+    $('fLine').textContent = `${a} – ${b} contre ${op.name}`;
+    $('duo').innerHTML = versusHTML({ name: me.name, color: '#E8B04B', total: a }, { name: op.name, color: '#6FC3D6', total: b },
+      Array.from({ length: last + 1 }, (_, i) => ({ t: qTitle(qAt(i)), a: pts(me, i), b: pts(op, i) })));
+    $('pDuo').hidden = false;
+  } else {
+    // l'autre n'a pas encore joué : on attend, sans dévoiler ses questions
+    $('fScore').textContent = tot(me);
+    $('fLine').textContent = `En attente de ${opName} : le face-à-face s’affichera quand ${opName} aura joué. Tes pièces arriveront à ce moment-là.`;
+  }
+  if (SES.log.length) { $('pRecap').hidden = false; $('recap').innerHTML = recapHTML(SES.log); }
+  SES.endPager = pager($('etabs'), $('epages')); requestAnimationFrame(() => SES.endPager(0));
+  rematchUI(!!(over && op));
+}
+/* Revanche : le bouton « Rejouer » de fin de partie devient « Revanche ». La nouvelle partie (mêmes réglages,
+   nouvelles questions) se lance quand tous les joueurs encore là l'ont demandée ; on surveille la partie
+   finie pour y passer dès qu'elle existe, et pour afficher qui est partant. */
+function rematchUI(on) {
+  const b = $('again'); clearInterval(MP.rp); MP.rp = 0;
+  b.dataset.rematch = on && MP.players.length >= 2 ? '1' : '';
+  if (!b.dataset.rematch) { b.textContent = 'Rejouer'; b.disabled = false; return; }
+  const paint = () => {
+    const m = MP.match || {}, votes = m.rematch || [], me = meId(), mine = votes.includes(me);
+    if (m.next && mine) return goRematch(m.next);
+    const others = mpPlayers().filter(p => !p.me && !p.left), ready = others.filter(p => votes.includes(p.user_id)).map(p => p.name), wait = others.filter(p => !votes.includes(p.user_id)).map(p => p.name);
+    b.disabled = mine;
+    b.textContent = mine ? `En attente de ${wait.join(', ') || '…'}` : ready.length ? `Revanche · ${ready.join(', ')} ${ready.length > 1 ? 'sont partants' : 'est partant'}` : 'Revanche';
+  };
+  paint();
+  MP.rp = setInterval(() => { if (!$('end').hidden && MP.id) mpLoad().then(paint).catch(() => {}); else { clearInterval(MP.rp); MP.rp = 0; } }, 2500);
+}
+function askRematch() {
+  $('again').disabled = true;
+  api('POST', { action: 'rematch', id: MP.id }).then(d => d.next ? goRematch(d.next) : mpLoad().then(() => rematchUI(true))).catch(e => { toast(e.message); $('again').disabled = false; });
+}
+function goRematch(id) { clearInterval(MP.rp); MP.rp = 0; $('again').textContent = 'Rejouer'; $('again').dataset.rematch = ''; SES = null; mpOpen(id, false); }
 /* Nom d'une partie en ligne : un jeu, ou un défi sur mesure (plusieurs jeux) */
 const gameName = id => { const g = byGame[id]; return g ? (g.parent ? `${byGame[g.parent].name} · ${g.v}` : g.name) : id; };
 function matchTitle(m) { if (m.game !== 'mix') return gameName(m.game); const ids = m.cat.split('.'); return ids.length <= 2 ? ids.map(gameName).join(' + ') : `Mélange de ${ids.length} jeux`; }
@@ -1533,37 +1636,60 @@ function matchMix(m) { return m.game === 'mix' ? m.cat.split('.').map(gameName).
 function renderLobby(countdown) {
   const m = MP.match, g = byGame[m.game] || { id: 'mix', name: 'Défi sur mesure' }, ps = mpPlayers(), host = ps.find(p => p.user_id === m.host), iAmHost = meId() === m.host;
   if ($('lobby').hidden) show('lobby');
-  const kind = m.mode === 'duel' ? 'Duel en ligne' : m.rules === 'elim' ? 'Partie à élimination' : 'Partie aux points';
+  renderChat();
+  const kind = m.target ? `Duel contre ${memberName(m.target)}` : m.mode === 'duel' ? 'Duel en ligne' : m.rules === 'elim' ? 'Partie à élimination' : 'Partie aux points';
   $('lbTitle').textContent = matchTitle(m);
   $('lbSub').textContent = `${kind} · ${m.level === 'expert' ? 'Expert' : 'Classique'}${m.rules === 'elim' ? '' : ' · ' + m.n + ' questions'}${m.cat && m.cat !== 'tout' && g.cats ? ' · ' + g.cats[m.cat] : ''}${m.game === 'mix' && m.cat.split('.').length > 2 ? ' · ' + matchMix(m) : ''}${host ? ' · créée par ' + host.name : ''}`;
   const who = `<div class="who">${ps.map(p => `<span><i style="background:${colorOf(p.user_id)}"></i>${esc(p.name)}${p.me ? ' <small>(toi)</small>' : ''}${p.user_id === m.host ? ' <small>· crée</small>' : ''}</span>`).join('')}</div>`;
   if (countdown != null) {
     const n = Math.max(1, Math.ceil(countdown / 1000)), st = $('lbStage');
     if (st.dataset.n !== String(n)) { st.dataset.n = n; st.innerHTML = `<div class="count">${n}</div>${who}`; }
-    $('lbHint').textContent = 'La partie commence…'; $('lbGo').hidden = true; $('lbLeave').hidden = true;
+    $('lbHint').textContent = 'La partie commence…'; $('lbGo').hidden = true; $('lbSolo').hidden = true; $('lbLeave').hidden = true;
     return;
   }
   $('lbStage').dataset.n = ''; $('lbLeave').hidden = false;
-  const waitTxt = m.mode === 'duel' ? (ps.length < 2 ? 'En attente d’un adversaire…' : 'C’est parti !') : iAmHost ? (ps.length < 2 ? 'En attente d’autres joueurs…' : 'Lance quand tout le monde est là.') : `En attente du lancement par ${host ? host.name : 'le créateur'}…`;
+  const tn = m.target ? memberName(m.target) : '';
+  const waitTxt = m.target && ps.length < 2 ? `En attente de ${tn}… Une notification lui a été envoyée.` : m.mode === 'duel' ? (ps.length < 2 ? 'En attente d’un adversaire…' : 'C’est parti !') : iAmHost ? (ps.length < 2 ? 'En attente d’autres joueurs…' : 'Lance quand tout le monde est là.') : `En attente du lancement par ${host ? host.name : 'le créateur'}…`;
   $('lbStage').innerHTML = `${who}<p class="wait"><span class="pulse"></span> ${waitTxt}</p>`;
-  $('lbHint').textContent = 'Les autres la voient dans Quiz › En ligne.';
+  $('lbHint').textContent = !m.target && m.mode === 'party' && iAmHost ? 'Tous ceux qui rejoignent jouent ; lance quand tu veux (à deux, c’est un duel).' : m.target ? (iAmHost ? `Tu peux attendre ${tn} pour jouer en direct, ou jouer tout de suite : ${tn} jouera les mêmes questions plus tard.` : '') : 'Les autres la voient dans Quiz › En ligne.';
+  $('lbSolo').hidden = !(m.target && iAmHost && ps.length < 2);
   $('lbGo').hidden = !(m.mode === 'party' && iAmHost); $('lbGo').disabled = ps.length < 2;
+}
+/* Tchat du salon d'attente : les messages arrivent avec la partie (actualisée en continu) */
+function renderChat() {
+  const msgs = (MP.match && MP.match.chat) || [], ol = $('lbMsgs'), key = MP.id + ':' + msgs.length + ':' + (msgs.length ? msgs[msgs.length - 1].at : '');
+  if (ol.dataset.k === key) return;
+  ol.dataset.k = key;
+  const me = meId();
+  ol.innerHTML = msgs.map(x => `<li class="${x.u === me ? 'me' : ''}"><b style="color:${colorOf(x.u)}">${esc(memberName(x.u))}</b>${esc(x.t)}</li>`).join('');
+  ol.scrollTop = ol.scrollHeight;
 }
 /* Parties ouvertes de la salle (page « En ligne » de l'accueil) */
 let ONLINE = [];
 async function loadOnline() {
   if (!ROOM || MP.id) return;
-  try { const d = await api('GET'); ONLINE = d.matches || []; } catch (e) { ONLINE = []; }
+  try { const d = await api('GET'); ONLINE = d.matches || []; MEMBERS = d.members || []; } catch (e) { ONLINE = []; }
   renderOnline();
 }
 function renderOnline() {
-  const open = ONLINE.filter(m => m.status === 'lobby' && !m.mine), mine = ONLINE.filter(m => m.mine);
-  if (open.length) $('onlineN').textContent = open.length; else $('onlineN').innerHTML = ICON_SWAP;
-  $('onlineSub').textContent = !ROOM ? 'Duel à deux sur ce téléphone' : open.length ? `${open.length} partie${open.length > 1 ? 's' : ''} t’attend${open.length > 1 ? 'ent' : ''} · ${open.map(m => m.hostName).join(', ')}` : mine.length ? 'Ta partie est ouverte' : 'Duel, partie à plusieurs, défi sur mesure';
+  const forMe = ONLINE.filter(m => m.forMe), open = ONLINE.filter(m => m.status === 'lobby' && !m.mine && !m.target), mine = ONLINE.filter(m => m.mine && !m.forMe);
+  const waiting = forMe.length + open.length;
+  if (waiting) $('onlineN').textContent = waiting; else $('onlineN').innerHTML = ICON_SWAP;
+  $('onlineSub').textContent = !ROOM ? 'Duel à deux sur ce téléphone'
+    : forMe.length ? `${forMe.map(m => m.hostName).join(', ')} te défie${forMe.length > 1 ? 'nt' : ''}`
+    : open.length ? `${open.length} partie${open.length > 1 ? 's' : ''} t’attend${open.length > 1 ? 'ent' : ''} · ${open.map(m => m.hostName).join(', ')}`
+    : mine.length ? 'Ta partie est ouverte' : 'Duel, partie à plusieurs, défi sur mesure';
   const list = ONLINE.map(m => {
-    const kind = m.mode === 'duel' ? 'Duel' : m.rules === 'elim' ? 'Élimination' : 'Partie';
-    const act = m.mine ? (m.status === 'playing' ? 'Reprendre' : 'Ouvrir') : 'Rejoindre';
-    return `<button class="card${m.mine ? ' mine' : ''}" data-m="${m.id}" data-join="${m.mine ? '' : '1'}"><span class="mm"><b>${kind} · ${esc(matchTitle(m))}</b><span>${esc(m.hostName)} · ${m.level === 'expert' ? 'Expert' : 'Classique'} · ${m.players.length} joueur${m.players.length > 1 ? 's' : ''}${m.status === 'playing' ? ' · en cours' : ''}</span></span><span class="act${m.mine ? ' ghosty' : ''}">${act}</span></button>`;
+    const kind = m.mode === 'duel' ? 'Duel' : m.rules === 'elim' ? 'Élimination' : 'Partie', lv = m.level === 'expert' ? 'Expert' : 'Classique';
+    if (m.forMe) {
+      // un défi qui m'est adressé : en direct si son créateur attend encore, sinon à mon rythme
+      const how = m.async ? `${esc(m.hostName)} a déjà joué, à toi` : `${esc(m.hostName)} t’attend, en direct`;
+      return `<div class="card forme"><span class="mm"><b>${esc(m.hostName)} te défie · ${esc(matchTitle(m))}</b><span>${lv} · ${how}</span></span><span class="acts"><button class="act" data-m="${m.id}" data-join="1">${m.async ? 'Relever' : 'Jouer'}</button><button class="act ghosty" data-decline="${m.id}">Refuser</button></span></div>`;
+    }
+    const sub = m.target ? (m.async ? (m.iDone ? `en attente de ${esc(m.targetName)}` : 'à toi de finir') : `en attente de ${esc(m.targetName)}`) : `${m.players.length} joueur${m.players.length > 1 ? 's' : ''}${m.status === 'playing' ? ' · en cours' : ''}`;
+    const title = m.target ? `Duel contre ${esc(m.targetName)}` : `${kind} · ${esc(matchTitle(m))}`;
+    const act = m.mine ? (m.async && m.iDone ? 'Voir' : m.status === 'playing' ? 'Reprendre' : 'Ouvrir') : 'Rejoindre';
+    return `<button class="card${m.mine ? ' mine' : ''}" data-m="${m.id}" data-join="${m.mine ? '' : '1'}"><span class="mm"><b>${title}</b><span>${m.target ? esc(matchTitle(m)) + ' · ' : esc(m.hostName) + ' · '}${lv} · ${sub}</span></span><span class="act${m.mine ? ' ghosty' : ''}">${act}</span></button>`;
   }).join('');
   $('dfOpenWrap').hidden = !ROOM || !list;
   $('onlineList').innerHTML = list;
@@ -1578,7 +1704,9 @@ const DF_KINDS = {
   local: { b: 'Même téléphone', s: 'À deux, chacun son tour', i: ICON_PHONE },
 };
 const DF_GROUPS = [['Reconnaître', '#E8B04B'], ['Comparer', '#E8B04B'], ['Cartes', '#9CC49A'], ['Histoire', '#D98A5F']];
-let DF = Object.assign({ kind: 'duel', ids: ['flag', 'cap', 'geo'], level: 'facile', n: 7 }, jget('chaumiere-geoquiz-defi', {}));
+let DF = Object.assign({ kind: 'duel', ids: ['flag', 'cap', 'geo'], level: 'facile', n: 7, target: '' }, jget('chaumiere-geoquiz-defi', {}));
+let MEMBERS = []; // autres membres de la salle (défi à une personne)
+const memberName = id => (MEMBERS.find(x => x.id === id) || {}).name || (MP.players.find(p => p.user_id === id) || {}).name || '?';
 function openDefi(pre) {
   if (pre) Object.assign(DF, pre);
   if (!ROOM) DF.kind = 'local';
@@ -1592,6 +1720,10 @@ function renderDefi() {
   $('dfLead').textContent = ROOM ? 'Rejoins une partie, ou compose ton défi.' : 'Compose un défi à jouer à deux sur ce téléphone.';
   $('dfKind').innerHTML = Object.entries(kinds).map(([k, v]) => `<button data-k="${k}" aria-pressed="${k === DF.kind}"><i>${v.i}</i><b>${v.b}</b><span>${v.s}</span></button>`).join('');
   $('dfNames').hidden = DF.kind !== 'local';
+  // duel : contre la salle (le premier qui rejoint) ou contre une personne (elle seule est prévenue)
+  if (DF.target && !MEMBERS.some(x => x.id === DF.target)) DF.target = MEMBERS.length ? '' : DF.target;
+  $('dfTargetWrap').hidden = !(ROOM && DF.kind === 'duel' && MEMBERS.length);
+  $('dfTarget').innerHTML = [['', 'Toute la salle'], ...MEMBERS.map(x => [x.id, x.name])].map(([id, n]) => `<button data-t="${id}" aria-pressed="${id === (DF.target || '')}">${esc(n)}</button>`).join('');
   $('dfPre').innerHTML = [['surprise', ICON_SHUFFLE + ' Surprise'], ['all', 'Tout'], ...DF_GROUPS.map(([g]) => [g, g]), ['none', 'Aucun']].map(([k, v]) => `<button data-p="${k}">${v}</button>`).join('');
   $('dfModes').innerHTML = DF_GROUPS.map(([gr, c]) => `<div class="dfgrp" style="--th:${c}">${gr}</div><div class="dfmodes" style="--th:${c}">${GAMES.filter(g => g.g === gr).map(g =>
     `<button data-id="${g.id}" aria-pressed="${DF.ids.includes(g.id)}">${illHTML(g.id)}<span class="nm">${g.parent ? g.v : g.name}</span></button>`).join('')}</div>`).join('')
@@ -1602,9 +1734,10 @@ function renderDefi() {
   $('dfNWrap').hidden = elim; elim ? $('dfRow').setAttribute('data-one', '') : $('dfRow').removeAttribute('data-one');
   seg($('dfN'), { 5: { b: '5', s: '' }, 7: { b: '7', s: '' }, 10: { b: '10', s: '' }, 15: { b: '15', s: '' } }, String(DF.n), v => { DF.n = +v; renderDefi(); });
   const k = DF_KINDS[DF.kind];
-  $('dfSum').textContent = DF.ids.length ? `${k.b} · ${DF.ids.length === 1 ? gameName(DF.ids[0]) : DF.ids.length + ' jeux mélangés'} · ${elim ? 'jusqu’au dernier' : DF.n + ' questions'} · ${DF.level === 'expert' ? 'Expert' : 'Classique'}` : 'Choisis au moins un jeu';
+  const vs = DF.kind === 'duel' ? (DF.target ? ` contre ${memberName(DF.target)}` : ' contre la salle') : '';
+  $('dfSum').textContent = DF.ids.length ? `${k.b}${vs} · ${DF.ids.length === 1 ? gameName(DF.ids[0]) : DF.ids.length + ' jeux mélangés'} · ${elim ? 'jusqu’au dernier' : DF.n + ' questions'} · ${DF.level === 'expert' ? 'Expert' : 'Classique'}` : 'Choisis au moins un jeu';
   $('dfGo').disabled = !DF.ids.length;
-  $('dfGo').textContent = DF.kind === 'local' ? 'Jouer à deux' : DF.kind === 'duel' ? 'Lancer le duel' : 'Créer la partie';
+  $('dfGo').textContent = DF.kind === 'local' ? 'Jouer à deux' : DF.kind === 'duel' ? (DF.target ? `Défier ${memberName(DF.target)}` : 'Défier la salle') : 'Créer la partie';
 }
 async function startDefi() {
   if (!DF.ids.length) return;
@@ -1616,7 +1749,7 @@ async function startDefi() {
   }
   $('dfGo').disabled = true;
   try {
-    const d = await api('POST', { action: 'create', mode: DF.kind === 'duel' ? 'duel' : 'party', rules: DF.kind === 'elim' ? 'elim' : 'points', game: one || 'mix', level: DF.level, cat, n: DF.n });
+    const d = await api('POST', { action: 'create', mode: DF.kind === 'duel' && DF.target ? 'duel' : 'party', rules: DF.kind === 'elim' ? 'elim' : 'points', game: one || 'mix', level: DF.level, cat, n: DF.n, target: DF.kind === 'duel' && DF.target ? DF.target : undefined });
     await mpOpen(d.id, false);
   } catch (e) { toast(e.message); } finally { $('dfGo').disabled = false; }
 }
@@ -1925,7 +2058,7 @@ async function startSel() {
   notePlay(sel.game, { level: sel.level, format: sel.format, cat: sel.cat[sel.game] });
   newSession({ game: sel.game, level: sel.level, format: sel.format === 'multi' ? 'duel' : sel.format, cat: sel.cat[sel.game], names });
 }
-$('again').addEventListener('click', () => { if (SES.online) { const m = MP.match || {}; mpClose(); openDefi({ ids: SES.game === 'mix' ? (m.cat || '').split('.') : [SES.game], level: SES.level, kind: SES.mode === 'duel' ? 'duel' : SES.rules === 'elim' ? 'elim' : 'points', n: m.n && m.n <= 15 ? m.n : DF.n }); return; } if (SES.daily) startDaily(); else startSel(); });
+$('again').addEventListener('click', () => { if (SES && SES.online && $('again').dataset.rematch) return askRematch(); if (SES.online) { const m = MP.match || {}; mpClose(); openDefi({ ids: SES.game === 'mix' ? (m.cat || '').split('.') : [SES.game], level: SES.level, kind: SES.mode === 'duel' ? 'duel' : SES.rules === 'elim' ? 'elim' : 'points', n: m.n && m.n <= 15 ? m.n : DF.n }); return; } if (SES.daily) startDaily(); else startSel(); });
 // défi déjà fait (sur ce téléphone, ou ailleurs d'après les pièces du jour) : le classement d'abord
 $('daily').addEventListener('click', () => store.get('chaumiere-geoquiz-daily-' + dayKey()) || (WALLET && WALLET.daily) ? openDailyBoard() : startDaily());
 function startDaily() {
@@ -1935,7 +2068,18 @@ function startDaily() {
   newSession({ daily: true, mix, game: 'mix', level: 'facile', format: 'normal', seed });
 }
 $('handGo').addEventListener('click', () => begin());
-$('onlineList').addEventListener('click', e => { const b = e.target.closest('.card[data-m]'); if (b) return mpOpen(b.dataset.m, !!b.dataset.join); });
+$('onlineList').addEventListener('click', e => {
+  const no = e.target.closest('[data-decline]');
+  if (no) { no.disabled = true; return api('POST', { action: 'decline', id: no.dataset.decline }).then(() => { toast('Défi refusé'); loadOnline(); }).catch(err => toast(err.message)); }
+  const b = e.target.closest('[data-m]'); if (b) return mpOpen(b.dataset.m, !!b.dataset.join);
+});
+$('dfTarget').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { DF.target = b.dataset.t; renderDefi(); } });
+$('lbSay').addEventListener('submit', e => {
+  e.preventDefault(); const t = $('lbIn').value.trim(); if (!t || !MP.id) return;
+  $('lbIn').value = '';
+  api('POST', { action: 'say', id: MP.id, t }).then(() => mpLoad()).then(() => renderChat()).catch(err => { toast(err.message); $('lbIn').value = t; });
+});
+$('lbSolo').addEventListener('click', () => { $('lbSolo').disabled = true; api('POST', { action: 'solo', id: MP.id }).then(() => mpLoad()).then(() => mpTick()).catch(e => toast(e.message)).finally(() => { $('lbSolo').disabled = false; }); });
 $('onlineBtn').addEventListener('click', () => openDefi());
 $('dfKind').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { DF.kind = b.dataset.k; renderDefi(); } });
 $('dfPre').addEventListener('click', e => {
