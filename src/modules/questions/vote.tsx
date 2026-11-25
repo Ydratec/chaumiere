@@ -24,7 +24,11 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
     await answer(f);
   }
   // « avec qui » : on ne peut pas se choisir ; une question qui vise quelqu'un ({x}) ne le propose pas
-  const members = candidates(Object.entries(people).map(([id, p]) => ({ id, name: p.name })), activity.payload.kind === "with" ? "with" : "vote", userId, activity.payload.target);
+  const everyone = Object.entries(people).map(([id, p]) => ({ id, name: p.name }));
+  const members = candidates(everyone, activity.payload.kind === "with" ? "with" : "vote", userId, activity.payload.target);
+  // Résultats : tout le monde (sauf la personne visée), soi compris : en « avec qui » on ne peut pas se choisir,
+  // mais on doit voir qui nous a choisi.
+  const results = candidates(everyone, "vote", userId, activity.payload.target);
   const person = (id: string, size: number) => (
     <Avatar url={people[id]?.url} character={people[id]?.character} name={people[id]?.name ?? "?"} size={size} />
   );
@@ -56,7 +60,7 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
     </form>
   );
 
-  const { rows: all, total } = tally(answers, members);
+  const { rows: all, total } = tally(answers, results);
   const rows = all.filter((r) => r.voters.length > 0); // seulement ceux qui ont des voix
 
   return (
