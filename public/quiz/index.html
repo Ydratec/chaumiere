@@ -417,6 +417,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .lbchat{flex:none;display:flex;flex-direction:column;gap:8px}
 .lbchat ol{list-style:none;margin:0;padding:0;max-height:132px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;scrollbar-width:none}
 .lbchat ol:empty{display:none}
+.echat ol{max-height:none;min-height:0;flex:1}
+.echat{min-height:220px}
+.echat ol:not(:empty)+.hint{display:none}
 .lbchat li{font-size:14px;line-height:1.35;color:var(--ink);user-select:text;-webkit-user-select:text}
 .lbchat li b{font-weight:700;margin-right:6px}
 .lbchat li.me{opacity:.85}
@@ -716,6 +719,7 @@ h1,h2,h3,.big{font-weight:400!important;letter-spacing:0}
     <div class="pages" id="epages">
       <div class="epage" id="pRank" data-t="Classement"><table class="duo" id="rankT"></table></div>
       <div class="epage" id="pDuo" data-t="Duel"><div class="vs" id="duo"></div></div>
+      <div class="epage" id="pChat" data-t="Tchat" hidden><div class="lbchat echat"><ol id="eMsgs" aria-live="polite"></ol><p class="hint" id="eEmpty">Un mot pour les autres joueurs ?</p><form id="eSay"><input id="eIn" maxlength="200" placeholder="Écris aux autres joueurs…" autocomplete="off" aria-label="Message"><button type="submit" aria-label="Envoyer"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form></div></div>
       <div class="epage" id="pMap" data-t="Carte"><svg id="endMap" class="endmap" aria-label="Récapitulatif sur la carte"></svg></div>
       <div class="epage" id="pRecap" data-t="Récap"><ul class="recap" id="recap"></ul></div>
       <div class="epage" id="pRoom" data-t="Salle"><div id="board"><h3 class="boardT">Défi du jour dans la salle</h3><ol class="board" id="boardL"></ol><button class="ghost" id="toBoard" type="button">Voir tous les classements</button></div></div>
@@ -1538,7 +1542,8 @@ function mpFinish() {
   mpLoad().catch(() => {}).finally(() => {
     clearInterval(MP.poll);
     show('end'); $('end').scrollTop = 0;
-    ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
+    ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare', 'pChat'].forEach(id => { $(id).hidden = true; });
+    $('pChat').hidden = !(SES && SES.online); renderChat();
     const r = mpRanking(), myRank = r.findIndex(p => p.me) + 1, elim = SES.rules === 'elim';
     $('fScore').textContent = myRank === 1 ? 'Victoire !' : `${myRank}e / ${r.length}`;
     $('fLine').textContent = r.length ? `${r[0].name} gagne${elim ? ' (dernier en lice)' : ` avec ${r[0].score} pts`}` : '';
@@ -1603,7 +1608,8 @@ function asyncEnd(d) {
   const tot = p => p.answers.reduce((t, a) => t + a.pts, 0), opName = op ? op.name : memberName(m.target === me.user_id ? m.host : m.target);
   const over = m.status === 'done' || (op && MP.players.every(p => p.done_at));
   show('end'); $('end').scrollTop = 0;
-  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare'].forEach(id => { $(id).hidden = true; });
+  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare', 'pChat'].forEach(id => { $(id).hidden = true; });
+    $('pChat').hidden = !(SES && SES.online); renderChat();
   if (d && ROOM) { if (d.coins) showCoins(d.coins); loadWallet(); }
   if (over && op) {
     const a = tot(me), b = tot(op), last = Math.max(-1, ...ps.flatMap(p => p.answers.map(x => x.i)));
@@ -1628,8 +1634,9 @@ function asyncEnd(d) {
 function rematchUI(on) {
   const b = $('again'); clearInterval(MP.rp); MP.rp = 0;
   b.dataset.rematch = on && MP.players.length >= 2 ? '1' : '';
-  if (!b.dataset.rematch) { b.textContent = 'Rejouer'; b.disabled = false; return; }
   const paint = () => {
+    renderChat(); // le tchat de fin de partie se met à jour avec la partie
+    if (!b.dataset.rematch) { b.textContent = 'Rejouer'; b.disabled = false; return; }
     const m = MP.match || {}, votes = m.rematch || [], me = meId(), mine = votes.includes(me);
     if (m.next && mine) return goRematch(m.next);
     const others = mpPlayers().filter(p => !p.me && !p.left), ready = others.filter(p => votes.includes(p.user_id)).map(p => p.name), wait = others.filter(p => !votes.includes(p.user_id)).map(p => p.name);
@@ -1672,12 +1679,13 @@ function renderLobby(countdown) {
 }
 /* Tchat du salon d'attente : les messages arrivent avec la partie (actualisée en continu) */
 function renderChat() {
-  const msgs = (MP.match && MP.match.chat) || [], ol = $('lbMsgs'), key = MP.id + ':' + msgs.length + ':' + (msgs.length ? msgs[msgs.length - 1].at : '');
-  if (ol.dataset.k === key) return;
-  ol.dataset.k = key;
-  const me = meId();
-  ol.innerHTML = msgs.map(x => `<li class="${x.u === me ? 'me' : ''}"><b style="color:${colorOf(x.u)}">${esc(memberName(x.u))}</b>${esc(x.t)}</li>`).join('');
-  ol.scrollTop = ol.scrollHeight;
+  const msgs = (MP.match && MP.match.chat) || [], key = MP.id + ':' + msgs.length + ':' + (msgs.length ? msgs[msgs.length - 1].at : ''), me = meId();
+  for (const ol of [$('lbMsgs'), $('eMsgs')]) { // salon d'attente et fin de partie : la même discussion
+    if (ol.dataset.k === key) continue;
+    ol.dataset.k = key;
+    ol.innerHTML = msgs.map(x => `<li class="${x.u === me ? 'me' : ''}"><b style="color:${colorOf(x.u)}">${esc(memberName(x.u))}</b>${esc(x.t)}</li>`).join('');
+    ol.scrollTop = ol.scrollHeight;
+  }
 }
 /* Parties ouvertes de la salle (page « En ligne » de l'accueil) */
 let ONLINE = [];
@@ -1806,7 +1814,7 @@ function finish() {
   show('end');
   const prev = +store.get(bestKey()) || 0, best = Math.max(prev, SES.score);
   if (SES.format !== 'duel') store.set(bestKey(), best);
-  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare', 'fCoins'].forEach(id => { $(id).hidden = true; });
+  ['pRank', 'pDuo', 'pMap', 'pRecap', 'pRoom', 'pShare', 'pChat', 'fCoins'].forEach(id => { $(id).hidden = true; });
   const goods = SES.log.filter(l => l.good).length;
   if (SES.format === 'duel') {
     SES.results.push({ score: SES.score, log: SES.log });
@@ -2101,11 +2109,12 @@ $('onlineList').addEventListener('click', e => {
 });
 $('dfAll').addEventListener('click', () => { try { window.top.location.href = `/r/${ROOM}/games/classement?jeu=quiz`; } catch (e) {} });
 $('dfTarget').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { DF.target = b.dataset.t; renderDefi(); } });
-$('lbSay').addEventListener('submit', e => {
-  e.preventDefault(); const t = $('lbIn').value.trim(); if (!t || !MP.id) return;
-  $('lbIn').value = '';
-  api('POST', { action: 'say', id: MP.id, t }).then(() => mpLoad()).then(() => renderChat()).catch(err => { toast(err.message); $('lbIn').value = t; });
+const say = (form, input) => form.addEventListener('submit', e => {
+  e.preventDefault(); const t = input.value.trim(); if (!t || !MP.id) return;
+  input.value = '';
+  api('POST', { action: 'say', id: MP.id, t }).then(() => mpLoad()).then(() => renderChat()).catch(err => { toast(err.message); input.value = t; });
 });
+say($('lbSay'), $('lbIn')); say($('eSay'), $('eIn'));
 $('lbSolo').addEventListener('click', () => { $('lbSolo').disabled = true; api('POST', { action: 'solo', id: MP.id }).then(() => mpLoad()).then(() => mpTick()).catch(e => toast(e.message)).finally(() => { $('lbSolo').disabled = false; }); });
 $('onlineBtn').addEventListener('click', () => openDefi());
 $('dfKind').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { DF.kind = b.dataset.k; renderDefi(); } });

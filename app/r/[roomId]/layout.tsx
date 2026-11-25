@@ -11,6 +11,7 @@ import { getMyRooms, getRoomContext } from "@/src/modules/rooms/context";
 import { RoomSwitcher } from "@/src/modules/rooms/room-switcher";
 import { NewsPopup } from "@/src/modules/news/popup";
 import { Presence } from "@/src/modules/notifications/presence";
+import { InviteToast } from "@/src/modules/games/invite-toast";
 import { quizVisible } from "@/src/modules/quiz/access";
 
 export default async function RoomLayout({
@@ -40,6 +41,7 @@ export default async function RoomLayout({
       </header>
       <main className="mx-auto max-w-md space-y-7 px-4 py-4">{children}</main>
       <Presence />
+      <InviteToast roomId={roomId} me={ctx.user.id} people={ctx.people} quiz={quizVisible(ctx.user)} />
       {SERRE_OPEN && chapterOf(ctx.chapter) && <StoryTeaser roomId={roomId} chapter={ctx.chapter} phase={ctx.storyDay < 1 ? "soon" : "live"} />}
       <ScratchTeaser roomId={roomId} />
       <NewsPopup roomId={roomId} />
