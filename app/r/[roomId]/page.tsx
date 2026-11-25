@@ -49,18 +49,18 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
     <>
       <GamesLive roomId={roomId} />
       {inbox.length > 0 && <FeedbackInbox roomId={roomId} items={inbox} />}
-      <Link href={`/r/${roomId}/question`} className="sticker relative block -rotate-1 bg-[#FFD54A] p-5 pr-10">
+      <Link href={`/r/${roomId}/question`} className="relative block -rotate-1 rounded-md bg-[#FFD54A] p-5 pr-10 shadow-[0_14px_22px_-14px_rgb(43_39_48/0.55),0_2px_3px_rgb(43_39_48/0.12)]">
         <span className="inline-block rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-extrabold text-[#FFD54A]">Question du jour</span>
         <h2 className="mt-2.5 text-[1.65rem] font-bold leading-[1.12]">{activity?.payload.text ?? "Pas de question aujourd'hui"}</h2>
         <span className="mt-4 flex items-center justify-between gap-3">
           {streak && <span className="text-sm font-extrabold">{streak.answered} sur {streak.total} ont répondu</span>}
           <span className="rounded-full border-2 border-ink bg-white px-4 py-1 font-display text-[1.05rem] font-bold">Répondre</span>
         </span>
-        {/* coin décollé */}
-        <svg aria-hidden width="34" height="34" viewBox="0 0 34 34" className="absolute -right-[2.5px] -top-[2.5px]">
-          <path d="M0 0H34V34Z" fill="#EEF3F4" />
-          <path d="M2 0L34 32L6 28Z" fill="#fff" stroke="#2B2730" strokeWidth="2" strokeLinejoin="round" />
-          <path d="M2 0L34 32L6 28Z" fill="#000" opacity=".08" />
+        {/* coin du post-it qui se décolle */}
+        <svg aria-hidden width="30" height="30" viewBox="0 0 30 30" className="absolute right-0 top-0">
+          <path d="M0 0H30V30Z" fill="#EEF3F4" />
+          <path d="M0 0L30 30L4 26Z" fill="#F2C53A" />
+          <path d="M0 0L30 30L4 26Z" fill="#000" opacity=".06" />
         </svg>
         {streak && <Flame days={streak.days} lit={streak.today} />}
       </Link>
