@@ -2,7 +2,9 @@
 // et tête de face (repère 24×24) pour les avatars.
 // Animations CSS partagées (.cat-walking, .cat-leg-*, .cat-body, .cat-tail) : voir app/globals.css.
 import { COLORS, UNIQUE_SPECIES, type Accessory, type Character, type Species } from "@/src/modules/characters/catalog";
-import { FACE_HEAD, UniqueFace, UniqueSide } from "./unique-characters";
+import { useId } from "react";
+import { FACE_ANCHOR, faceSvg } from "./character-faces";
+import { UniqueSide } from "./unique-characters";
 
 const INK = "#27272a";
 const PINK = "#f9a8b8";
@@ -174,101 +176,6 @@ function Body({ species, fur, dark, eye }: { species: Species; fur: string; dark
   }
 }
 
-/** Têtes de face (repère 24×24) des espèces de base, aux couleurs choisies : pour les avatars ronds. */
-const BASE_FACE: Partial<Record<Species, { x: number; y: number; r: number; bg: string }>> = {
-  cat: { x: 12, y: 13, r: 6.6, bg: "#fef3c7" },
-  dog: { x: 12, y: 12.5, r: 6.4, bg: "#e0f2fe" },
-  bunny: { x: 12, y: 14.5, r: 6, bg: "#fce7f3" },
-  duck: { x: 12, y: 12, r: 6.5, bg: "#ecfccb" },
-  turtle: { x: 12, y: 11.5, r: 6, bg: "#dcfce7" },
-  fish: { x: 12, y: 12, r: 6.5, bg: "#e0f2fe" },
-};
-
-function Face({ species, fur, dark, eye }: { species: Species; fur: string; dark: string; eye: string }) {
-  const eyes = (y: number, dx = 2.8, r = 1.15) => <>
-    {[12 - dx, 12 + dx].map((x) => <g key={x}><circle cx={x} cy={y} r={r} fill={eye} /><circle cx={x + r * .35} cy={y - r * .35} r={r * .32} fill="#fff" /></g>)}
-  </>;
-  const cheeks = (y: number, dx = 4.6) => <><circle cx={12 - dx} cy={y} r="1.1" fill={PINK} opacity=".7" /><circle cx={12 + dx} cy={y} r="1.1" fill={PINK} opacity=".7" /></>;
-  switch (species) {
-    case "cat":
-      return <>
-        <path d="M5.4 10.4 5.6 3l5 4.2zM18.6 10.4 18.4 3l-5 4.2z" fill={fur} stroke={fur} strokeWidth="1" strokeLinejoin="round" />
-        <path d="M6.6 8.4l.1-3.4 2.3 2zM17.4 8.4l-.1-3.4-2.3 2z" fill={PINK} />
-        <ellipse cx="12" cy="13.4" rx="7.4" ry="6.6" fill={fur} />
-        <ellipse cx="12" cy="16.4" rx="3.4" ry="2.4" fill="#fff" opacity=".35" />
-        {eyes(12.4)}
-        <path d="M11.2 15.2h1.6L12 16.2z" fill={PINK} />
-        <path d="M10.4 17q.8.8 1.6 0 .8.8 1.6 0" stroke={INK} strokeWidth=".45" fill="none" strokeLinecap="round" />
-        <path d="M7.8 15.6l-4.2-.6M7.8 16.6l-4 .8M16.2 15.6l4.2-.6M16.2 16.6l4 .8" stroke="#a1a1aa" strokeWidth=".4" strokeLinecap="round" />
-        {cheeks(15.4, 5)}
-      </>;
-    case "dog":
-      return <>
-        <ellipse cx="12" cy="12.6" rx="6.8" ry="6.6" fill={fur} />
-        <ellipse cx="4.8" cy="12.4" rx="2.4" ry="5" transform="rotate(14 4.8 12.4)" fill={dark} />
-        <ellipse cx="19.2" cy="12.4" rx="2.4" ry="5" transform="rotate(-14 19.2 12.4)" fill={dark} />
-        <ellipse cx="12" cy="16.6" rx="4.2" ry="3.2" fill={fur} />
-        <ellipse cx="12" cy="17" rx="3.4" ry="2.4" fill="#fff" opacity=".4" />
-        <ellipse cx="12" cy="15.2" rx="1.5" ry="1.1" fill={INK} />
-        {eyes(11.4, 2.7)}
-        <path d="M10.4 17.6q1.6 1.2 3.2 0" stroke={INK} strokeWidth=".5" fill="none" strokeLinecap="round" />
-        <path d="M11.3 18.1q.7 1.8 1.4 0z" fill="#fb7185" />
-      </>;
-    case "bunny":
-      return <>
-        <ellipse cx="9" cy="5.6" rx="2" ry="6" transform="rotate(-10 9 5.6)" fill={fur} />
-        <ellipse cx="15" cy="5.6" rx="2" ry="6" transform="rotate(10 15 5.6)" fill={fur} />
-        <ellipse cx="9" cy="6" rx=".9" ry="4.4" transform="rotate(-10 9 6)" fill={PINK} />
-        <ellipse cx="15" cy="6" rx=".9" ry="4.4" transform="rotate(10 15 6)" fill={PINK} />
-        <ellipse cx="12" cy="15.2" rx="7" ry="6.4" fill={fur} />
-        {eyes(14, 2.8)}
-        <path d="M11.2 16.4h1.6L12 17.3z" fill={PINK} />
-        <path d="M12 17.3v.8M10.6 18.4q1.4.6 2.8 0" stroke={INK} strokeWidth=".45" fill="none" strokeLinecap="round" />
-        <rect x="11.3" y="18.4" width="1.4" height="1.2" rx=".3" fill="#fff" stroke="#d4d4d8" strokeWidth=".2" />
-        {cheeks(17)}
-      </>;
-    case "duck":
-      return <>
-        <path d="M12 5.4c-.4-1.4.4-2.4 1.6-2.6-.2 1 .2 1.6.8 2" stroke={fur} strokeWidth="1" fill="none" strokeLinecap="round" />
-        <circle cx="12" cy="12" r="7" fill={fur} />
-        <circle cx="12" cy="13" r="5" fill={dark} opacity=".18" />
-        {eyes(10.6, 3)}
-        <ellipse cx="12" cy="15" rx="3.8" ry="1.6" fill="#f59e0b" />
-        <path d="M8.4 15h7.2" stroke="#d97706" strokeWidth=".4" />
-        <circle cx="10.8" cy="14.4" r=".25" fill="#b45309" /><circle cx="13.2" cy="14.4" r=".25" fill="#b45309" />
-        {cheeks(13.2, 5)}
-      </>;
-    case "turtle":
-      return <>
-        <path d="M1 24a11 9 0 0 1 22 0z" fill={fur} />
-        <path d="M7 24l2-5h6l2 5M9 19l3-3 3 3" stroke={dark} strokeWidth=".9" fill="none" strokeLinejoin="round" />
-        <rect x="0" y="21.6" width="24" height="2.4" fill={dark} />
-        <ellipse cx="12" cy="11.6" rx="6.4" ry="6" fill="#a3c47a" />
-        <path d="M9 18h6" stroke="#a3c47a" strokeWidth="4" />
-        {eyes(10.8, 2.6)}
-        <path d="M10 14.4q2 1.4 4 0" stroke={INK} strokeWidth=".5" fill="none" strokeLinecap="round" />
-        {[[8, 7.4], [16, 7.4], [12, 6.4]].map(([x, y]) => <circle key={x} cx={x} cy={y} r=".5" fill="#86a865" />)}
-        {cheeks(13.4, 4.2)}
-      </>;
-    case "fish":
-      return <>
-        <path d="M5 12 1 8v8zM19 12l4-4v8z" fill={dark} />
-        <path d="M8 6q4-5 8 0z" fill={dark} />
-        <ellipse cx="12" cy="12.4" rx="7" ry="6.6" fill={fur} />
-        <path d="M6.4 9.4q5.6-2.4 11.2 0" stroke={dark} strokeWidth=".7" fill="none" opacity=".6" />
-        <circle cx="9" cy="11.4" r="1.8" fill="#fff" /><circle cx="15" cy="11.4" r="1.8" fill="#fff" />
-        <circle cx="9.3" cy="11.6" r="1" fill={INK} /><circle cx="15.3" cy="11.6" r="1" fill={INK} />
-        <circle cx="9.6" cy="11.2" r=".3" fill="#fff" /><circle cx="15.6" cy="11.2" r=".3" fill="#fff" />
-        <ellipse cx="12" cy="15.6" rx="1.1" ry=".9" fill={dark} />
-        <circle cx="19" cy="4" r=".9" fill="none" stroke="#7dd3fc" strokeWidth=".45" />
-        <circle cx="21" cy="1.8" r=".6" fill="none" stroke="#7dd3fc" strokeWidth=".4" />
-        {cheeks(14.2, 4.8)}
-      </>;
-    default:
-      return null;
-  }
-}
-
 /**
  * Le personnage en pied, de profil (`walking` : il se déplace, chacun à sa façon),
  * ou `portrait` : sa tête de face, pour les avatars ronds (les bulles).
@@ -282,14 +189,13 @@ export function CharacterSprite({ character, walking = false, portrait = false, 
   const color = COLORS[character.color] ?? COLORS[0];
   const eye = "night" in color && color.night ? "#fef3c7" : INK;
   const sp = character.species;
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   if (portrait) {
-    const unique = UNIQUE_SPECIES.includes(sp);
-    const f = unique ? FACE_HEAD[sp] : BASE_FACE[sp];
+    const f = FACE_ANCHOR[sp];
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" className="overflow-hidden" aria-hidden>
-        {!unique && <rect width="24" height="24" fill={BASE_FACE[sp]?.bg ?? "#f4f4f5"} />}
-        {unique ? <UniqueFace species={sp} /> : <Face species={sp} fur={color.fur} dark={color.dark} eye={eye} />}
-        {character.accessory && f && (
+        <g dangerouslySetInnerHTML={{ __html: faceSvg(sp, color.fur, color.dark, "night" in color && !!color.night, `a${uid}`) }} />
+        {character.accessory && (
           <g transform={`translate(${f.x} ${f.y}) scale(${f.r / 6})`}>
             <Accessory id={character.accessory} front />
           </g>
