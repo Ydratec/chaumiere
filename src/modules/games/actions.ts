@@ -6,7 +6,7 @@ import { adminDb } from "@/src/lib/db/server";
 import { getRoomContext } from "@/src/modules/rooms/context";
 import { loadUnlocks } from "@/src/modules/farm/data";
 import { GAME_LOCKS } from "@/src/modules/farm/projects";
-import { notify, roomMembers } from "@/src/modules/notifications/push";
+import { notify, roomMembers, throttle, type Options } from "@/src/modules/notifications/push";
 import { ENGINES } from "./engines";
 import { GAME_TYPES, isGameType, type GameState } from "./labels";
 
@@ -34,8 +34,11 @@ async function load(gameId: string) {
 const label = (g: Game) => (isGameType(g.type) ? GAME_TYPES[g.type].label : "Partie");
 const url = (g: Pick<Game, "room_id" | "id">) => `/r/${g.room_id}/games/${g.id}`;
 /** Notification de jeu, envoyée après la réponse (ne ralentit pas le coup joué). */
-const tell = (to: string[], g: Pick<Game, "room_id" | "id">, title: string, body: string) =>
-  after(() => notify(to, "games", { title, body, url: url(g), tag: `game-${g.id}` }));
+const tell = (to: string[], g: Pick<Game, "room_id" | "id">, title: string, body: string, opt: Options = {}) =>
+  after(() => notify(to, "games", { title, body, url: url(g), tag: `game-${g.id}` }, opt));
+/** « À toi de jouer » : pas si l'autre est déjà dans l'appli, et au plus une fois toutes les 15 min par partie. */
+const tellTurn = (to: string, g: Pick<Game, "room_id" | "id">, body: string) =>
+  after(async () => notify(await throttle([to], `turn:${g.id}`, 15), "games", { title: "À toi de jouer", body, url: url(g), tag: `game-${g.id}` }, { skipIfActive: true }));
 
 /** Défi lancé à toute la salle (target vide) ou à un joueur. Un nouveau défi remplace le précédent encore ouvert. */
 export async function createGame(f: FormData) {
@@ -55,7 +58,8 @@ export async function createGame(f: FormData) {
   const { data } = await admin.from("games").insert({ room_id: roomId, type, creator: c.user.id, target }).select("id").single();
   const id = data?.id;
   const to = target ? [target] : await roomMembers(roomId, c.user.id);
-  if (id) tell(to, { room_id: roomId, id }, `${c.names[c.user.id]} te défie`, GAME_TYPES[type].label);
+  // défi à la salle : notification « salle » (limitée) ; défi à une personne : « pour toi »
+  if (id) tell(to, { room_id: roomId, id }, target ? `${c.names[c.user.id]} te défie` : `${c.names[c.user.id]} défie la salle`, GAME_TYPES[type].label, target ? {} : { level: "room", topic: "games", sender: c.user.id });
   redirect(`/r/${roomId}/games/${id}`);
 }
 
@@ -107,7 +111,7 @@ export async function playMove(gameId: string, move: unknown) {
       const other = uid === game.creator ? game.opponent! : game.creator;
       const s = res.state as GameState;
       if (s.winner) tell([other], game, "Partie terminée", s.winner === "draw" ? `${label(game)} : égalité` : s.winner === uid ? `${label(game)} : ${names[uid]} a gagné` : `${label(game)} : tu as gagné !`);
-      else if (s.turn === other && (game.state.turn !== other || s.phase !== game.state.phase)) tell([other], game, "À toi de jouer", `${label(game)} contre ${names[uid]}`);
+      else if (s.turn === other && (game.state.turn !== other || s.phase !== game.state.phase)) tellTurn(other, game, `${label(game)} contre ${names[uid]}`);
       return { state: s, status: status as Game["status"], version: game.version + 1 };
     }
   }
