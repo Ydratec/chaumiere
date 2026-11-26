@@ -21,10 +21,15 @@ export const isTheme = (t: unknown): t is Theme => typeof t === "string" && Obje
 /** Un pack à thème : PACK_SIZE questions, une par jour, pour PACK_FACTOR fois le prix d'une question en plus (comme buy_question en SQL). */
 export const PACK_SIZE = 7;
 export const PACK_FACTOR = 5;
+/** Prix fixe d'une question inverse (comme buy_inverse en SQL, migration 0039). */
+export const INVERSE_PRICE = 200;
+/** Formats qu'on peut inverser : ceux où l'on choisit des membres. */
+export const INVERTIBLE = ["vote", "rank", "duo"];
 
 /** Petit titre d'une question : « Question du jour », ou qui l'a achetée (et son thème). */
-export function questionLabel(a: { slot?: number; bought_by?: string | null; payload: { theme?: string | null; n?: number; gift?: boolean } }, names: Record<string, string>) {
+export function questionLabel(a: { slot?: number; bought_by?: string | null; payload: { theme?: string | null; n?: number; gift?: boolean; inverse_of?: string } }, names: Record<string, string>) {
   if (!a.slot) return "Question du jour";
+  if (a.payload.inverse_of) return `Question inverse · de ${names[a.bought_by ?? ""] ?? "un ancien membre"}`;
   const who = a.payload.gift ? "offert" : `de ${names[a.bought_by ?? ""] ?? "un ancien membre"}`;
   return `${isTheme(a.payload.theme) ? `Pack ${THEMES[a.payload.theme]} · jour ${a.payload.n ?? 1}/${PACK_SIZE}` : "Question en plus"} · ${who}`;
 }
