@@ -71,9 +71,9 @@ export default async function RoomHome({ params }: { params: Promise<{ roomId: s
         {streak && <Flame days={streak.days} lit={streak.today} />}
       </Link>
 
-      {extras.length > 0 && (
+      {extras.some((x) => !x.payload.inverse_of) && (
         <div className="space-y-3">
-          {extras.map((x) => (
+          {extras.filter((x) => !x.payload.inverse_of).map((x) => (
             <Link key={x.id} href={`/r/${roomId}/question?a=${x.id}`} className="sticker band-sun block p-4 pb-6 transition active:scale-[0.98]">
               <p className="font-display text-sm font-bold">{questionLabel(x, ctx.names)}</p>
               <p className="mt-1 font-semibold leading-snug">{x.payload.text}</p>

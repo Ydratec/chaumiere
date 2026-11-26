@@ -56,6 +56,7 @@ export async function QuestionHistory({ sb, roomId, today, names, people }: {
                 : null;
               return (
                 <article key={a.id} className="rounded-[1.5rem] sticker p-4">
+                  {a.payload.inverse_of && <p className="eyebrow mb-1">Question inverse</p>}
                   <h3 className="font-bold leading-snug">{a.payload.text}</h3>
                   {summary ?? (vote ? (
                     t!.total ? (
@@ -78,7 +79,7 @@ export async function QuestionHistory({ sb, roomId, today, names, people }: {
                       ))}
                     </div>
                   ) : <p className="mt-2 text-sm text-zinc-500">Personne n&apos;a répondu.</p>)}
-                  <Link href={`/r/${roomId}/question?a=${a.id}`} className="mt-2 inline-block text-sm font-semibold text-indigo-600">Voir la discussion ›</Link>
+                  <Link href={`/r/${roomId}/question?a=${a.payload.inverse_of ?? a.id}`} className="mt-2 inline-block text-sm font-semibold text-indigo-600">Voir la discussion ›</Link>
                 </article>
               );
             })}
