@@ -87,16 +87,24 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
           </div>
           <div className="space-y-2.5">
             {rows.map((r) => {
-              const on = open === r.id, faces = r.voters.slice(0, 7), color = characterColor(people[r.id]?.character);
+              const on = open === r.id, faces = r.voters.slice(0, 6), color = characterColor(people[r.id]?.character);
               return (
                 <div key={r.id}>
                   <button type="button" aria-expanded={on} onClick={() => setOpen(on ? null : r.id)} className="flex w-full items-center gap-2.5 text-left">
                     {person(r.id, 36)}
-                    <span className="w-14 shrink-0 truncate font-display text-base font-bold">{r.id === userId ? "Toi" : r.name}</span>
-                    <span className="flex min-w-0 items-center rounded-full border-2 border-ink py-[3px] pl-[5px] pr-3" style={{ background: color }}>
-                      {faces.map((v, k) => <span key={v} className={k ? "-ml-1.5" : ""}>{person(v, 26)}</span>)}
-                      {r.voters.length > faces.length && <span className="-ml-1.5 flex size-[26px] items-center justify-center rounded-full border-2 border-ink bg-white text-[11px] font-extrabold">+{r.voters.length - faces.length}</span>}
-                      <span className={`ml-2 font-display text-lg font-extrabold leading-none ${dark(color) ? "text-white" : ""}`}>{r.voters.length}</span>
+                    <span className="w-14 shrink-0 truncate font-display text-base font-bold leading-tight">{r.id === userId ? "Toi" : r.name}</span>
+                    {/* barre normalisée : le plus voté prend toute la place, les autres en proportion (assez pour leurs visages) */}
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="flex items-center justify-between rounded-full border-2 border-ink py-1 pl-1 pr-3 transition-[width] duration-500"
+                        style={{ background: color, width: `${r.share * 100}%`, minWidth: 30 + 22 * (faces.length - 1) + (r.voters.length > faces.length ? 22 : 0) + 46 }}
+                      >
+                        <span className="flex">
+                          {faces.map((v, k) => <span key={v} className={k ? "-ml-2" : ""}>{person(v, 30)}</span>)}
+                          {r.voters.length > faces.length && <span className="-ml-2 flex size-[30px] items-center justify-center rounded-full border-2 border-ink bg-white text-xs font-extrabold">+{r.voters.length - faces.length}</span>}
+                        </span>
+                        <span className={`ml-2 font-display text-xl font-extrabold leading-none ${dark(color) ? "text-white" : ""}`}>{r.voters.length}</span>
+                      </span>
                     </span>
                   </button>
                   {on && (
