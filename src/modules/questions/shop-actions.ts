@@ -46,28 +46,26 @@ export async function buyQuestion(roomId: string, theme: string | null, custom?:
   return { id: data.id };
 }
 
-/** Pose l'inverse d'une question du jour (vote, classement, duo), écrite par l'acheteur. Renvoie l'id de l'originale. */
-export async function buyInverse(roomId: string, originalId: string, text: string): Promise<{ id?: string; error?: string }> {
+/** Pose l'inverse d'une question du jour (texte choisi d'avance dans questions.inverse, migration 0040). Renvoie l'id de l'originale. */
+export async function buyInverse(roomId: string, originalId: string): Promise<{ id?: string; error?: string }> {
   const c = await getRoomContext(roomId);
   if (!c) return { error: "Non autorisé." };
-  const t = String(text ?? "").trim();
-  if (t.length < 5 || t.length > 200) return { error: "La question doit faire entre 5 et 200 caractères." };
-  const { error } = await adminDb().rpc("buy_inverse", { r: roomId, u: c.user.id, orig: originalId, txt: t }).single();
-  if (error) {
+  const { data, error } = await adminDb().rpc("buy_inverse", { r: roomId, u: c.user.id, orig: originalId }).single<{ payload: { text: string } }>();
+  if (error || !data) {
     const msg: Record<string, string> = {
       "23514": "Pas assez de pièces.",
       "23505": "Quelqu'un a déjà posé l'inverse de cette question.",
       "22023": "Cette question ne peut pas être inversée.",
       P0002: "Question introuvable (elle n'est plus du jour ?).",
     };
-    return { error: msg[error.code] ?? "Achat impossible pour l'instant." };
+    return { error: msg[error?.code ?? ""] ?? "Achat impossible pour l'instant." };
   }
   revalidatePath(`/r/${roomId}`, "layout");
   const who = c.names[c.user.id];
   after(async () =>
     notify(await roomMembers(roomId, c.user.id), "question", {
       title: `${who} a posé la question inverse`,
-      body: t,
+      body: data.payload.text,
       url: `/r/${roomId}/question?a=${originalId}`,
     }, { level: "room", topic: "question", sender: c.user.id }),
   );
