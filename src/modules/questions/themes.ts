@@ -23,8 +23,6 @@ export const PACK_SIZE = 7;
 export const PACK_FACTOR = 5;
 /** Prix fixe d'une question inverse (comme buy_inverse en SQL, migration 0039). */
 export const INVERSE_PRICE = 200;
-/** Formats qu'on peut inverser : ceux où l'on choisit des membres. */
-export const INVERTIBLE = ["vote", "rank", "duo"];
 
 /** Petit titre d'une question : « Question du jour », ou qui l'a achetée (et son thème). */
 export function questionLabel(a: { slot?: number; bought_by?: string | null; payload: { theme?: string | null; n?: number; gift?: boolean; inverse_of?: string } }, names: Record<string, string>) {

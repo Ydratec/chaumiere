@@ -5,7 +5,6 @@ import { Chat } from "@/src/modules/chat/chat";
 import { adminDb } from "@/src/lib/db/server";
 import { todayExtras } from "@/src/modules/questions/extras";
 import { InverseOffer } from "@/src/modules/questions/inverse";
-import { INVERTIBLE } from "@/src/modules/questions/themes";
 import { QuestionHistory } from "@/src/modules/questions/history";
 import { getRoomContext } from "@/src/modules/rooms/context";
 
@@ -27,14 +26,16 @@ export default async function QuestionPage({ params, searchParams }: { params: P
   if (picked?.payload.inverse_of) picked = await find(picked.payload.inverse_of);
   const activity = picked ?? main;
 
-  const [{ data: answers }, { data: messages }, { data: inverse }, { data: wallet }] = await Promise.all([
+  const [{ data: answers }, { data: messages }, { data: inverse }, { data: wallet }, { data: source }] = await Promise.all([
     sb.from("answers").select("user_id, content").eq("activity_id", activity.id),
     sb.from("messages").select("id, user_id, content").eq("activity_id", activity.id).order("id"),
     sb.from("daily_activities").select("*").eq("room_id", roomId).eq("payload->>inverse_of", activity.id).maybeSingle<Activity>(),
     adminDb().from("farm_items").select("qty").eq("room_id", roomId).eq("user_id", user.id).eq("item", "coins").maybeSingle(),
+    // L'inverse possible (choisie d'avance, migration 0040) : seulement pour les questions de la base.
+    activity.payload.qid ? adminDb().from("questions").select("inverse").eq("id", activity.payload.qid).maybeSingle<{ inverse: string | null }>() : { data: null },
   ]);
   const { data: inverseAnswers } = inverse ? await sb.from("answers").select("user_id, content").eq("activity_id", inverse.id) : { data: [] };
-  const invertible = !inverse && activity.day === main.day && !activity.payload.inverse_of && INVERTIBLE.includes(activity.payload.kind ?? "open");
+  const invertible = !inverse && activity.day === main.day && !activity.payload.inverse_of && !!source?.inverse;
   const ids = (messages ?? []).map((m) => m.id);
   const { data: reactions } = ids.length
     ? await sb.from("message_reactions").select("message_id, user_id, emoji").in("message_id", ids)
@@ -63,7 +64,7 @@ export default async function QuestionPage({ params, searchParams }: { params: P
           <Today key={inverse.id} activity={inverse} userId={user.id} names={names} people={people} voteLocked={ctx.voteLocked} answers={inverseAnswers ?? []} />
         </div>
       )}
-      {invertible && <InverseOffer roomId={roomId} activityId={activity.id} text={activity.payload.text} coins={wallet?.qty ?? 0} />}
+      {invertible && <InverseOffer roomId={roomId} activityId={activity.id} inverse={source!.inverse!} coins={wallet?.qty ?? 0} />}
       {!(answers ?? []).some((x) => x.user_id === user.id) ? (
         <p className="rounded-2xl sticker px-4 py-5 text-center text-sm text-zinc-500">
           {activity.payload.kind === "open" || !activity.payload.kind ? "Réponds" : activity.payload.kind === "rank" ? "Fais ton classement" : "Vote"} pour voir la discussion.
