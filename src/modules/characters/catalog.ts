@@ -38,6 +38,17 @@ export const COLORS = [
   { fur: "#7cb87a", dark: "#4f8a4d", name: "Vert" },
 ] as const;
 
+/** Couleur principale des personnages uniques (couleurs fixes, reprises de leur dessin). */
+const UNIQUE_COLORS: Partial<Record<Species, string>> = {
+  unicorn: "#C8A8FF", penguin: "#4A6FA5", dragon: "#7CCF8F", fox: "#F08A3C",
+  whale: "#5B8FD6", schrodinger: "#8B8B95", frog: "#93D673", shark: "#8AA2C2",
+};
+/** La couleur d'une personne (barres de résultats…) : celle de son personnage. */
+export function characterColor(c: Pick<Character, "species" | "color"> | null | undefined): string {
+  if (!c) return COLORS[0].fur;
+  return UNIQUE_COLORS[c.species] ?? COLORS[c.color]?.fur ?? COLORS[0].fur;
+}
+
 /** `requires` : déblocage de salle (projet de la serre) au lieu d'un prix. */
 export const ACCESSORIES: Record<string, { name: string; price: number; requires?: string }> = {
   bow: { name: "Nœud", price: 30 },

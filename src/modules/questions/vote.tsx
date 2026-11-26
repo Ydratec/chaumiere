@@ -3,12 +3,17 @@
 import { useOptimistic, useState } from "react";
 import { answer } from "@/app/actions";
 import { Avatar } from "@/src/components/avatar";
+import { Medal } from "@/src/components/medal";
+import { characterColor } from "@/src/modules/characters/catalog";
 import type { ActivityProps } from "../activities/registry";
 import { candidates } from "./formats";
 import { tally } from "./tally";
 import { questionLabel } from "./themes";
 
-/** Question de vote : on choisit un membre ; ensuite, histogramme des voix avec les bulles des votants. */
+/**
+ * Question de vote : on choisit un membre ; ensuite, une ligne par personne qui a des voix, avec une barre à la
+ * couleur de son personnage. Toucher une ligne déplie le détail : qui a voté pour elle.
+ */
 export function VoteActivity({ activity, userId, names, people, answers: saved, voteLocked }: ActivityProps) {
   // Le vote s'affiche tout de suite ; le serveur confirme ensuite (et corrige si besoin).
   const [answers, vote] = useOptimistic(saved, (all, target: string) => [
@@ -62,6 +67,7 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
 
   const { rows: all, total } = tally(answers, results);
   const rows = all.filter((r) => r.voters.length > 0); // seulement ceux qui ont des voix
+  const zero = all.filter((r) => !r.voters.length);
 
   return (
     <>
@@ -73,39 +79,56 @@ export function VoteActivity({ activity, userId, names, people, answers: saved, 
       {!mine ? (
         choices
       ) : (
-        <section className="space-y-4">
-          <h3 className="eyebrow">{total} vote{total > 1 ? "s" : ""}</h3>
-          {rows.map((r, i) => (
-            <div key={r.id} className="flex items-center gap-3">
-              <div className="flex w-20 shrink-0 items-center gap-2">
-                {person(r.id, 32)}
-                <span className="truncate text-xs font-medium">{r.id === userId ? "Moi" : r.name}</span>
-              </div>
-              <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                <div
-                  className={`flex h-8 items-center justify-end rounded-full pr-2 text-xs font-bold text-white transition-[width] duration-500 ${
-                    i === 0 && r.voters.length ? "bg-indigo-600" : r.voters.length ? "bg-indigo-400" : "bg-zinc-200"
-                  }`}
-                  style={{ width: `max(${r.voters.length ? "2rem" : "0.5rem"}, ${r.share * 62}%)` }}
-                >
-                  {r.voters.length || ""}
-                </div>
-                <div className="flex shrink-0 -space-x-2">
-                  {r.voters.slice(0, 5).map((v) => (
-                    <span key={v} className="rounded-full ring-2 ring-[var(--background)]" title={people[v]?.name}>{person(v, 24)}</span>
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="eyebrow">{total} vote{total > 1 ? "s" : ""}</h3>
+            <span className="text-sm font-bold text-zinc-600">Ton vote : {mine.content === userId ? "toi" : (people[mine.content]?.name ?? "?")}</span>
+          </div>
+          {rows.map((r) => {
+            const place = rows.filter((x) => x.voters.length > r.voters.length).length; // ex æquo : même place
+            const color = characterColor(people[r.id]?.character);
+            const pct = Math.round((r.voters.length / Math.max(1, total)) * 100);
+            return (
+              <details key={r.id} className="group sticker overflow-hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-3 p-3 [&::-webkit-details-marker]:hidden">
+                  <span className="flex w-6 shrink-0 justify-center">{place < 3 ? <Medal rank={place} /> : <span className="font-display font-bold text-zinc-500">{place + 1}</span>}</span>
+                  {person(r.id, 40)}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-display text-lg font-bold leading-tight">
+                        {r.id === userId ? "Toi" : r.name}
+                        {mine.content === r.id && <span className="ml-1.5 rounded-full bg-ink px-2 py-0.5 align-middle font-sans text-[10px] font-extrabold text-white">ton vote</span>}
+                      </span>
+                      <span className="shrink-0 font-display text-2xl font-extrabold leading-none tabular-nums">{r.voters.length}</span>
+                    </span>
+                    <span className="mt-1.5 block h-4 overflow-hidden rounded-full border-2 border-ink bg-zinc-100">
+                      <span className="block h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(6, r.share * 100)}%`, background: color }} />
+                    </span>
+                    <span className="mt-1 block text-xs font-semibold text-zinc-500">{pct} % des voix · toucher pour voir qui</span>
+                  </span>
+                  <svg viewBox="0 0 24 24" width="18" height="18" className="shrink-0 transition group-open:rotate-180" aria-hidden>
+                    <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </summary>
+                <div className="flex flex-wrap gap-2 border-t-2 border-dashed border-ink/20 px-3 pb-3 pt-3">
+                  {r.voters.map((v) => (
+                    <span key={v} className="flex items-center gap-1.5 rounded-full border-2 border-ink bg-white py-0.5 pl-0.5 pr-2.5 text-sm font-bold">
+                      {person(v, 26)}
+                      {v === userId ? "Toi" : (people[v]?.name ?? "?")}
+                    </span>
                   ))}
-                  {r.voters.length > 5 && (
-                    <span className="flex size-6 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold ring-2 ring-[var(--background)]">+{r.voters.length - 5}</span>
-                  )}
                 </div>
-              </div>
-            </div>
-          ))}
+              </details>
+            );
+          })}
+          {zero.length > 0 && (
+            <p className="px-1 text-sm text-zinc-500">Pas de voix : {zero.map((r) => (r.id === userId ? "toi" : r.name)).join(", ")}</p>
+          )}
           {voteLocked ? (
-            <p className="pt-2 text-xs text-zinc-500">Vote définitif dans cette salle.</p>
+            <p className="pt-1 text-xs text-zinc-500">Vote définitif dans cette salle.</p>
           ) : (
-            <details className="pt-2 text-sm">
-              <summary className="cursor-pointer text-zinc-500">Changer mon vote</summary>
+            <details className="pt-1 text-sm">
+              <summary className="cursor-pointer font-display font-bold text-zinc-600">Changer mon vote</summary>
               <div className="mt-3">{choices}</div>
             </details>
           )}
